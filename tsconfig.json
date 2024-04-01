@@ -1,0 +1,30 @@
+{
+  "compilerOptions": {
+    "outDir": "./.dist/",
+    "moduleResolution": "node",
+    "module": "commonjs",
+    "target": "es6",
+    "experimentalDecorators": true,
+    "emitDecoratorMetadata": true,
+    "allowSyntheticDefaultImports": true,
+    "sourceMap": false,
+    "declaration": false,
+    "resolveJsonModule": true,
+    "allowJs": true,
+    "lib": [
+      "ES2021"
+    ],
+    "typeRoots": [
+      "node_modules/@types",
+      "node_modules/@structured-growth/microservice-sdk"
+    ]
+  },
+  "include": [
+    "database",
+    "src",
+    "test"
+  ],
+  "exclude": [
+    "node_modules"
+  ]
+}

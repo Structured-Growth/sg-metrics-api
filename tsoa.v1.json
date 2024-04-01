@@ -1,0 +1,24 @@
+{
+  "basePath": "/src/controllers",
+  "specVersion": 3,
+  "noImplicitAdditionalProperties": "throw-on-extras",
+  "controllerPathGlobs": ["./src/controllers/v1/*controller.ts"],
+  "spec": {
+    "version": "2.0",
+    "outputDirectory": ".docs/openapi.v1",
+    "specVersion": 3,
+    "securityDefinitions": {
+      "jwt": {
+        "type": "http",
+        "scheme": "bearer",
+        "bearerFormat": "JWT"
+      }
+    }
+  },
+  "routes": {
+    "routesDir": "src/routes",
+    "routesFileName": "v1.ts",
+    "middleware": "express",
+    "middlewareTemplate": "src/routes/v1.template.hbs"
+  }
+}

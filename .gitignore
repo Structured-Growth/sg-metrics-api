@@ -1,0 +1,6 @@
+.idea
+.env
+.dist
+.db
+.docs
+node_modules

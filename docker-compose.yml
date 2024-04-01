@@ -1,0 +1,13 @@
+version: '3'
+services:
+  postgres:
+    image: postgres:11
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_DB: default
+      POSTGRES_USER: user
+      POSTGRES_PASSWORD: user
+      PGDATA: /var/lib/postgresql/data/pgdata
+    volumes:
+      - ./.db:/var/lib/postgresql/data/pgdata
