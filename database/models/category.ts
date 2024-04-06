@@ -4,39 +4,42 @@ import {
 	RegionEnum,
 	DefaultModelInterface,
 	BelongsToOrgInterface,
-	BelongsToAccountInterface,
 } from "@structured-growth/microservice-sdk";
 
-export interface CategoryAttributes
+export interface MetricCategoryAttributes
 	extends DefaultModelInterface {
-	catId?: number | any;
+	id?: number | any;
 	orgId: number;
+	accountId?: number;
 	region: RegionEnum;
 	title: string;
 	code: number;
 	status: "active" | "inactive" | "archived";
 }
 
-export interface CategoryCreationAttributes
-	extends Omit<CategoryAttributes, "catId" | "arn" | "createdAt" | "updatedAt" | "deletedAt"> {}
+export interface MetricCategoryCreationAttributes
+	extends Omit<MetricCategoryAttributes, "id" | "arn" | "createdAt" | "updatedAt" | "deletedAt"> {}
 
-export interface OrganizationUpdateAttributes
-	extends Pick<CategoryAttributes, "title"  |  "status"> {}
+export interface MetricCategoryUpdateAttributes
+	extends Pick<MetricCategoryAttributes, "title"  |  "status"> {}
 
 @Table({
 	tableName: "categories",
 	timestamps: true,
 	underscored: true,
 })
-export class Category
-	extends Model<CategoryAttributes, CategoryCreationAttributes>
-	implements CategoryAttributes
+export class MetricCategory
+	extends Model<MetricCategoryAttributes, MetricCategoryCreationAttributes>
+	implements MetricCategoryAttributes
 {
 	@Column
-	catId: number;
+	id: number;
 
 	@Column
 	orgId: number;
+
+	@Column
+	accountId: number;
 
 	@Column(DataType.STRING)
 	region: RegionEnum;
@@ -48,15 +51,15 @@ export class Category
 	code: number;
 
 	@Column(DataType.STRING)
-	status: CategoryAttributes["status"];
+	status: MetricCategoryAttributes["status"];
 
 	static get arnPattern(): string {
-		return [container.resolve("appPrefix"), "<region>", "<orgId>"].join(":");
+		return [container.resolve("appPrefix"), "<region>", "<orgId>", '<accountId>'].join(":");
 	}
 
 	get arn(): string {
-		return [container.resolve("appPrefix"), this.region, this.orgId, this.catId].join(":");
+		return [container.resolve("appPrefix"), this.region, this.orgId, this.accountId, this.id].join(":");
 	}
 }
 
-export default Category;
+export default MetricCategory;

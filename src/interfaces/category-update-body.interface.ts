@@ -1,5 +1,7 @@
-import { ExampleAttributes } from "../../database/models/example";
+import { MetricCategoryAttributes } from "../../database/models/category";
 
-export interface ExampleUpdateBodyInterface {
-	status?: ExampleAttributes["status"];
+export interface MetricCategoryUpdateBodyInterface {
+	title?: string;
+	status?: MetricCategoryAttributes["status"];
+	code?: number;
 }

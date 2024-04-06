@@ -4,92 +4,117 @@ import {
 	BaseController,
 	DescribeAction,
 	DescribeResource,
-	SearchResultInterface,
+	container,
+	inject,
+	NotFoundError,
 	ValidateFuncArgs,
+	SearchResultInterface,
 } from "@structured-growth/microservice-sdk";
-import { ExampleAttributes } from "../../../database/models/example";
-import { ExampleSearchParamsInterface } from "../../interfaces/example-search-params.interface";
-import { ExampleCreateBodyInterface } from "../../interfaces/example-create-body.interface";
-import { ExampleUpdateBodyInterface } from "../../interfaces/example-update-body.interface";
-import { ExampleSearchParamsValidator } from "../../validators/example-search-params.validator";
+import { pick } from "lodash";
+import { MetricTypeAttributes } from "../../../database/models/type";
+import { MetricTypeSearchParamsInterface } from "../../interfaces/type-search-params.interface";
+import { MetricTypeCreateBodyInterface } from "../../interfaces/type-create-body.interface";
+import { MetricTypeUpdateBodyInterface } from "../../interfaces/type-update-body.interface";
+import { MetricTypeSearchParamsValidator } from "../../validators/type-search-params.validator";
+import { MetricTypeCreateParamsValidator } from "../../validators/type-create-params.validator";
+import { MetricTypeUpdateParamsValidator } from "../../validators/type-update-params.validator";
 
-/**
- * This is just an example of a controller with search and CRUD operations over a model.
- */
-@Route("v1/examples")
-@Tags("ExampleController")
+const publicMetricTypeAttributes = [
+	"id",
+	"orgId",
+	"region",
+	"metricCategoryId",
+	"title",
+	"code",
+	"unit",
+	"factor",
+	"version",
+	"lonic_code",
+	"lonic_url",
+	"status",
+	"createdAt",
+	"updatedAt",
+	"arn",
+] as const;
+type MetricTypeKeys = (typeof publicMetricTypeAttributes)[number];
+type PublicAccountAttributes = Pick<MetricTypeAttributes, MetricTypeKeys>;
+
+
+@Route("v1/metric-types")
+@Tags("MetricTypeController")
 @autoInjectable()
-export class ExampleController extends BaseController {
+export class MetricTypeController extends BaseController {
 	/**
-	 * Search Example records
+	 * Search Metric Types records
 	 */
 	@OperationId("Search")
 	@Get("/")
-	@SuccessResponse(200, "Returns list of entities")
-	@DescribeAction("example/search")
-	@DescribeResource("Organization", ({ query }) => Number(query.orgId), "sg-api:<region>:<orgId>")
-	@DescribeResource("Account", ({ query }) => Number(query.accountId), "sg-api:<region>:<orgId>:<accountId>")
-	@DescribeResource("Example", ({ query }) => Number(query.id?.[0]))
+	@SuccessResponse(200, "Returns list of metric types")
+	@DescribeAction("metric-types/search")
+	@DescribeResource("Organization", ({ query }) => Number(query.orgId))
 	@DescribeResource(
-		"ExampleStatus",
+		"CategoryStatus",
 		({ query }) => query.status as string,
-		"sg-api:<region>:<orgId>:<accountId>:example-status/<exampleStatus>"
+		`${container.resolve("appPrefix")}:<region>:<orgId>:metric-type-status/<metricTypeStatus>`
 	)
-	@ValidateFuncArgs(ExampleSearchParamsValidator)
-	async search(@Queries() query: ExampleSearchParamsInterface): Promise<SearchResultInterface<ExampleAttributes>> {
+	@ValidateFuncArgs(MetricTypeSearchParamsValidator)
+	async search(@Queries() query: MetricTypeSearchParamsInterface
+	): Promise<SearchResultInterface<PublicAccountAttributes>> {
 		return undefined;
 	}
 
 	/**
-	 * Create Example
+	 * Create Metric Types
 	 */
 	@OperationId("Create")
 	@Post("/")
 	@SuccessResponse(201, "Returns created model")
-	@DescribeAction("example/create")
-	@DescribeResource("Organization", ({ query }) => Number(query.orgId), "sg-api:<region>:<orgId>")
-	@DescribeResource("Account", ({ query }) => Number(query.accountId), "sg-api:<region>:<orgId>:<accountId>")
-	async create(@Queries() query: {}, @Body() body: ExampleCreateBodyInterface): Promise<ExampleAttributes> {
+	@DescribeAction("metric-types/create")
+	@DescribeResource("Organization", ({ body }) => Number(body.orgId))
+	@DescribeResource("Metric Category", ({ body }) => Number(body.metricCategoryId))
+	@ValidateFuncArgs(MetricTypeCreateParamsValidator)
+	async create(@Queries() query: {}, @Body() body: MetricTypeCreateBodyInterface): Promise<PublicAccountAttributes> {
 		return undefined;
 	}
 
 	/**
-	 * Get Example
+	 * Get Metric Types
 	 */
 	@OperationId("Read")
-	@Get("/:exampleId")
+	@Get("/:metricTypeId")
 	@SuccessResponse(200, "Returns model")
-	@DescribeAction("example/read")
-	@DescribeResource("Example", ({ params }) => Number(params.exampleId))
-	async get(@Path() exampleId: number): Promise<ExampleAttributes> {
+	@DescribeAction("metric-types/read")
+	@DescribeResource("Metric Type", ({ params }) => Number(params.metricTypeId))
+	async get(@Path() metricTypeId: number): Promise<PublicAccountAttributes> {
 		return undefined;
 	}
 
 	/**
-	 * Update Example
+	 * Update Metric Types
 	 */
 	@OperationId("Update")
-	@Put("/:exampleId")
+	@Put("/:metricTypeId")
 	@SuccessResponse(200, "Returns updated model")
-	@DescribeAction("example/update")
-	@DescribeResource("Example", ({ params }) => Number(params.exampleId))
+	@DescribeAction("metric-types/update")
+	@DescribeResource("Metric Type", ({ params }) => Number(params.metricTypeId))
+	@ValidateFuncArgs(MetricTypeUpdateParamsValidator)
 	async update(
-		@Path() exampleId: number,
+		@Path() metricTypeId: number,
 		@Queries() query: {},
-		@Body() body: ExampleUpdateBodyInterface
-	): Promise<ExampleAttributes> {
+		@Body() body: MetricTypeUpdateBodyInterface
+	): Promise<PublicAccountAttributes> {
 		return undefined;
 	}
 
 	/**
-	 * Delete Example
+	 * Delete Metric Types
 	 */
 	@OperationId("Delete")
-	@Delete("/:exampleId")
+	@Delete("/:metricTypeId")
 	@SuccessResponse(204, "Returns nothing")
-	@DescribeAction("example/delete")
-	@DescribeResource("Example", ({ params }) => Number(params.exampleId))
-	async delete(@Path() exampleId: number): Promise<void> {
+	@DescribeAction("metric-types/delete")
+	@DescribeResource("Metric Type", ({ params }) => Number(params.metricTypeId))
+	async delete(@Path() metricTypeId: number): Promise<void> {
 		return undefined;
 	}
 }

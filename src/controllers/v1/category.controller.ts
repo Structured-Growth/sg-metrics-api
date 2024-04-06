@@ -11,14 +11,16 @@ import {
 	NotFoundError,
 } from "@structured-growth/microservice-sdk";
 import { pick } from "lodash";
-import { Category, CategoryAttributes } from "../../../database/models/category";
-import { CategorySearchParamsInterface } from "../../interfaces/category-search-params.interface";
-import { CategoryCreateBodyInterface } from "../../interfaces/category-create-body.interface";
-import { CategoryUpdateBodyInterface } from "../../interfaces/category-update-body.interface";
-import { ExampleSearchParamsValidator } from "../../validators/example-search-params.validator";
+import { MetricCategory, MetricCategoryAttributes } from "../../../database/models/category";
+import { MetricCategorySearchParamsInterface } from "../../interfaces/category-search-params.interface";
+import { MetricCategoryCreateBodyInterface } from "../../interfaces/category-create-body.interface";
+import { MetricCategoryUpdateBodyInterface } from "../../interfaces/category-update-body.interface";
+import { MetricCategorySearchParamsValidator } from "../../validators/category-search-params.validator";
+import { MetricCategoryCreateParamsValidator } from "../../validators/category-create-params.validator";
+import { MetricCategoryUpdateSearchParamsValidator } from "../../validators/category-update-params.validator";
 
-const publicCategoryAttributes = [
-	"catId",
+const publicMetricCategoryAttributes = [
+	"id",
 	"orgId",
 	"region",
 	"title",
@@ -27,74 +29,76 @@ const publicCategoryAttributes = [
 	"updatedAt",
 	"arn",
 ] as const;
-type CategoryKeys = (typeof publicCategoryAttributes)[number];
-type PublicCategoryAttributes = Pick<CategoryAttributes, CategoryKeys>;
+type MetricCategoryKeys = (typeof publicMetricCategoryAttributes)[number];
+type PublicMetricCategoryAttributes = Pick<MetricCategoryAttributes, MetricCategoryKeys>;
 
 
 @Route("v1/category")
-@Tags("CategoryController")
+@Tags("MetricCategoryController")
 @autoInjectable()
-export class CategoryController extends BaseController {
+export class MetricCategoryController extends BaseController {
 	/**
-	 * Search Example records
+	 * Search MetricCategory records
 	 */
 	@OperationId("Search")
 	@Get("/")
 	@SuccessResponse(200, "Returns list of categories")
-	@DescribeAction("category/search")
+	@DescribeAction("metric-category/search")
 	@DescribeResource("Organization", ({ query }) => Number(query.orgId))
 	@DescribeResource(
 		"CategoryStatus",
 		({ query }) => query.status as string,
-		`${container.resolve("appPrefix")}:<region>:<orgId>:category-status/<categoryStatus>`
+		`${container.resolve("appPrefix")}:<region>:<orgId>:metric-category-status/<metricCategoryStatus>`
 	)
-	@ValidateFuncArgs(ExampleSearchParamsValidator)
+	@ValidateFuncArgs(MetricCategorySearchParamsValidator)
 	async search(
-		@Queries() query: CategorySearchParamsInterface
-	): Promise<SearchResultInterface<PublicCategoryAttributes>> {
+		@Queries() query: MetricCategorySearchParamsInterface
+	): Promise<SearchResultInterface<PublicMetricCategoryAttributes>> {
 		return undefined;
 	}
 
 	/**
-	 * Create Example
+	 * Create MetricCategory
 	 */
 	@OperationId("Create")
 	@Post("/")
 	@SuccessResponse(201, "Returns created category")
-	@DescribeAction("category/create")
+	@DescribeAction("metric-category/create")
 	@DescribeResource("Organization", ({ body }) => Number(body.orgId))
+	@ValidateFuncArgs(MetricCategoryCreateParamsValidator)
 	async create(
 		@Queries() query: {},
-		@Body() body: CategoryCreateBodyInterface
-	): Promise<PublicCategoryAttributes> {
+		@Body() body: MetricCategoryCreateBodyInterface
+	): Promise<PublicMetricCategoryAttributes> {
 		return undefined;
 	}
 
 	/**
-	 * Get Example
+	 * Get MetricCategory
 	 */
 	@OperationId("Read")
-	@Get("/:catId")
+	@Get("/:metricCategoryId")
 	@SuccessResponse(200, "Returns category")
-	@DescribeAction("category/read")
-	@DescribeResource("Category", ({ params }) => Number(params.catId))
-	async get(@Path() catId: number): Promise<PublicCategoryAttributes> {
+	@DescribeAction("metric-category/read")
+	@DescribeResource("MetricCategory", ({ params }) => Number(params.metricCategoryId))
+	async get(@Path() catId: number): Promise<PublicMetricCategoryAttributes> {
 		return undefined;
 	}
 
 	/**
-	 * Update Example
+	 * Update MetricCategory
 	 */
 	@OperationId("Update")
-	@Put("/:catId")
+	@Put("/:metricCategoryId")
 	@SuccessResponse(200, "Returns updated category")
-	@DescribeAction("category/update")
-	@DescribeResource("Category", ({ params }) => Number(params.catId))
+	@DescribeAction("metric-category/update")
+	@DescribeResource("MetricCategory", ({ params }) => Number(params.metricCategoryId))
+	@ValidateFuncArgs(MetricCategoryUpdateSearchParamsValidator)
 	async update(
 		@Path() catId: number,
 		@Queries() query: {},
-		@Body() body: CategoryUpdateBodyInterface
-	): Promise<PublicCategoryAttributes> {
+		@Body() body: MetricCategoryUpdateBodyInterface
+	): Promise<PublicMetricCategoryAttributes> {
 		return undefined;
 	}
 
@@ -102,10 +106,10 @@ export class CategoryController extends BaseController {
 	 * Delete Example
 	 */
 	@OperationId("Delete")
-	@Delete("/:catId")
+	@Delete("/:metricCategoryId")
 	@SuccessResponse(204, "Returns nothing")
-	@DescribeAction("category/delete")
-	@DescribeResource("Category", ({ params }) => Number(params.catId))
+	@DescribeAction("metric-category/delete")
+	@DescribeResource("MetricCategory", ({ params }) => Number(params.metricCategoryId))
 	async delete(@Path() catId: number): Promise<void> {
 		return undefined;
 	}

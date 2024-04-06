@@ -1,38 +1,113 @@
-import { Column, Model, Table } from "sequelize-typescript";
-import { Optional } from "sequelize";
-import { container, RegionEnum, DefaultModelInterface } from "@structured-growth/microservice-sdk";
+import { TimestreamWrite } from 'aws-sdk';
 
-export interface ExampleAttributes extends DefaultModelInterface {
-	status: string;
-}
-
-export interface ExampleCreationAttributes extends Optional<ExampleAttributes, "id"> {}
-
-@Table({
-	tableName: "example",
-	timestamps: true,
-	underscored: true,
-})
-export class Example extends Model<ExampleAttributes, ExampleCreationAttributes> implements ExampleAttributes {
-	@Column
-	accountId: number;
-
-	@Column
+export interface MetricAttributes {
+	id: number;
 	orgId: number;
-
-	@Column
-	region: RegionEnum;
-
-	@Column
-	status: string;
-
-	static get arnPattern(): string {
-		return [container.resolve("appPrefix"), '<region>', '<orgId>', '<accountId>', `examples/<exampleId>`].join(":");
-	}
-
-	get arn(): string {
-		return [container.resolve("appPrefix"), this.region, this.orgId, this.accountId, `examples/${this.id}`].join(":");
-	}
+	region: string;
+	accountId: number;
+	userId: number;
+	metricTypeId: string;
+	metricTypeVersion: number;
+	deviceId: string;
+	batchId: string;
+	value: number;
+	takenAt: Date;
+	takenAtOffset: number;
+	recordedAt: Date;
 }
 
-export default Example;
+export interface MetricCreationAttributes extends Omit<MetricAttributes, "id" | "recordedAt"> {
+}
+
+export class Metric {
+	id: number;
+	orgId: number;
+	region: string;
+	accountId: number;
+	userId: number;
+	metricTypeId: string;
+	metricTypeVersion: number;
+	deviceId: string;
+	batchId: string;
+	value: number;
+	takenAt: Date;
+	takenAtOffset: number;
+	recordedAt: Date;
+
+	constructor(
+		id: number,
+		orgId: number,
+		region: string,
+		accountId: number,
+		userId: number,
+		metricTypeId: string,
+		metricTypeVersion: number,
+		deviceId: string,
+		batchId: string,
+		value: number,
+		takenAt: Date,
+		takenAtOffset: number,
+		recordedAt: Date
+	) {
+		this.id = id;
+		this.orgId = orgId;
+		this.region = region;
+		this.accountId = accountId;
+		this.userId = userId;
+		this.metricTypeId = metricTypeId;
+		this.metricTypeVersion = metricTypeVersion;
+		this.deviceId = deviceId;
+		this.batchId = batchId;
+		this.value = value;
+		this.takenAt = takenAt;
+		this.takenAtOffset = takenAtOffset;
+		this.recordedAt = recordedAt;
+	}
+
+	static writeToTimestream(metric: Metric) {
+		const timestreamWrite = new TimestreamWrite();
+
+		const metricData = {
+			TableName: 'YourTableName',
+			Records: [
+				{
+					Dimensions: [
+						{ Name: 'orgId', Value: metric.orgId.toString() },
+						{ Name: 'region', Value: metric.region },
+					],
+					MeasureName: 'value',
+					MeasureValue: metric.value.toString(),
+					MeasureValueType: 'DOUBLE',
+					Time: metric.takenAt.toISOString(),
+					TimeUnit: 'MILLISECONDS',
+				},
+			],
+		};
+
+		timestreamWrite.writeRecords(metricData, (err, data) => {
+			if (err) {
+				console.error('Error inserting metric:', err);
+			} else {
+				console.log('Successfully inserted metric:', data);
+			}
+		});
+	}
+
+	toAttributes(): MetricAttributes {
+		return {
+			id: this.id,
+			orgId: this.orgId,
+			region: this.region,
+			accountId: this.accountId,
+			userId: this.userId,
+			metricTypeId: this.metricTypeId,
+			metricTypeVersion: this.metricTypeVersion,
+			deviceId: this.deviceId,
+			batchId: this.batchId,
+			value: this.value,
+			takenAt: this.takenAt,
+			takenAtOffset: this.takenAtOffset,
+			recordedAt: this.recordedAt,
+		};
+	}
+}

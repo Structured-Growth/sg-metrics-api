@@ -1,6 +1,14 @@
-import {BelongsToAccountInterface, BelongsToOrgInterface} from "@structured-growth/microservice-sdk";
-import { ExampleAttributes } from "../../database/models/example";
-
-export interface ExampleCreateBodyInterface extends BelongsToAccountInterface, BelongsToOrgInterface {
-	status: ExampleAttributes["status"];
+export interface MetricTypeCreateBodyInterface {
+	orgId: number;
+	accountId?: number;
+	metricCategoryId: number;
+	title: string;
+	code: number;
+	unit: string;
+	factor: number;
+	relatedTo: string;
+	version: number;
+	lonic_code: number;
+	lonic_url: string;
+	status?: "active" | "inactive";
 }

@@ -1,6 +1,6 @@
 import { RegionEnum } from "@structured-growth/microservice-sdk";
 
-export interface CategoryCreateBodyInterface {
+export interface MetricCategoryCreateBodyInterface {
 	orgId: number;
 	region: RegionEnum;
 	title: string;

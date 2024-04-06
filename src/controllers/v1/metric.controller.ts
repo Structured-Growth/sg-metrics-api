@@ -4,92 +4,87 @@ import {
 	BaseController,
 	DescribeAction,
 	DescribeResource,
-	SearchResultInterface,
+	container,
+	inject,
+	NotFoundError,
 	ValidateFuncArgs,
+	SearchResultInterface,
 } from "@structured-growth/microservice-sdk";
-import { ExampleAttributes } from "../../../database/models/example";
-import { ExampleSearchParamsInterface } from "../../interfaces/example-search-params.interface";
-import { ExampleCreateBodyInterface } from "../../interfaces/example-create-body.interface";
-import { ExampleUpdateBodyInterface } from "../../interfaces/example-update-body.interface";
-import { ExampleSearchParamsValidator } from "../../validators/example-search-params.validator";
+import { Metric, MetricAttributes } from '../../../database/models/metric';
+import { MetricSearchParamsInterface } from "../../interfaces/metric-search-params.interface";
+import { MetricCreateBodyInterface } from "../../interfaces/metric-create-body.interface";
+import { MetricUpdateBodyInterface } from "../../interfaces/metric-update-body.interface";
+import { MetricSearchParamsValidator } from "../../validators/metric-search-params.validator";
+import { MetricCreateParamsValidator } from "../../validators/metric-create-params.validator";
+import { MetricUpdateParamsValidator } from "../../validators/metric-update-params.validator";
+import { TimestreamWrite } from 'aws-sdk';
 
-/**
- * This is just an example of a controller with search and CRUD operations over a model.
- */
-@Route("v1/examples")
-@Tags("ExampleController")
+const publicMetricAttributes = [
+	"id",
+	"orgId",
+	"region",
+	"accountId",
+	"userId",
+	"metricTypeId",
+	"value",
+	"takenAt",
+	"recordedAt"
+] as const;
+
+type MetricKeys = (typeof publicMetricAttributes)[number];
+type PublicMetricAttributes = Pick<MetricAttributes, MetricKeys>;
+
+@Route('v1/metrics')
+@Tags('MetricController')
 @autoInjectable()
-export class ExampleController extends BaseController {
-	/**
-	 * Search Example records
-	 */
+export class MetricController {
+
 	@OperationId("Search")
 	@Get("/")
-	@SuccessResponse(200, "Returns list of entities")
-	@DescribeAction("example/search")
-	@DescribeResource("Organization", ({ query }) => Number(query.orgId), "sg-api:<region>:<orgId>")
-	@DescribeResource("Account", ({ query }) => Number(query.accountId), "sg-api:<region>:<orgId>:<accountId>")
-	@DescribeResource("Example", ({ query }) => Number(query.id?.[0]))
-	@DescribeResource(
-		"ExampleStatus",
-		({ query }) => query.status as string,
-		"sg-api:<region>:<orgId>:<accountId>:example-status/<exampleStatus>"
-	)
-	@ValidateFuncArgs(ExampleSearchParamsValidator)
-	async search(@Queries() query: ExampleSearchParamsInterface): Promise<SearchResultInterface<ExampleAttributes>> {
+	@SuccessResponse(200, "Returns list of metrics")
+	@DescribeAction("metrics/search")
+	@ValidateFuncArgs(MetricSearchParamsValidator)
+	public async searchMetrics(@Query() query: MetricSearchParamsInterface): Promise<SearchResultInterface<PublicMetricAttributes>> {
 		return undefined;
 	}
 
-	/**
-	 * Create Example
-	 */
 	@OperationId("Create")
-	@Post("/")
+	@Post('/')
 	@SuccessResponse(201, "Returns created model")
-	@DescribeAction("example/create")
-	@DescribeResource("Organization", ({ query }) => Number(query.orgId), "sg-api:<region>:<orgId>")
-	@DescribeResource("Account", ({ query }) => Number(query.accountId), "sg-api:<region>:<orgId>:<accountId>")
-	async create(@Queries() query: {}, @Body() body: ExampleCreateBodyInterface): Promise<ExampleAttributes> {
+	@DescribeAction("metrics/create")
+	@DescribeResource("Organization", ({ body }) => Number(body.orgId))
+	@DescribeResource("Account", ({ body }) => Number(body.accountId))
+	@DescribeResource("Metric Type", ({ body }) => Number(body.metricTypeId))
+	@ValidateFuncArgs(MetricCreateParamsValidator)
+	public async createMetric(@Body() body: MetricCreateBodyInterface): Promise<PublicMetricAttributes> {
 		return undefined;
 	}
 
-	/**
-	 * Get Example
-	 */
 	@OperationId("Read")
-	@Get("/:exampleId")
+	@Get('/:metricId')
 	@SuccessResponse(200, "Returns model")
-	@DescribeAction("example/read")
-	@DescribeResource("Example", ({ params }) => Number(params.exampleId))
-	async get(@Path() exampleId: number): Promise<ExampleAttributes> {
+	@DescribeAction("metrics/read")
+	@DescribeResource("Metric", ({ params }) => Number(params.metricId))
+	public async getMetric(@Path() metricId: string): Promise<PublicMetricAttributes> {
 		return undefined;
 	}
 
-	/**
-	 * Update Example
-	 */
 	@OperationId("Update")
-	@Put("/:exampleId")
+	@Put('/:metricId')
 	@SuccessResponse(200, "Returns updated model")
-	@DescribeAction("example/update")
-	@DescribeResource("Example", ({ params }) => Number(params.exampleId))
-	async update(
-		@Path() exampleId: number,
-		@Queries() query: {},
-		@Body() body: ExampleUpdateBodyInterface
-	): Promise<ExampleAttributes> {
+	@DescribeAction("metrics/update")
+	@DescribeResource("Metric", ({ params }) => Number(params.metricId))
+	@ValidateFuncArgs(MetricUpdateParamsValidator)
+	public async updateMetric(@Path() metricId: string, @Body() body: MetricUpdateBodyInterface): Promise<PublicMetricAttributes> {
 		return undefined;
 	}
 
-	/**
-	 * Delete Example
-	 */
 	@OperationId("Delete")
-	@Delete("/:exampleId")
+	@Delete('/:id')
 	@SuccessResponse(204, "Returns nothing")
-	@DescribeAction("example/delete")
-	@DescribeResource("Example", ({ params }) => Number(params.exampleId))
-	async delete(@Path() exampleId: number): Promise<void> {
+	@DescribeAction("metrics/delete")
+	@DescribeResource("Metric", ({ params }) => Number(params.metricId))
+	public async deleteMetric(@Path() metricId: string): Promise<void> {
 		return undefined;
 	}
 }
