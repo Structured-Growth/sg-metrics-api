@@ -7,7 +7,7 @@ import {
 } from "@structured-growth/microservice-sdk";
 
 export interface MetricCategoryAttributes
-	extends DefaultModelInterface {
+	extends Omit<DefaultModelInterface, 'accountId'> {
 	id?: number | any;
 	orgId: number;
 	accountId?: number;

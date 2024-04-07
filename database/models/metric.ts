@@ -1,14 +1,15 @@
-import { TimestreamWrite } from 'aws-sdk';
+import TimestreamWrite from 'aws-sdk/clients/timestreamwrite';
+import { container, RegionEnum } from "@structured-growth/microservice-sdk";
 
 export interface MetricAttributes {
 	id: number;
 	orgId: number;
-	region: string;
+	region: RegionEnum;
 	accountId: number;
 	userId: number;
-	metricTypeId: string;
+	metricTypeId: number;
 	metricTypeVersion: number;
-	deviceId: string;
+	deviceId: number;
 	batchId: string;
 	value: number;
 	takenAt: Date;
@@ -16,18 +17,18 @@ export interface MetricAttributes {
 	recordedAt: Date;
 }
 
-export interface MetricCreationAttributes extends Omit<MetricAttributes, "id" | "recordedAt"> {
+export interface MetricCreationAttributes extends MetricAttributes {
 }
 
-export class Metric {
+export class Metric implements MetricAttributes {
 	id: number;
 	orgId: number;
-	region: string;
+	region: RegionEnum;
 	accountId: number;
 	userId: number;
-	metricTypeId: string;
+	metricTypeId: number;
 	metricTypeVersion: number;
-	deviceId: string;
+	deviceId: number;
 	batchId: string;
 	value: number;
 	takenAt: Date;
@@ -35,39 +36,32 @@ export class Metric {
 	recordedAt: Date;
 
 	constructor(
-		id: number,
-		orgId: number,
-		region: string,
-		accountId: number,
-		userId: number,
-		metricTypeId: string,
-		metricTypeVersion: number,
-		deviceId: string,
-		batchId: string,
-		value: number,
-		takenAt: Date,
-		takenAtOffset: number,
-		recordedAt: Date
+		data: MetricAttributes,
 	) {
-		this.id = id;
-		this.orgId = orgId;
-		this.region = region;
-		this.accountId = accountId;
-		this.userId = userId;
-		this.metricTypeId = metricTypeId;
-		this.metricTypeVersion = metricTypeVersion;
-		this.deviceId = deviceId;
-		this.batchId = batchId;
-		this.value = value;
-		this.takenAt = takenAt;
-		this.takenAtOffset = takenAtOffset;
-		this.recordedAt = recordedAt;
+		this.id = data.id;
+		this.orgId = data.orgId;
+		this.region = data.region;
+		this.accountId = data.accountId;
+		this.userId = data.userId;
+		this.metricTypeId = data.metricTypeId;
+		this.metricTypeVersion = data.metricTypeVersion;
+		this.deviceId = data.deviceId;
+		this.batchId = data.batchId;
+		this.value = data.value;
+		this.takenAt = data.takenAt;
+		this.takenAtOffset = data.takenAtOffset;
+		this.recordedAt = data.recordedAt;
 	}
 
 	static writeToTimestream(metric: Metric) {
-		const timestreamWrite = new TimestreamWrite();
+		const region = container.resolve("region");
+		const timestreamWrite = new TimestreamWrite({
+			apiVersion: "2018-11-01",
+			region: region,
+		});
 
 		const metricData = {
+			DatabaseName: 'test',
 			TableName: 'YourTableName',
 			Records: [
 				{
@@ -77,8 +71,8 @@ export class Metric {
 					],
 					MeasureName: 'value',
 					MeasureValue: metric.value.toString(),
-					MeasureValueType: 'DOUBLE',
-					Time: metric.takenAt.toISOString(),
+					MeasureValueType: 'BIGINT',
+					Time: metric.recordedAt.getTime().toString(),
 					TimeUnit: 'MILLISECONDS',
 				},
 			],
@@ -93,7 +87,7 @@ export class Metric {
 		});
 	}
 
-	toAttributes(): MetricAttributes {
+	toJSON(): MetricAttributes {
 		return {
 			id: this.id,
 			orgId: this.orgId,
