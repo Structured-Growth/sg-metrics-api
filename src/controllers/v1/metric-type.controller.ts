@@ -11,13 +11,13 @@ import {
 	SearchResultInterface,
 } from "@structured-growth/microservice-sdk";
 import { pick } from "lodash";
-import { MetricTypeAttributes } from "../../../database/models/type";
-import { MetricTypeSearchParamsInterface } from "../../interfaces/type-search-params.interface";
-import { MetricTypeCreateBodyInterface } from "../../interfaces/type-create-body.interface";
-import { MetricTypeUpdateBodyInterface } from "../../interfaces/type-update-body.interface";
-import { MetricTypeSearchParamsValidator } from "../../validators/type-search-params.validator";
-import { MetricTypeCreateParamsValidator } from "../../validators/type-create-params.validator";
-import { MetricTypeUpdateParamsValidator } from "../../validators/type-update-params.validator";
+import { MetricTypeAttributes } from "../../../database/models/metric-type";
+import { MetricTypeSearchParamsInterface } from "../../interfaces/metric-type-search-params.interface";
+import { MetricTypeCreateBodyInterface } from "../../interfaces/metric-type-create-body.interface";
+import { MetricTypeUpdateBodyInterface } from "../../interfaces/metric-type-update-body.interface";
+import { MetricTypeSearchParamsValidator } from "../../validators/metric-type-search-params.validator";
+import { MetricTypeCreateParamsValidator } from "../../validators/metric-type-create-params.validator";
+import { MetricTypeUpdateParamsValidator } from "../../validators/metric-type-update-params.validator";
 
 const publicMetricTypeAttributes = [
 	"id",

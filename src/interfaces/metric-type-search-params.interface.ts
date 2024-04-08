@@ -1,8 +1,9 @@
 import { DefaultSearchParamsInterface } from "@structured-growth/microservice-sdk";
-import { MetricCategoryAttributes } from "../../database/models/category";
+import { MetricCategoryAttributes } from "../../database/models/metric-category";
 
-export interface MetricCategorySearchParamsInterface extends Omit<DefaultSearchParamsInterface, "orgId" | "accountId"> {
+export interface MetricTypeSearchParamsInterface extends Omit<DefaultSearchParamsInterface, "orgId" | "accountId"> {
 	orgId?: number;
+	metricCategoryId?: number;
 	status?: MetricCategoryAttributes["status"][];
 	/**
 	 * Wildcards and exclusions are allowed:
@@ -16,4 +17,8 @@ export interface MetricCategorySearchParamsInterface extends Omit<DefaultSearchP
 	 * `name: ["Starts*", "-*ends"]`
 	 */
 	code?: number;
+	unit?: string;
+	factor?: number;
+	relatedTo?: string;
+	version?: number;
 }

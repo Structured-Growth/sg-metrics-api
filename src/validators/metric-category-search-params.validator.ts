@@ -4,8 +4,8 @@ import { CommonSearchParamsValidator } from "./common-search-params.validator";
 export const MetricCategorySearchParamsValidator = joi.object({
 	query: joi
 		.object({
-			orgId: joi.number().positive().required().label("Organization Id"),
-			accountId: joi.number().positive().required().label("Account Id"),
+			orgId: joi.number().positive().label("Organization Id"),
+			accountId: joi.number().positive().label("Account Id"),
 			title: joi.array().items(joi.string().max(50).required()),
 			code: joi.number().positive().label("Category code"),
 			status: joi.string().valid("active", "inactive").label("Status"),

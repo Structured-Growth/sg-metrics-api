@@ -1,21 +1,19 @@
 import { joi } from "@structured-growth/microservice-sdk";
 import { CommonSearchParamsValidator } from "./common-search-params.validator";
 
-export const MetricTypeSearchParamsValidator = joi.object({
+export const MetricSearchParamsValidator = joi.object({
 	query: joi
 		.object({
-			orgId: joi.number().positive().required().label("Organization Id"),
+			orgId: joi.number().positive().label("Organization Id"),
 			accountId: joi.number().positive().label("Account Id"),
 			metricCategoryId: joi.number().positive().label("Metric Category Id"),
-			title: joi.array().items(joi.string().max(50).required()),
-			code: joi.number().positive().label("Category code"),
-			unit: joi.string().max(50).label("Unit"),
-			factor: joi.number().positive().label("Factor"),
-			relatedTo: joi.string().max(50).label("Related To"),
-			version: joi.number().positive().label("Version"),
-			lonic_code: joi.number().positive().label("Lonic code"),
-			lonic_url: joi.string().max(50).label("Lonic URL"),
-			status: joi.string().valid("active", "inactive").label("Status"),
+			metricTypeVersion: joi.number().positive().label("Metric Type Id"),
+			deviceId: joi.number().positive().label("Device ID"),
+			batchId: joi.string().max(50).label("Batch id"),
+			value: joi.number().positive().label("Value"),
+			takenAt: joi.date().iso().label("Taken at"),
+			takenAtOffset: joi.number().positive().label("Taken at Offset"),
+			recordedAt: joi.date().iso().label("Recorded at"),
 	})
 		.concat(CommonSearchParamsValidator),
 });

@@ -11,13 +11,13 @@ import {
 	NotFoundError,
 } from "@structured-growth/microservice-sdk";
 import { pick } from "lodash";
-import { MetricCategory, MetricCategoryAttributes } from "../../../database/models/category";
-import { MetricCategorySearchParamsInterface } from "../../interfaces/category-search-params.interface";
-import { MetricCategoryCreateBodyInterface } from "../../interfaces/category-create-body.interface";
-import { MetricCategoryUpdateBodyInterface } from "../../interfaces/category-update-body.interface";
-import { MetricCategorySearchParamsValidator } from "../../validators/category-search-params.validator";
-import { MetricCategoryCreateParamsValidator } from "../../validators/category-create-params.validator";
-import { MetricCategoryUpdateSearchParamsValidator } from "../../validators/category-update-params.validator";
+import { MetricCategory, MetricCategoryAttributes } from "../../../database/models/metric-category";
+import { MetricCategorySearchParamsInterface } from "../../interfaces/metric-category-search-params.interface";
+import { MetricCategoryCreateBodyInterface } from "../../interfaces/metric-category-create-body.interface";
+import { MetricCategoryUpdateBodyInterface } from "../../interfaces/metric-category-update-body.interface";
+import { MetricCategorySearchParamsValidator } from "../../validators/metric-category-search-params.validator";
+import { MetricCategoryCreateParamsValidator } from "../../validators/metric-category-create-params.validator";
+import { MetricCategoryUpdateSearchParamsValidator } from "../../validators/metric-category-update-params.validator";
 
 const publicMetricCategoryAttributes = [
 	"id",

@@ -4,7 +4,7 @@ import {
 	RegionEnum,
 	DefaultModelInterface,
 } from "@structured-growth/microservice-sdk";
-import MetricCategory from "./category";
+import MetricCategory from "./metric-category";
 
 export interface MetricTypeAttributes
 	extends DefaultModelInterface {
@@ -19,8 +19,6 @@ export interface MetricTypeAttributes
 	factor: number;
 	relatedTo: string;
 	version: number;
-	lonic_code: number;
-	lonic_url: string;
 	status: "active" | "inactive" | "archived";
 }
 
@@ -71,11 +69,6 @@ export class MetricType extends Model<MetricTypeAttributes, MetricTypeCreationAt
 	@Column
 	version: number;
 
-	@Column
-	lonic_code: number;
-
-	@Column
-	lonic_url: string;
 
 	@Column(DataType.STRING)
 	status: MetricTypeAttributes["status"];

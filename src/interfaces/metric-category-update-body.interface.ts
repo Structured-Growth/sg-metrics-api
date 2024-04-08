@@ -1,4 +1,4 @@
-import { MetricCategoryAttributes } from "../../database/models/category";
+import { MetricCategoryAttributes } from "../../database/models/metric-category";
 
 export interface MetricCategoryUpdateBodyInterface {
 	title?: string;

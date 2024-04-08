@@ -1,5 +1,13 @@
 import { ExampleAttributes } from "../../database/models/example";
 
-export interface ExampleUpdateBodyInterface {
-	status?: ExampleAttributes["status"];
+export interface MetricUpdateBodyInterface {
+	accountId?: number;
+	userId?: number;
+	metricTypeId?: number;
+	metricTypeVersion?: number;
+	deviceId?: number;
+	batchId?: string;
+	value?: number;
+	takenAt?: Date;
+	takenAtOffset?: number;
 }

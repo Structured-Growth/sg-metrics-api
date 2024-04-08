@@ -1,6 +1,14 @@
-import {BelongsToAccountInterface, BelongsToOrgInterface} from "@structured-growth/microservice-sdk";
-import { ExampleAttributes } from "../../database/models/example";
-
-export interface ExampleCreateBodyInterface extends BelongsToAccountInterface, BelongsToOrgInterface {
-	status: ExampleAttributes["status"];
+import { RegionEnum } from "@structured-growth/microservice-sdk";
+export interface MetricCreateBodyInterface {
+	orgId: number;
+	region: RegionEnum;
+	accountId?: number;
+	userId: number;
+	metricTypeId: number;
+	metricTypeVersion: number;
+	deviceId: number;
+	batchId: string;
+	value: number;
+	takenAt: Date;
+	takenAtOffset: number;
 }
