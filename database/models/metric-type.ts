@@ -14,7 +14,7 @@ export interface MetricTypeAttributes
 	region: RegionEnum;
 	metricCategoryId: number;
 	title: string;
-	code: number;
+	code: string;
 	unit: string;
 	factor: number;
 	relatedTo: string;
@@ -26,7 +26,7 @@ export interface MetricTypeCreationAttributes
 	extends Omit<MetricTypeAttributes, "id" | "arn" | "createdAt" | "updatedAt" | "deletedAt"> {
 }
 @Table({
-	tableName: "types",
+	tableName: "metric_types",
 	timestamps: true,
 	underscored: true,
 })
@@ -55,7 +55,7 @@ export class MetricType extends Model<MetricTypeAttributes, MetricTypeCreationAt
 	title: string;
 
 	@Column
-	code: number;
+	code: string;
 
 	@Column
 	unit: string;
@@ -69,10 +69,10 @@ export class MetricType extends Model<MetricTypeAttributes, MetricTypeCreationAt
 	@Column
 	version: number;
 
-
 	@Column(DataType.STRING)
 	status: MetricTypeAttributes["status"];
 
+	// todo sg-metrics-api:us:1:1:metric-category/1/metric-type/1
 	static get arnPattern(): string {
 		return [container.resolve("appPrefix"), '<region>', '<orgId>', '<accountId>'].join(":");
 	}

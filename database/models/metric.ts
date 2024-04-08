@@ -7,6 +7,7 @@ export interface MetricAttributes {
 	region: RegionEnum;
 	accountId: number;
 	userId: number;
+	metricCategoryId: number;
 	metricTypeId: number;
 	metricTypeVersion: number;
 	deviceId: number;
@@ -26,6 +27,7 @@ export class Metric implements MetricAttributes {
 	region: RegionEnum;
 	accountId: number;
 	userId: number;
+	metricCategoryId: number;
 	metricTypeId: number;
 	metricTypeVersion: number;
 	deviceId: number;
@@ -43,6 +45,7 @@ export class Metric implements MetricAttributes {
 		this.region = data.region;
 		this.accountId = data.accountId;
 		this.userId = data.userId;
+		this.metricCategoryId = data.metricCategoryId;
 		this.metricTypeId = data.metricTypeId;
 		this.metricTypeVersion = data.metricTypeVersion;
 		this.deviceId = data.deviceId;
@@ -87,6 +90,15 @@ export class Metric implements MetricAttributes {
 		});
 	}
 
+	// todo sg-metrics-api:us:1:1:users/1/devices/1/metric-category/1/metric-type/1/metric/1
+	static get arnPattern(): string {
+		return [container.resolve("appPrefix"), '<region>', '<orgId>', '<accountId>'].join(":");
+	}
+
+	get arn(): string {
+		return [container.resolve("appPrefix"), this.region, this.orgId, this.accountId, null, this.id].join(":");
+	}
+
 	toJSON(): MetricAttributes {
 		return {
 			id: this.id,
@@ -94,6 +106,7 @@ export class Metric implements MetricAttributes {
 			region: this.region,
 			accountId: this.accountId,
 			userId: this.userId,
+			metricCategoryId: this.metricCategoryId,
 			metricTypeId: this.metricTypeId,
 			metricTypeVersion: this.metricTypeVersion,
 			deviceId: this.deviceId,

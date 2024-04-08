@@ -1,9 +1,8 @@
-import { BelongsTo, Column, DataType, ForeignKey, Model, Table } from "sequelize-typescript";
+import { Column, DataType, Model, Table } from "sequelize-typescript";
 import {
 	container,
 	RegionEnum,
 	DefaultModelInterface,
-	BelongsToOrgInterface,
 } from "@structured-growth/microservice-sdk";
 
 export interface MetricCategoryAttributes
@@ -13,7 +12,7 @@ export interface MetricCategoryAttributes
 	accountId?: number;
 	region: RegionEnum;
 	title: string;
-	code: number;
+	code: string;
 	status: "active" | "inactive" | "archived";
 }
 
@@ -21,10 +20,10 @@ export interface MetricCategoryCreationAttributes
 	extends Omit<MetricCategoryAttributes, "id" | "arn" | "createdAt" | "updatedAt" | "deletedAt"> {}
 
 export interface MetricCategoryUpdateAttributes
-	extends Pick<MetricCategoryAttributes, "title"  |  "status"> {}
+	extends Pick<MetricCategoryAttributes, "title"  | "code" | "status"> {}
 
 @Table({
-	tableName: "categories",
+	tableName: "metric_categories",
 	timestamps: true,
 	underscored: true,
 })
@@ -48,17 +47,17 @@ export class MetricCategory
 	title: string;
 
 	@Column
-	code: number;
+	code: string;
 
 	@Column(DataType.STRING)
 	status: MetricCategoryAttributes["status"];
 
 	static get arnPattern(): string {
-		return [container.resolve("appPrefix"), "<region>", "<orgId>", '<accountId>'].join(":");
+		return [container.resolve("appPrefix"), "<region>", "<orgId>", '<accountId>', "metric-category/<metricCategoryId>"].join(":");
 	}
 
 	get arn(): string {
-		return [container.resolve("appPrefix"), this.region, this.orgId, this.accountId, this.id].join(":");
+		return [container.resolve("appPrefix"), this.region, this.orgId, this.accountId || '-', `metric-category/${this.id}`].join(":");
 	}
 }
 

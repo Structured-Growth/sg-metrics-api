@@ -4,6 +4,7 @@ export interface MetricCreateBodyInterface {
 	region: RegionEnum;
 	accountId?: number;
 	userId: number;
+	metricCategoryId: number;
 	metricTypeId: number;
 	metricTypeVersion: number;
 	deviceId: number;

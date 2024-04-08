@@ -3,6 +3,7 @@ import { MetricCategoryAttributes } from "../../database/models/metric-category"
 
 export interface MetricCategorySearchParamsInterface extends Omit<DefaultSearchParamsInterface, "orgId" | "accountId"> {
 	orgId?: number;
+	accountId?: number;
 	status?: MetricCategoryAttributes["status"][];
 	/**
 	 * Wildcards and exclusions are allowed:
@@ -15,5 +16,5 @@ export interface MetricCategorySearchParamsInterface extends Omit<DefaultSearchP
 	 *
 	 * `name: ["Starts*", "-*ends"]`
 	 */
-	code?: number;
+	code?: string[];
 }

@@ -4,6 +4,7 @@ export interface MetricSearchParamsInterface extends Omit<DefaultSearchParamsInt
 	orgId?: number;
 	accountId?: number;
 	userId?: number;
+	metricCategoryId?: number;
 	metricTypeId?: number;
 	metricTypeVersion?: number;
 	deviceId?: number;

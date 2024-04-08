@@ -28,12 +28,14 @@ const publicMetricCategoryAttributes = [
 	"createdAt",
 	"updatedAt",
 	"arn",
+	"metadata",
 ] as const;
 type MetricCategoryKeys = (typeof publicMetricCategoryAttributes)[number];
-type PublicMetricCategoryAttributes = Pick<MetricCategoryAttributes, MetricCategoryKeys>;
+type PublicMetricCategoryAttributes = Pick<MetricCategoryAttributes, MetricCategoryKeys> & {
+	metadata: Record<any, any>;
+};
 
-
-@Route("v1/category")
+@Route("v1/metric-category")
 @Tags("MetricCategoryController")
 @autoInjectable()
 export class MetricCategoryController extends BaseController {
@@ -81,7 +83,7 @@ export class MetricCategoryController extends BaseController {
 	@SuccessResponse(200, "Returns category")
 	@DescribeAction("metric-category/read")
 	@DescribeResource("MetricCategory", ({ params }) => Number(params.metricCategoryId))
-	async get(@Path() catId: number): Promise<PublicMetricCategoryAttributes> {
+	async get(@Path() metricCategoryId: number): Promise<PublicMetricCategoryAttributes> {
 		return undefined;
 	}
 
@@ -95,7 +97,7 @@ export class MetricCategoryController extends BaseController {
 	@DescribeResource("MetricCategory", ({ params }) => Number(params.metricCategoryId))
 	@ValidateFuncArgs(MetricCategoryUpdateSearchParamsValidator)
 	async update(
-		@Path() catId: number,
+		@Path() metricCategoryId: number,
 		@Queries() query: {},
 		@Body() body: MetricCategoryUpdateBodyInterface
 	): Promise<PublicMetricCategoryAttributes> {
@@ -110,7 +112,7 @@ export class MetricCategoryController extends BaseController {
 	@SuccessResponse(204, "Returns nothing")
 	@DescribeAction("metric-category/delete")
 	@DescribeResource("MetricCategory", ({ params }) => Number(params.metricCategoryId))
-	async delete(@Path() catId: number): Promise<void> {
+	async delete(@Path() metricCategoryId: number): Promise<void> {
 		return undefined;
 	}
 }

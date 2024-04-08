@@ -6,4 +6,5 @@ export interface MetricCategoryCreateBodyInterface {
 	title: string;
 	code: number;
 	status?: "active" | "inactive";
+	metadata?: Record<string, string>;
 }

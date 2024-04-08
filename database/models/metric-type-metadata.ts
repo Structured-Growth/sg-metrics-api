@@ -17,7 +17,6 @@ export interface MetricTypeMetadataAttributes
 	metricTypeId: number;
 	name: string;
 	value: number;
-
 }
 
 export interface MetricTypeMetadataCreationAttributes
@@ -71,6 +70,8 @@ export class MetricTypeMetadata
 	static get arnPattern(): string {
 		return [container.resolve("appPrefix"), "<region>", "<orgId>", '<accountId>'].join(":");
 	}
+
+	// todo sg-metrics-api:us:1:1:metric-category/1/metric-type/1/metadata/1
 
 	get arn(): string {
 		return [container.resolve("appPrefix"), this.region, this.orgId, this.accountId, this.metricCategoryId, this.metricTypeId, this.id].join(":");

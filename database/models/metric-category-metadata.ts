@@ -14,8 +14,7 @@ export interface MetricCategoryMetadataAttributes
 	accountId?: number;
 	metricCategoryId: number;
 	name: string;
-	value: number;
-
+	value: string;
 }
 
 export interface MetricCategoryMetadataCreationAttributes
@@ -25,7 +24,7 @@ export interface MetricCategoryUpdateAttributes
 	extends Pick<MetricCategoryMetadataAttributes, "name"  |  "value"> {}
 
 @Table({
-	tableName: "metric-categories-metadata",
+	tableName: "metric_category_metadata",
 	timestamps: true,
 	underscored: true,
 })
@@ -56,8 +55,9 @@ export class MetricCategoryMetadata
 	name: string;
 
 	@Column
-	value: number;
+	value: string;
 
+	// todo sg-metrics-api:us:1:1:metric-category/1/metadata/1
 
 	static get arnPattern(): string {
 		return [container.resolve("appPrefix"), "<region>", "<orgId>", '<accountId>'].join(":");

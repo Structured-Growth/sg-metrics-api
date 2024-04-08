@@ -29,8 +29,6 @@ const publicMetricTypeAttributes = [
 	"unit",
 	"factor",
 	"version",
-	"lonic_code",
-	"lonic_url",
 	"status",
 	"createdAt",
 	"updatedAt",
@@ -53,7 +51,7 @@ export class MetricTypeController extends BaseController {
 	@DescribeAction("metric-types/search")
 	@DescribeResource("Organization", ({ query }) => Number(query.orgId))
 	@DescribeResource(
-		"CategoryStatus",
+		"MetricTypeStatus",
 		({ query }) => query.status as string,
 		`${container.resolve("appPrefix")}:<region>:<orgId>:metric-type-status/<metricTypeStatus>`
 	)

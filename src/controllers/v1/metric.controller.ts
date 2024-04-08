@@ -25,10 +25,16 @@ const publicMetricAttributes = [
 	"region",
 	"accountId",
 	"userId",
+	"metricCategoryId",
 	"metricTypeId",
+	"metricTypeVersion",
+	"deviceId",
+	"batchId",
 	"value",
 	"takenAt",
-	"recordedAt"
+	"takenAtOffset",
+	"recordedAt",
+	"arn"
 ] as const;
 
 type MetricKeys = (typeof publicMetricAttributes)[number];
@@ -56,7 +62,10 @@ export class MetricController {
 	@DescribeAction("metrics/create")
 	@DescribeResource("Organization", ({ body }) => Number(body.orgId))
 	@DescribeResource("Account", ({ body }) => Number(body.accountId))
-	@DescribeResource("Metric Type", ({ body }) => Number(body.metricTypeId))
+	@DescribeResource("User", ({ body }) => Number(body.userId))
+	@DescribeResource("MetricCategory", ({ body }) => Number(body.metricCategoryId))
+	@DescribeResource("MetricType", ({ body }) => Number(body.metricTypeId))
+	@DescribeResource("Device", ({ body }) => Number(body.deviceId))
 	@ValidateFuncArgs(MetricCreateParamsValidator)
 	public async create(@Body() body: MetricCreateBodyInterface): Promise<PublicMetricAttributes> {
 		return undefined;

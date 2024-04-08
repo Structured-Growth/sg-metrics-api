@@ -5,12 +5,14 @@ export const MetricCreateParamsValidator = joi.object({
 	body: joi.object({
 		orgId: joi.number().positive().required().label("Organization Id"),
 		accountId: joi.number().positive().label("Account Id"),
+		userId: joi.number().positive().required().label("User Id"),
 		metricCategoryId: joi.number().positive().required().label("Metric Category Id"),
-		metricTypeVersion: joi.number().positive().required().label("Metric Type Id"),
+		metricTypeId: joi.number().positive().required().label("Metric Type Id"),
+		metricTypeVersion: joi.number().positive().required().label("Metric Type Version"),
 		deviceId: joi.number().positive().required().label("Device ID"),
 		batchId: joi.string().max(50).required().label("Batch id"),
-		value: joi.number().positive().required().label("Value"),
+		value: joi.number().required().label("Value"),
 		takenAt: joi.date().iso().required().label("Taken at"),
-		takenAtOffset: joi.number().positive().required().label("Taken at Offset"),
+		takenAtOffset: joi.number().required().label("Taken at Offset"),
 	}),
 });
