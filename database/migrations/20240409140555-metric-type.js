@@ -3,7 +3,7 @@
 /** @type {import('sequelize-cli').Migration} */
 module.exports = {
   async up(queryInterface, Sequelize) {
-    await queryInterface.createTable("metric_categories", {
+    await queryInterface.createTable("metric_types", {
       id: {
         type: Sequelize.SMALLINT,
         primaryKey: true,
@@ -19,6 +19,14 @@ module.exports = {
         type: Sequelize.STRING(10),
         allowNull: false,
       },
+      metricCategoryId: {
+        type: Sequelize.SMALLINT,
+        references: {
+          model: "metric_categories",
+          key: "id",
+        },
+        onDelete: "RESTRICT",
+      },
       title: {
         type: Sequelize.STRING(100),
         allowNull: false,
@@ -26,6 +34,18 @@ module.exports = {
       code: {
         type: Sequelize.STRING(100),
         unique: true,
+      },
+      unit: {
+        type: Sequelize.STRING(100),
+      },
+      factor: {
+        type: Sequelize.SMALLINT,
+      },
+      relatedTo: {
+        type: Sequelize.STRING(200),
+      },
+      version: {
+        type: Sequelize.SMALLINT,
       },
       status: {
         type: Sequelize.STRING(15),
@@ -38,6 +58,6 @@ module.exports = {
   },
 
   async down(queryInterface, Sequelize) {
-    await queryInterface.dropTable("metric_categories");
+    await queryInterface.dropTable("metric_types");
   },
 };
