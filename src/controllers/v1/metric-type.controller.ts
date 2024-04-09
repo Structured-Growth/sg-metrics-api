@@ -34,7 +34,9 @@ const publicMetricTypeAttributes = [
 	"arn",
 ] as const;
 type MetricTypeKeys = (typeof publicMetricTypeAttributes)[number];
-type PublicAccountAttributes = Pick<MetricTypeAttributes, MetricTypeKeys>;
+type PublicAccountAttributes = Pick<MetricTypeAttributes, MetricTypeKeys> & {
+	metadata: Record<any, any>;
+};
 
 
 @Route("v1/metric-type")
@@ -61,7 +63,7 @@ export class MetricTypeController extends BaseController {
 	}
 
 	/**
-	 * Create Metric Types
+	 * Create Metric Type record
 	 */
 	@OperationId("Create")
 	@Post("/")
@@ -75,7 +77,7 @@ export class MetricTypeController extends BaseController {
 	}
 
 	/**
-	 * Get Metric Types
+	 * Get Metric Types records
 	 */
 	@OperationId("Read")
 	@Get("/:metricTypeId")
@@ -87,7 +89,7 @@ export class MetricTypeController extends BaseController {
 	}
 
 	/**
-	 * Update Metric Types
+	 * Update Metric Type with one or few attributes
 	 */
 	@OperationId("Update")
 	@Put("/:metricTypeId")
@@ -104,7 +106,7 @@ export class MetricTypeController extends BaseController {
 	}
 
 	/**
-	 * Delete Metric Types
+	 * Mark Metric Type as deleted. Will be permanently deleted in 90 days.
 	 */
 	@OperationId("Delete")
 	@Delete("/:metricTypeId")

@@ -44,7 +44,7 @@ type PublicMetricAttributes = Pick<MetricAttributes, MetricKeys>;
 export class MetricController {
 
 	/**
-	 * Search metrics
+	 * Search Metric records
 	 */
 	@OperationId("Search")
 	@Get("/")
@@ -58,7 +58,7 @@ export class MetricController {
 	}
 
 	/**
-	 *
+	 * Create Metric record, if table has the record with the same takenAt - this record will be replaced
 	 */
 	@OperationId("Create")
 	@Post('/')
@@ -74,7 +74,9 @@ export class MetricController {
 	public async create(@Body() body: MetricCreateBodyInterface): Promise<PublicMetricAttributes> {
 		return undefined;
 	}
-
+	/**
+	 * Get Metric Types records
+	 */
 	@OperationId("Read")
 	@Get('/:metricId')
 	@SuccessResponse(200, "Returns metric")
@@ -83,7 +85,9 @@ export class MetricController {
 	public async get(@Path() metricId: string): Promise<PublicMetricAttributes> {
 		return undefined;
 	}
-
+	/**
+	 * Update Metric  with one or few attributes
+	 */
 	@OperationId("Update")
 	@Put('/:metricId')
 	@SuccessResponse(200, "Returns updated metric")
@@ -93,6 +97,9 @@ export class MetricController {
 	public async update(@Path() metricId: string, @Body() body: MetricUpdateBodyInterface): Promise<PublicMetricAttributes> {
 		return undefined;
 	}
+	/**
+	 * Mark Metric as deleted. Will be permanently deleted in 90 days.
+	 */
 
 	@OperationId("Delete")
 	@Delete('/:metricId')

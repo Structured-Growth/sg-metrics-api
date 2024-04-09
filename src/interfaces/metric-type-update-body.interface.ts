@@ -10,4 +10,5 @@ export interface MetricTypeUpdateBodyInterface {
 	relatedTo?: string;
 	version?: number;
 	status?: MetricTypeAttributes["status"];
+	metadata?: Record<string, string>;
 }

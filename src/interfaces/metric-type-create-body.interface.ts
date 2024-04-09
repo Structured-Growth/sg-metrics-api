@@ -9,4 +9,5 @@ export interface MetricTypeCreateBodyInterface {
 	relatedTo: string;
 	version: number;
 	status?: "active" | "inactive";
+	metadata?: Record<string, string>;
 }
