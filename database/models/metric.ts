@@ -55,7 +55,7 @@ export class Metric implements MetricAttributes {
 		this.takenAtOffset = data.takenAtOffset;
 		this.recordedAt = data.recordedAt;
 	}
-
+/*
 	static writeToTimestream(metric: Metric) {
 		const region = container.resolve("region");
 		const timestreamWrite = new TimestreamWrite({
@@ -89,14 +89,14 @@ export class Metric implements MetricAttributes {
 			}
 		});
 	}
+*/
 
-	// todo sg-metrics-api:us:1:1:users/1/devices/1/metric-category/1/metric-type/1/metric/1
 	static get arnPattern(): string {
-		return [container.resolve("appPrefix"), '<region>', '<orgId>', '<accountId>'].join(":");
+		return [container.resolve("appPrefix"), "<region>", "<orgId>", '<accountId>', "metric-category/<metricCategoryId>", "metric-type/<metricTypeId>", "metric/<metricId>"].join(":");
 	}
 
 	get arn(): string {
-		return [container.resolve("appPrefix"), this.region, this.orgId, this.accountId, null, this.id].join(":");
+		return [container.resolve("appPrefix"), this.region, this.orgId, this.accountId || '-', `metric-category/${this.metricCategoryId}`, `metric-type/${this.metricTypeId}`, `metric/${this.id}`].join(":");
 	}
 
 	toJSON(): MetricAttributes {
@@ -118,3 +118,5 @@ export class Metric implements MetricAttributes {
 		};
 	}
 }
+
+export default Metric;

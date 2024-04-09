@@ -9,7 +9,7 @@ import MetricCategory from "./metric-category";
 
 export interface MetricCategoryMetadataAttributes
 	extends Omit<DefaultModelInterface, 'accountId'> {
-	id?: number | any;
+	id: number;
 	orgId: number;
 	accountId?: number;
 	metricCategoryId: number;
@@ -57,14 +57,12 @@ export class MetricCategoryMetadata
 	@Column
 	value: string;
 
-	// todo sg-metrics-api:us:1:1:metric-category/1/metadata/1
-
 	static get arnPattern(): string {
-		return [container.resolve("appPrefix"), "<region>", "<orgId>", '<accountId>'].join(":");
+		return [container.resolve("appPrefix"), "<region>", "<orgId>", '<accountId>', "metric-category/<metricCategoryId>",  "metadata/<metricCategoryMetadataId>"].join(":");
 	}
 
 	get arn(): string {
-		return [container.resolve("appPrefix"), this.region, this.orgId, this.accountId, this.metricCategoryId, this.id].join(":");
+		return [container.resolve("appPrefix"), this.region, this.orgId, this.accountId || '-', `metric-category/${this.metricCategoryId}`,  `metadata/${this.id}`].join(":");
 	}
 }
 

@@ -66,15 +66,12 @@ export class MetricTypeMetadata
 	@Column
 	value: number;
 
-
 	static get arnPattern(): string {
-		return [container.resolve("appPrefix"), "<region>", "<orgId>", '<accountId>'].join(":");
+		return [container.resolve("appPrefix"), "<region>", "<orgId>", '<accountId>', "metric-category/<metricCategoryId>", "metric-type/<metricTypeId>", "metadata/<metricTypeMetadataId>"].join(":");
 	}
 
-	// todo sg-metrics-api:us:1:1:metric-category/1/metric-type/1/metadata/1
-
 	get arn(): string {
-		return [container.resolve("appPrefix"), this.region, this.orgId, this.accountId, this.metricCategoryId, this.metricTypeId, this.id].join(":");
+		return [container.resolve("appPrefix"), this.region, this.orgId, this.accountId || '-', `metric-category/${this.metricCategoryId}`, `metric-type/${this.metricTypeId}`, `metadata/${this.id}`].join(":");
 	}
 }
 

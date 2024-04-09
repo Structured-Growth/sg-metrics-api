@@ -10,7 +10,6 @@ import {
 	ValidateFuncArgs,
 	SearchResultInterface,
 } from "@structured-growth/microservice-sdk";
-import { pick } from "lodash";
 import { MetricTypeAttributes } from "../../../database/models/metric-type";
 import { MetricTypeSearchParamsInterface } from "../../interfaces/metric-type-search-params.interface";
 import { MetricTypeCreateBodyInterface } from "../../interfaces/metric-type-create-body.interface";
@@ -38,7 +37,7 @@ type MetricTypeKeys = (typeof publicMetricTypeAttributes)[number];
 type PublicAccountAttributes = Pick<MetricTypeAttributes, MetricTypeKeys>;
 
 
-@Route("v1/metric-types")
+@Route("v1/metric-type")
 @Tags("MetricTypeController")
 @autoInjectable()
 export class MetricTypeController extends BaseController {
@@ -48,7 +47,7 @@ export class MetricTypeController extends BaseController {
 	@OperationId("Search")
 	@Get("/")
 	@SuccessResponse(200, "Returns list of metric types")
-	@DescribeAction("metric-types/search")
+	@DescribeAction("metric-type/search")
 	@DescribeResource("Organization", ({ query }) => Number(query.orgId))
 	@DescribeResource(
 		"MetricTypeStatus",
@@ -67,9 +66,9 @@ export class MetricTypeController extends BaseController {
 	@OperationId("Create")
 	@Post("/")
 	@SuccessResponse(201, "Returns created model")
-	@DescribeAction("metric-types/create")
+	@DescribeAction("metric-type/create")
 	@DescribeResource("Organization", ({ body }) => Number(body.orgId))
-	@DescribeResource("Metric Category", ({ body }) => Number(body.metricCategoryId))
+	@DescribeResource("MetricCategory", ({ body }) => Number(body.metricCategoryId))
 	@ValidateFuncArgs(MetricTypeCreateParamsValidator)
 	async create(@Queries() query: {}, @Body() body: MetricTypeCreateBodyInterface): Promise<PublicAccountAttributes> {
 		return undefined;
@@ -81,8 +80,8 @@ export class MetricTypeController extends BaseController {
 	@OperationId("Read")
 	@Get("/:metricTypeId")
 	@SuccessResponse(200, "Returns model")
-	@DescribeAction("metric-types/read")
-	@DescribeResource("Metric Type", ({ params }) => Number(params.metricTypeId))
+	@DescribeAction("metric-type/read")
+	@DescribeResource("MetricType", ({ params }) => Number(params.metricTypeId))
 	async get(@Path() metricTypeId: number): Promise<PublicAccountAttributes> {
 		return undefined;
 	}
@@ -93,8 +92,8 @@ export class MetricTypeController extends BaseController {
 	@OperationId("Update")
 	@Put("/:metricTypeId")
 	@SuccessResponse(200, "Returns updated model")
-	@DescribeAction("metric-types/update")
-	@DescribeResource("Metric Type", ({ params }) => Number(params.metricTypeId))
+	@DescribeAction("metric-type/update")
+	@DescribeResource("MetricType", ({ params }) => Number(params.metricTypeId))
 	@ValidateFuncArgs(MetricTypeUpdateParamsValidator)
 	async update(
 		@Path() metricTypeId: number,
@@ -110,8 +109,8 @@ export class MetricTypeController extends BaseController {
 	@OperationId("Delete")
 	@Delete("/:metricTypeId")
 	@SuccessResponse(204, "Returns nothing")
-	@DescribeAction("metric-types/delete")
-	@DescribeResource("Metric Type", ({ params }) => Number(params.metricTypeId))
+	@DescribeAction("metric-type/delete")
+	@DescribeResource("MetricType", ({ params }) => Number(params.metricTypeId))
 	async delete(@Path() metricTypeId: number): Promise<void> {
 		return undefined;
 	}

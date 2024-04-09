@@ -28,7 +28,6 @@ const publicMetricCategoryAttributes = [
 	"createdAt",
 	"updatedAt",
 	"arn",
-	"metadata",
 ] as const;
 type MetricCategoryKeys = (typeof publicMetricCategoryAttributes)[number];
 type PublicMetricCategoryAttributes = Pick<MetricCategoryAttributes, MetricCategoryKeys> & {

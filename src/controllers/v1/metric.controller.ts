@@ -18,6 +18,7 @@ import { MetricSearchParamsValidator } from "../../validators/metric-search-para
 import { MetricCreateParamsValidator } from "../../validators/metric-create-params.validator";
 import { MetricUpdateParamsValidator } from "../../validators/metric-update-params.validator";
 import TimestreamWrite from 'aws-sdk/clients/timestreamwrite';
+import MetricCategory from "../../../database/models/metric-category";
 
 const publicMetricAttributes = [
 	"id",
@@ -33,12 +34,13 @@ const publicMetricAttributes = [
 	"value",
 	"takenAt",
 	"takenAtOffset",
-	"recordedAt",
-	"arn"
+	"recordedAt"
 ] as const;
 
 type MetricKeys = (typeof publicMetricAttributes)[number];
-type PublicMetricAttributes = Pick<MetricAttributes, MetricKeys>;
+type PublicMetricAttributes = Pick<MetricAttributes, MetricKeys> & {
+	"arn": string
+	};
 
 @Route('v1/metrics')
 @Tags('MetricController')

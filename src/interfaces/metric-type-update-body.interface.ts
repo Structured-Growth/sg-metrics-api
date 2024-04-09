@@ -1,4 +1,4 @@
-import { AccountAttributes } from "../../database/models/account";
+import { MetricTypeAttributes } from "../../database/models/metric-type";
 
 export interface MetricTypeUpdateBodyInterface {
 	accountId?: number;
@@ -9,5 +9,5 @@ export interface MetricTypeUpdateBodyInterface {
 	factor?: number;
 	relatedTo?: string;
 	version?: number;
-	status?: AccountAttributes["status"];
+	status?: MetricTypeAttributes["status"];
 }
