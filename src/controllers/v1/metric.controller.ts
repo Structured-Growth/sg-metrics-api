@@ -17,8 +17,6 @@ import { MetricUpdateBodyInterface } from "../../interfaces/metric-update-body.i
 import { MetricSearchParamsValidator } from "../../validators/metric-search-params.validator";
 import { MetricCreateParamsValidator } from "../../validators/metric-create-params.validator";
 import { MetricUpdateParamsValidator } from "../../validators/metric-update-params.validator";
-import TimestreamWrite from 'aws-sdk/clients/timestreamwrite';
-import MetricCategory from "../../../database/models/metric-category";
 
 const publicMetricAttributes = [
 	"id",
@@ -34,19 +32,20 @@ const publicMetricAttributes = [
 	"value",
 	"takenAt",
 	"takenAtOffset",
-	"recordedAt"
+	"recordedAt",
+	"arn"
 ] as const;
-
 type MetricKeys = (typeof publicMetricAttributes)[number];
-type PublicMetricAttributes = Pick<MetricAttributes, MetricKeys> & {
-	"arn": string
-	};
+type PublicMetricAttributes = Pick<MetricAttributes, MetricKeys>;
 
 @Route('v1/metrics')
 @Tags('MetricController')
 @autoInjectable()
 export class MetricController {
 
+	/**
+	 * Search metrics
+	 */
 	@OperationId("Search")
 	@Get("/")
 	@SuccessResponse(200, "Returns list of metrics")
@@ -58,6 +57,9 @@ export class MetricController {
 		return undefined;
 	}
 
+	/**
+	 *
+	 */
 	@OperationId("Create")
 	@Post('/')
 	@SuccessResponse(201, "Returns created metric")
@@ -93,7 +95,7 @@ export class MetricController {
 	}
 
 	@OperationId("Delete")
-	@Delete('/:id')
+	@Delete('/:metricId')
 	@SuccessResponse(204, "Returns metric")
 	@DescribeAction("metrics/delete")
 	@DescribeResource("Metric", ({ params }) => Number(params.metricId))

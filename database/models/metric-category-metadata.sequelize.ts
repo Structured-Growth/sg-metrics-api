@@ -1,15 +1,14 @@
-import { BelongsTo, Column, DataType, ForeignKey, Model, Table } from "sequelize-typescript";
+import { BelongsTo, Column, DataType, ForeignKey, Model, PrimaryKey, Table } from "sequelize-typescript";
 import {
 	container,
 	RegionEnum,
 	DefaultModelInterface,
 	BelongsToOrgInterface,
 } from "@structured-growth/microservice-sdk";
-import MetricCategory from "./metric-category";
+import MetricCategory from "./metric-category.sequelize";
 
 export interface MetricCategoryMetadataAttributes
 	extends Omit<DefaultModelInterface, 'accountId'> {
-	id: number;
 	orgId: number;
 	accountId?: number;
 	metricCategoryId: number;
@@ -32,8 +31,6 @@ export class MetricCategoryMetadata
 	extends Model<MetricCategoryMetadataAttributes, MetricCategoryMetadataCreationAttributes>
 	implements MetricCategoryMetadataAttributes
 {
-	@Column
-	id: number;
 
 	@Column
 	orgId: number;

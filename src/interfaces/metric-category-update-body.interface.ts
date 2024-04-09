@@ -1,4 +1,4 @@
-import { MetricCategoryAttributes } from "../../database/models/metric-category";
+import { MetricCategoryAttributes } from "../../database/models/metric-category.sequelize";
 
 export interface MetricCategoryUpdateBodyInterface {
 	title?: string;

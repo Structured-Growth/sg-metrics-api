@@ -1,4 +1,4 @@
-import { MetricTypeAttributes } from "../../database/models/metric-type";
+import { MetricTypeAttributes } from "../../database/models/metric-type.sequelize";
 
 export interface MetricTypeUpdateBodyInterface {
 	accountId?: number;

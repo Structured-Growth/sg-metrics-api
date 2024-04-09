@@ -16,6 +16,7 @@ export interface MetricAttributes {
 	takenAt: Date;
 	takenAtOffset: number;
 	recordedAt: Date;
+	arn: string;
 }
 
 export interface MetricCreationAttributes extends MetricAttributes {
@@ -115,6 +116,7 @@ export class Metric implements MetricAttributes {
 			takenAt: this.takenAt,
 			takenAtOffset: this.takenAtOffset,
 			recordedAt: this.recordedAt,
+			arn: this.arn
 		};
 	}
 }

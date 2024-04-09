@@ -41,6 +41,6 @@ export class AppMock {
 		} catch (e) {
 			// should through error, it's ok
 		}
-		this.sequelize.addModels([path.join(__dirname, "..", "..", "database", "models")]);
+		this.sequelize.addModels([path.join(__dirname, "..", "..", "database", "models", "*.sequelize.ts")]);
 	}
 }

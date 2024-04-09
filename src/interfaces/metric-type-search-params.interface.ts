@@ -1,5 +1,5 @@
 import { DefaultSearchParamsInterface } from "@structured-growth/microservice-sdk";
-import { MetricCategoryAttributes } from "../../database/models/metric-category";
+import { MetricCategoryAttributes } from "../../database/models/metric-category.sequelize";
 
 export interface MetricTypeSearchParamsInterface extends Omit<DefaultSearchParamsInterface, "orgId" | "accountId"> {
 	orgId?: number;

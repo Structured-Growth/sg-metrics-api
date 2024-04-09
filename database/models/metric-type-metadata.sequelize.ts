@@ -5,8 +5,8 @@ import {
 	DefaultModelInterface,
 	BelongsToOrgInterface,
 } from "@structured-growth/microservice-sdk";
-import MetricCategory from "./metric-category";
-import MetricType from "./metric-type";
+import MetricCategory from "./metric-category.sequelize";
+import MetricType from "./metric-type.sequelize";
 
 export interface MetricTypeMetadataAttributes
 	extends Omit<DefaultModelInterface, 'accountId'> {
@@ -34,9 +34,6 @@ export class MetricTypeMetadata
 	extends Model<MetricTypeMetadataAttributes, MetricTypeMetadataCreationAttributes>
 	implements MetricTypeMetadataAttributes
 {
-	@Column
-	id: number;
-
 	@Column
 	orgId: number;
 

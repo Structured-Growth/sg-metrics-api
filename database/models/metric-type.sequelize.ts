@@ -4,7 +4,7 @@ import {
 	RegionEnum,
 	DefaultModelInterface,
 } from "@structured-growth/microservice-sdk";
-import MetricCategory from "./metric-category";
+import MetricCategory from "./metric-category.sequelize";
 
 export interface MetricTypeAttributes
 	extends Omit<DefaultModelInterface, 'accountId'> {
@@ -31,10 +31,6 @@ export interface MetricTypeCreationAttributes
 	underscored: true,
 })
 export class MetricType extends Model<MetricTypeAttributes, MetricTypeCreationAttributes> implements MetricTypeAttributes {
-
-	@Column
-	id: number;
-
 	@Column
 	orgId: number;
 

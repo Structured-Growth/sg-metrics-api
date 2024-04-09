@@ -32,9 +32,6 @@ export class MetricCategory
 	implements MetricCategoryAttributes
 {
 	@Column
-	id: number;
-
-	@Column
 	orgId: number;
 
 	@Column

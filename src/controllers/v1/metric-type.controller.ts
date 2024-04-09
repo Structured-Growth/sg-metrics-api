@@ -10,7 +10,7 @@ import {
 	ValidateFuncArgs,
 	SearchResultInterface,
 } from "@structured-growth/microservice-sdk";
-import { MetricTypeAttributes } from "../../../database/models/metric-type";
+import { MetricTypeAttributes } from "../../../database/models/metric-type.sequelize";
 import { MetricTypeSearchParamsInterface } from "../../interfaces/metric-type-search-params.interface";
 import { MetricTypeCreateBodyInterface } from "../../interfaces/metric-type-create-body.interface";
 import { MetricTypeUpdateBodyInterface } from "../../interfaces/metric-type-update-body.interface";

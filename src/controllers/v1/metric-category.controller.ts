@@ -11,7 +11,7 @@ import {
 	NotFoundError,
 } from "@structured-growth/microservice-sdk";
 import { pick } from "lodash";
-import { MetricCategory, MetricCategoryAttributes } from "../../../database/models/metric-category";
+import { MetricCategory, MetricCategoryAttributes } from "../../../database/models/metric-category.sequelize";
 import { MetricCategorySearchParamsInterface } from "../../interfaces/metric-category-search-params.interface";
 import { MetricCategoryCreateBodyInterface } from "../../interfaces/metric-category-create-body.interface";
 import { MetricCategoryUpdateBodyInterface } from "../../interfaces/metric-category-update-body.interface";
@@ -39,7 +39,7 @@ type PublicMetricCategoryAttributes = Pick<MetricCategoryAttributes, MetricCateg
 @autoInjectable()
 export class MetricCategoryController extends BaseController {
 	/**
-	 * Search MetricCategory records
+	 * Search Metric Categories records
 	 */
 	@OperationId("Search")
 	@Get("/")
