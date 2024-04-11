@@ -25,15 +25,14 @@ module.exports = {
           model: "metric_categories",
           key: "id",
         },
-        onDelete: "RESTRICT",
+        onDelete: "CASCADE",
       },
       name: {
         type: Sequelize.STRING(100),
         allowNull: false,
-        unique: true,
       },
       value: {
-        type: Sequelize.STRING(100),
+        type: Sequelize.STRING(255),
       },
       created_at: Sequelize.DATE,
       updated_at: Sequelize.DATE,

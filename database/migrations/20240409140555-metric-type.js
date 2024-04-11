@@ -11,6 +11,7 @@ module.exports = {
       },
       org_id: {
         type: Sequelize.INTEGER,
+        allowNull: false,
       },
       account_id: {
         type: Sequelize.INTEGER,
@@ -33,16 +34,17 @@ module.exports = {
       },
       code: {
         type: Sequelize.STRING(100),
+        allowNull: false,
         unique: true,
       },
       unit: {
-        type: Sequelize.STRING(100),
+        type: Sequelize.STRING(15),
       },
       factor: {
         type: Sequelize.SMALLINT,
       },
       relatedTo: {
-        type: Sequelize.STRING(200),
+        type: Sequelize.STRING(50),
       },
       version: {
         type: Sequelize.SMALLINT,

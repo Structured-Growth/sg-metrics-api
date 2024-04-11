@@ -69,11 +69,11 @@ export class MetricType extends Model<MetricTypeAttributes, MetricTypeCreationAt
 	status: MetricTypeAttributes["status"];
 
 	static get arnPattern(): string {
-		return [container.resolve("appPrefix"), "<region>", "<orgId>", '<accountId>', "metric-category/<metricCategoryId>", "metric-type/<metricTypeId>"].join(":");
+		return [container.resolve("appPrefix"), "<region>", "<orgId>", '<accountId>', "metric-category/<metricCategoryId>/metric-type/<metricTypeId>"].join(":");
 	}
 
 	get arn(): string {
-		return [container.resolve("appPrefix"), this.region, this.orgId, this.accountId || '-', `metric-category/${this.metricCategoryId}`, `metric-type/${this.id}`].join(":");
+		return [container.resolve("appPrefix"), this.region, this.orgId, this.accountId || '-', `metric-category/${this.metricCategoryId}/metric-type/${this.id}`].join(":");
 	}
 }
 

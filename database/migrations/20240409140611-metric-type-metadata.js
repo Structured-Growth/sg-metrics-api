@@ -11,6 +11,7 @@ module.exports = {
       },
       org_id: {
         type: Sequelize.INTEGER,
+        allowNull: false,
       },
       account_id: {
         type: Sequelize.INTEGER,
@@ -38,10 +39,9 @@ module.exports = {
       name: {
         type: Sequelize.STRING(100),
         allowNull: false,
-        unique: true,
       },
       value: {
-        type: Sequelize.STRING(100),
+        type: Sequelize.STRING(255),
       },
       created_at: Sequelize.DATE,
       updated_at: Sequelize.DATE,

@@ -11,6 +11,7 @@ module.exports = {
       },
       org_id: {
         type: Sequelize.INTEGER,
+        allowNull: false,
       },
       account_id: {
         type: Sequelize.INTEGER,
