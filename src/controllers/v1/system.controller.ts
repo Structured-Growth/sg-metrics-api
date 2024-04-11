@@ -1,9 +1,8 @@
-import { injectable } from "tsyringe";
 import { Post, Route, Hidden } from "@tsoa/runtime";
 import { Sequelize } from "sequelize";
 import { SequelizeStorage, Umzug } from "umzug";
 import * as dbConfig from "../../../database/config/config";
-import { BaseController } from "@structured-growth/microservice-sdk";
+import { BaseController, injectable } from "@structured-growth/microservice-sdk";
 import { Tags } from "tsoa";
 import { Options } from "sequelize/types/sequelize";
 
