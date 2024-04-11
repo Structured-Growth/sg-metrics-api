@@ -35,7 +35,7 @@ type PublicMetricCategoryAttributes = Pick<MetricCategoryAttributes, MetricCateg
 };
 
 @Route("v1/metric-category")
-@Tags("MetricCategoryController")
+@Tags("Metric Category")
 @autoInjectable()
 export class MetricCategoryController extends BaseController {
 	/**

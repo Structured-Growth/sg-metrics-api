@@ -40,7 +40,7 @@ type PublicAccountAttributes = Pick<MetricTypeAttributes, MetricTypeKeys> & {
 
 
 @Route("v1/metric-type")
-@Tags("MetricTypeController")
+@Tags("Metric Type")
 @autoInjectable()
 export class MetricTypeController extends BaseController {
 	/**

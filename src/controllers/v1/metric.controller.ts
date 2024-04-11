@@ -39,9 +39,9 @@ type MetricKeys = (typeof publicMetricAttributes)[number];
 type PublicMetricAttributes = Pick<MetricAttributes, MetricKeys>;
 
 @Route('v1/metrics')
-@Tags('MetricController')
+@Tags('Metric')
 @autoInjectable()
-export class MetricController {
+export class MetricController extends BaseController {
 
 	/**
 	 * Search Metric records

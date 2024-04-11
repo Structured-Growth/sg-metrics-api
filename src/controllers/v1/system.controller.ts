@@ -7,7 +7,7 @@ import { Tags } from "tsoa";
 import { Options } from "sequelize/types/sequelize";
 
 @Route("v1/system")
-@Tags("SystemController")
+@Tags("System")
 @injectable()
 export class SystemController extends BaseController {
 	/**
