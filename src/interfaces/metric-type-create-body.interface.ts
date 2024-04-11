@@ -6,7 +6,7 @@ export interface MetricTypeCreateBodyInterface {
 	code: number;
 	unit: string;
 	factor: number;
-	relatedTo: string;
+	relatedTo: "Organization" | "Account" | "User" | "Device" | "Phone" | "Email" | "Group" | "GroupMember";
 	version: number;
 	status?: "active" | "inactive";
 	metadata?: Record<string, string>;
