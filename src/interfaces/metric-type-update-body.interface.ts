@@ -4,7 +4,7 @@ export interface MetricTypeUpdateBodyInterface {
 	accountId?: number;
 	metricCategoryId?: number;
 	title?: string;
-	code?: number;
+	code?: string;
 	unit?: string;
 	factor?: number;
 	relatedTo?: string;

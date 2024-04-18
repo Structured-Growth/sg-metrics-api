@@ -25,6 +25,10 @@ export interface MetricTypeAttributes
 export interface MetricTypeCreationAttributes
 	extends Omit<MetricTypeAttributes, "id" | "arn" | "createdAt" | "updatedAt" | "deletedAt"> {
 }
+export interface MetricTypeUpdateAttributes
+	extends Pick<MetricTypeAttributes, "title"  | "code" | "factor" | "version" | "status"> {}
+
+
 @Table({
 	tableName: "metric_types",
 	timestamps: true,

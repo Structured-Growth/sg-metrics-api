@@ -19,7 +19,7 @@ export interface MetricCategoryMetadataAttributes
 export interface MetricCategoryMetadataCreationAttributes
 	extends Omit<MetricCategoryMetadataAttributes, "id" | "arn" | "createdAt" | "updatedAt" | "deletedAt"> {}
 
-export interface MetricCategoryUpdateAttributes
+export interface MetricCategoryMetadataUpdateAttributes
 	extends Pick<MetricCategoryMetadataAttributes, "name"  |  "value"> {}
 
 @Table({

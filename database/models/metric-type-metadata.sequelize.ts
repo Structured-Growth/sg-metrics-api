@@ -7,6 +7,7 @@ import {
 } from "@structured-growth/microservice-sdk";
 import MetricCategory from "./metric-category.sequelize";
 import MetricType from "./metric-type.sequelize";
+import {MetricCategoryMetadataAttributes} from "./metric-category-metadata.sequelize";
 
 export interface MetricTypeMetadataAttributes
 	extends Omit<DefaultModelInterface, 'accountId'> {
@@ -22,7 +23,7 @@ export interface MetricTypeMetadataAttributes
 export interface MetricTypeMetadataCreationAttributes
 	extends Omit<MetricTypeMetadataAttributes, "id" | "arn" | "createdAt" | "updatedAt" | "deletedAt"> {}
 
-export interface MetricTypeUpdateAttributes
+export interface MetricTypeMetadataUpdateAttributes
 	extends Pick<MetricTypeMetadataAttributes, "name"  |  "value"> {}
 
 @Table({

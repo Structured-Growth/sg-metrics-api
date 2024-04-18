@@ -4,7 +4,7 @@ export interface MetricCategoryCreateBodyInterface {
 	orgId: number;
 	region: RegionEnum;
 	title: string;
-	code: number;
+	code: string;
 	status?: "active" | "inactive";
 	metadata?: Record<string, string>;
 }

@@ -1,9 +1,12 @@
+import {RegionEnum} from "@structured-growth/microservice-sdk/.dist";
+
 export interface MetricTypeCreateBodyInterface {
 	orgId: number;
+	region: RegionEnum;
 	accountId?: number;
 	metricCategoryId: number;
 	title: string;
-	code: number;
+	code: string;
 	unit: string;
 	factor: number;
 	relatedTo: "Organization" | "Account" | "User" | "Device" | "Phone" | "Email" | "Group" | "GroupMember";

@@ -1,4 +1,3 @@
-import TimestreamWrite from 'aws-sdk/clients/timestreamwrite';
 import { container, RegionEnum } from "@structured-growth/microservice-sdk";
 
 export interface MetricAttributes {
@@ -16,6 +15,7 @@ export interface MetricAttributes {
 	takenAt: Date;
 	takenAtOffset: number;
 	recordedAt: Date;
+	isActive: boolean;
 	arn: string;
 }
 
@@ -37,6 +37,7 @@ export class Metric implements MetricAttributes {
 	takenAt: Date;
 	takenAtOffset: number;
 	recordedAt: Date;
+	isActive: boolean;
 
 	constructor(
 		data: MetricAttributes,
@@ -55,42 +56,8 @@ export class Metric implements MetricAttributes {
 		this.takenAt = data.takenAt;
 		this.takenAtOffset = data.takenAtOffset;
 		this.recordedAt = data.recordedAt;
+		this.isActive = data.isActive
 	}
-/*
-	static writeToTimestream(metric: Metric) {
-		const region = container.resolve("region");
-		const timestreamWrite = new TimestreamWrite({
-			apiVersion: "2018-11-01",
-			region: region,
-		});
-
-		const metricData = {
-			DatabaseName: 'test',
-			TableName: 'YourTableName',
-			Records: [
-				{
-					Dimensions: [
-						{ Name: 'orgId', Value: metric.orgId.toString() },
-						{ Name: 'region', Value: metric.region },
-					],
-					MeasureName: 'value',
-					MeasureValue: metric.value.toString(),
-					MeasureValueType: 'BIGINT',
-					Time: metric.recordedAt.getTime().toString(),
-					TimeUnit: 'MILLISECONDS',
-				},
-			],
-		};
-
-		timestreamWrite.writeRecords(metricData, (err, data) => {
-			if (err) {
-				console.error('Error inserting metric:', err);
-			} else {
-				console.log('Successfully inserted metric:', data);
-			}
-		});
-	}
-*/
 
 	static get arnPattern(): string {
 		return [container.resolve("appPrefix"), "<region>", "<orgId>", '<accountId>', "metric-category/<metricCategoryId>", "metric-type/<metricTypeId>", "metric/<metricId>"].join(":");
@@ -116,6 +83,7 @@ export class Metric implements MetricAttributes {
 			takenAt: this.takenAt,
 			takenAtOffset: this.takenAtOffset,
 			recordedAt: this.recordedAt,
+			isActive: this.isActive,
 			arn: this.arn
 		};
 	}

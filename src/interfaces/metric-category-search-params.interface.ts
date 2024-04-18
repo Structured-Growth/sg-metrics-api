@@ -14,7 +14,7 @@ export interface MetricCategorySearchParamsInterface extends Omit<DefaultSearchP
 	/**
 	 * Wildcards and exclusions are allowed:
 	 *
-	 * `name: ["Starts*", "-*ends"]`
+	 * `code: ["Starts*", "-*ends"]`
 	 */
 	code?: string[];
 }
