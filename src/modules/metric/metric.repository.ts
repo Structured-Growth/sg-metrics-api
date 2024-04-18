@@ -15,6 +15,10 @@ export class MetricRepository {
         this.timestreamQuery = timestreamQuery;
         this.databaseName = databaseName;
         this.tableName = tableName;
+
+        const client = new TimestreamWrite({
+
+        })
     }
 
     public async create(params: MetricCreationAttributes): Promise<void> {

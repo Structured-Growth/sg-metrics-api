@@ -9,16 +9,30 @@ import { isUndefined, omitBy } from "lodash";
 export class MetricCategoryService {
     constructor(
         @inject("MetricCategoryRepository") private metricCategoryRepository: MetricCategoryRepository,
+        @inject("MetricCategoryMetadataRepository") private metricCategoryMetadataRepository: MetricCategoryRepository,
     ) {}
 
     public async create(params: MetricCategoryCreateBodyInterface): Promise<MetricCategory> {
+        await MetricCategory.sequelize.transaction(async (transaction) => {
+            await this.metricCategoryRepository.create({
+                orgId: params.orgId,
+                region: params.region,
+                title: params.title,
+                code: params.code,
+                status: params.status || "inactive",
+            }, {
+                transaction
+            });
 
-        return this.metricCategoryRepository.create({
-            orgId: params.orgId,
-            region: params.region,
-            title: params.title,
-            code: params.code,
-            status: params.status || "inactive",
+            await this.metricCategoryMetadataRepository.create({
+                orgId: params.orgId,
+                region: params.region,
+                title: params.title,
+                code: params.code,
+                status: params.status || "inactive",
+            }, {
+                transaction
+            });
         });
     }
 
