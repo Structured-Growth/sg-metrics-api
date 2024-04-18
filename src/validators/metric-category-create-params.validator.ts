@@ -4,6 +4,7 @@ export const MetricCategoryCreateParamsValidator = joi.object({
 	query: joi.object(),
 	body: joi.object({
 		orgId: joi.number().positive().required().label("Organization Id"),
+		accountId: joi.number().positive().label("Account Id"),
 		region: joi.string().min(2).required().label("Metric category region"),
 		title: joi.string().min(3).max(50).required().label("Metric category title"),
 		code: joi.string().required().label("Metric category code"),

@@ -1,4 +1,4 @@
-import { Op } from "sequelize";
+import { Op, Transaction } from "sequelize";
 import {
     autoInjectable,
     RepositoryInterface,
@@ -50,8 +50,11 @@ export class MetricCategoryMetadataRepository
         };
     }
 
-    public async create(params: MetricCategoryMetadataCreationAttributes): Promise<MetricCategoryMetadata> {
-        return MetricCategoryMetadata.create(params);
+    public async create(
+        params: MetricCategoryMetadataCreationAttributes,
+        { transaction }: { transaction?: Transaction } = {}
+    ): Promise<MetricCategoryMetadata> {
+        return MetricCategoryMetadata.create(params, { transaction });
     }
 
     public async read(

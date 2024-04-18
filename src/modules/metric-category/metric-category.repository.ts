@@ -58,11 +58,7 @@ export class MetricCategoryRepository
 
 	public async create(
 		params: MetricCategoryCreationAttributes,
-		{
-			transaction,
-		}: {
-			transaction?: Transaction;
-		}
+		{ transaction }: { transaction?: Transaction } = {}
 	): Promise<MetricCategory> {
 		return MetricCategory.create(params, { transaction });
 	}

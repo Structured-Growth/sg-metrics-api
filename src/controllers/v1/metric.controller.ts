@@ -11,12 +11,14 @@ import {
 	SearchResultInterface,
 } from "@structured-growth/microservice-sdk";
 import { Metric, MetricAttributes } from '../../../database/models/metric';
+import { MetricRepository } from "../../modules/metric/metric.repository";
 import { MetricSearchParamsInterface } from "../../interfaces/metric-search-params.interface";
 import { MetricCreateBodyInterface } from "../../interfaces/metric-create-body.interface";
 import { MetricUpdateBodyInterface } from "../../interfaces/metric-update-body.interface";
 import { MetricSearchParamsValidator } from "../../validators/metric-search-params.validator";
 import { MetricCreateParamsValidator } from "../../validators/metric-create-params.validator";
 import { MetricUpdateParamsValidator } from "../../validators/metric-update-params.validator";
+
 
 const publicMetricAttributes = [
 	"id",
@@ -42,7 +44,11 @@ type PublicMetricAttributes = Pick<MetricAttributes, MetricKeys>;
 @Tags('Metric')
 @autoInjectable()
 export class MetricController extends BaseController {
-
+	constructor(
+		@inject("MetricRepository") private metricRepository: MetricRepository,
+	) {
+		super();
+	}
 	/**
 	 * Search Metric records
 	 */

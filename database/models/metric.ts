@@ -16,6 +16,7 @@ export interface MetricAttributes {
 	takenAtOffset: number;
 	recordedAt: Date;
 	isActive: boolean;
+	version: number;
 	arn: string;
 }
 
@@ -38,6 +39,7 @@ export class Metric implements MetricAttributes {
 	takenAtOffset: number;
 	recordedAt: Date;
 	isActive: boolean;
+	version: number;
 
 	constructor(
 		data: MetricAttributes,
@@ -56,7 +58,8 @@ export class Metric implements MetricAttributes {
 		this.takenAt = data.takenAt;
 		this.takenAtOffset = data.takenAtOffset;
 		this.recordedAt = data.recordedAt;
-		this.isActive = data.isActive
+		this.isActive = data.isActive;
+		this.version = data.version;
 	}
 
 	static get arnPattern(): string {
@@ -84,6 +87,7 @@ export class Metric implements MetricAttributes {
 			takenAtOffset: this.takenAtOffset,
 			recordedAt: this.recordedAt,
 			isActive: this.isActive,
+			version: this.version,
 			arn: this.arn
 		};
 	}

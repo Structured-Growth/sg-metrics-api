@@ -4,5 +4,5 @@ export interface MetricCategoryMetadataCreateBodyInterface {
 	accountId?: number;
 	metricCategoryId: number;
 	name: string;
-	value: number;
+	value: string;
 }
