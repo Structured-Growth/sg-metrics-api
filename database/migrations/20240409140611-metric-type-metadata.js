@@ -20,7 +20,7 @@ module.exports = {
         type: Sequelize.STRING(10),
         allowNull: false,
       },
-      metricCategoryId: {
+      metric_category_id: {
         type: Sequelize.SMALLINT,
         references: {
           model: "metric_categories",
@@ -28,7 +28,7 @@ module.exports = {
         },
         onDelete: "RESTRICT",
       },
-      metricTypeId: {
+      metric_type_id: {
         type: Sequelize.SMALLINT,
         references: {
           model: "metric_types",

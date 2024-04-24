@@ -19,7 +19,7 @@ module.exports = {
         type: Sequelize.STRING(10),
         allowNull: false,
       },
-      metricCategoryId: {
+      metric_category_id: {
         type: Sequelize.SMALLINT,
         references: {
           model: "metric_categories",

@@ -1,9 +1,10 @@
-import { Column, DataType, Model, Table } from "sequelize-typescript";
+import { Column, DataType, HasMany, Model, Table } from "sequelize-typescript";
 import {
 	container,
 	RegionEnum,
 	DefaultModelInterface,
 } from "@structured-growth/microservice-sdk";
+import MetricCategoryMetadata from "./metric-category-metadata.sequelize";
 
 export interface MetricCategoryAttributes
 	extends Omit<DefaultModelInterface, 'accountId'> {
@@ -48,6 +49,9 @@ export class MetricCategory
 
 	@Column(DataType.STRING)
 	status: MetricCategoryAttributes["status"];
+
+	@HasMany(() => MetricCategoryMetadata, { foreignKey: "metricCategoryId" })
+	metadata: Record<string, string>;
 
 	static get arnPattern(): string {
 		return [container.resolve("appPrefix"), "<region>", "<orgId>", '<accountId>', "metric-category/<metricCategoryId>"].join(":");

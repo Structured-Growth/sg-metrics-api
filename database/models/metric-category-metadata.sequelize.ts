@@ -23,7 +23,7 @@ export interface MetricCategoryMetadataUpdateAttributes
 	extends Pick<MetricCategoryMetadataAttributes, "name"  |  "value"> {}
 
 @Table({
-	tableName: "metric_category_metadata",
+	tableName: "metric_categories_metadata",
 	timestamps: true,
 	underscored: true,
 })

@@ -9,6 +9,7 @@ import { MetricTypeMetadataRepository } from "../modules/metric-type-metada/metr
 import { MetricCategoryService } from "../modules/metric-category/metric-category.service";
 import { MetricCategoryRepository } from "../modules/metric-category/metric-category.repository";
 import { MetricCategoryMetadataRepository } from "../modules/metric-category-metadata/metric-category-metadata.repository";
+import { MetricRepository } from "../modules/metric/metric.repository";
 
 // load and validate env variables
 loadEnvironment();
@@ -37,3 +38,4 @@ container.register("MetricCategoryRepository", MetricCategoryRepository);
 container.register("MetricTypeRepository", MetricTypeRepository);
 container.register("MetricCategoryMetadataRepository", MetricCategoryMetadataRepository);
 container.register("MetricTypeMetadataRepository", MetricTypeMetadataRepository);
+container.register("MetricRepository", MetricRepository);

@@ -132,7 +132,7 @@ export class MetricCategoryController extends BaseController {
 		@Body() body: MetricCategoryUpdateBodyInterface
 	): Promise<PublicMetricCategoryAttributes> {
 		const metricCategory = await this.metricCategoryService.update(metricCategoryId, body);
-		this.response.status(201);
+		this.response.status(200);
 
 		return {
 			...(pick(metricCategory.toJSON(), publicMetricCategoryAttributes) as PublicMetricCategoryAttributes),

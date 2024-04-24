@@ -10,6 +10,7 @@ import MetricCategory, {
 	MetricCategoryUpdateAttributes,
 } from "../../../database/models/metric-category.sequelize";
 import { MetricCategorySearchParamsInterface } from "../../interfaces/metric-category-search-params.interface";
+import MetricCategoryMetadata from "../../../database/models/metric-category-metadata.sequelize";
 
 @autoInjectable()
 export class MetricCategoryRepository
@@ -57,16 +58,34 @@ export class MetricCategoryRepository
 	}
 
 	public async create(
-		params: MetricCategoryCreationAttributes,
-		{ transaction }: { transaction?: Transaction } = {}
+		params: MetricCategoryCreationAttributes & {
+			metadata?: Record<string, string>;
+		}
 	): Promise<MetricCategory> {
-		return MetricCategory.create(params, { transaction });
+		const { metadata, ...metricAttributes } = params;
+
+		return MetricCategory.create(
+			{
+				...metricAttributes,
+				metadata: Object.keys(metadata).map((name) => ({
+					orgId: metricAttributes.orgId,
+					accountId: metricAttributes.accountId,
+					region: metricAttributes.region,
+					name,
+					value: metadata[name],
+				})),
+			} as any,
+			{
+				include: [MetricCategoryMetadata],
+			}
+		);
 	}
 
 	public async read(
 		id: number,
 		params?: {
 			attributes?: string[];
+			transaction?: Transaction;
 		}
 	): Promise<MetricCategory | null> {
 		return MetricCategory.findByPk(id, {
@@ -76,11 +95,45 @@ export class MetricCategoryRepository
 	}
 
 	// pick some attributes
-	public async update(id: number, params: MetricCategoryUpdateAttributes): Promise<MetricCategory> {
-		const metricCategory = await this.read(id);
-		metricCategory.setAttributes(params);
+	public async update(
+		id: number,
+		params: MetricCategoryUpdateAttributes & {
+			metadata?: Record<string, string>;
+		}
+	): Promise<MetricCategory> {
+		return MetricCategory.sequelize.transaction(async (transaction) => {
+			const metricCategory = await this.read(id, {
+				transaction,
+			});
+			metricCategory.setAttributes(params);
+			await metricCategory.save({
+				transaction,
+			});
 
-		return metricCategory.save();
+			if (params.metadata) {
+				await MetricCategoryMetadata.destroy({
+					where: {
+						metricCategoryId: metricCategory.id,
+					},
+					transaction,
+				});
+				await MetricCategoryMetadata.bulkCreate(
+					Object.keys(params.metadata).map((name) => ({
+						orgId: metricCategory.orgId,
+						accountId: metricCategory.accountId,
+						region: metricCategory.region,
+						metricCategoryId: metricCategory.id,
+						name,
+						value: params.metadata[name],
+					})),
+					{
+						transaction,
+					}
+				);
+			}
+
+			return metricCategory;
+		});
 	}
 
 	public async delete(id: number): Promise<void> {
