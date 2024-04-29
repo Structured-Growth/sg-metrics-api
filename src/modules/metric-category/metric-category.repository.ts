@@ -16,9 +16,11 @@ import MetricCategoryMetadata from "../../../database/models/metric-category-met
 export class MetricCategoryRepository
 	implements RepositoryInterface<MetricCategory, MetricCategorySearchParamsInterface, MetricCategoryCreationAttributes>
 {
-	public async search(params: MetricCategorySearchParamsInterface & {
-		metadata?: Record<string, string>;
-	}): Promise<SearchResultInterface<MetricCategory>> {
+	public async search(
+		params: MetricCategorySearchParamsInterface & {
+			metadata?: Record<string, string>;
+		}
+	): Promise<SearchResultInterface<MetricCategory>> {
 		const page = params.page || 1;
 		const limit = params.limit || 20;
 		const offset = (page - 1) * limit;
@@ -108,26 +110,29 @@ export class MetricCategoryRepository
 			transaction?: Transaction;
 			metadata?: Record<string, string>;
 		}
-	): Promise<MetricCategory | null> {
-		return MetricCategory.sequelize.transaction(async (transaction) => {
-			const metricCategory = await this.read(id, {
-				transaction,
+	): Promise<(MetricCategory & { metadata?: Record<string, string> }) | null> {
+		const metricCategory = await MetricCategory.findByPk(id, {
+			transaction: params?.transaction,
+		});
+
+		if (!metricCategory) return null;
+
+		if (params?.metadata) {
+			const metadata = await MetricCategoryMetadata.findAll({
+				where: {
+					metricCategoryId: metricCategory.id,
+				},
+				transaction: params?.transaction,
+				raw: true,
 			});
 
-			if (!metricCategory) return null;
+			metricCategory.metadata = metadata.reduce((acc, item) => {
+				acc[item.name] = item.value;
+				return acc;
+			}, {});
+		}
 
-			if (params?.metadata) {
-				const metadata = await MetricCategoryMetadata.findAll({
-					where: {
-						metricCategoryId: metricCategory.id,
-					},
-					transaction,
-					raw: true,
-				});
-			}
-
-			return metricCategory;
-		});
+		return metricCategory;
 	}
 
 	// pick some attributes
