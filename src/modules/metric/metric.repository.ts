@@ -125,10 +125,10 @@ export class MetricRepository {
     }
 
     private async executeQuery(query: string): Promise<any> {
-    //     const command = new QueryCommand({
-    //         QueryString: query,
-    //     });
-    //     return this.timestreamQuery.send(command).promise();
+        //     const command = new QueryCommand({
+        //         QueryString: query,
+        //     });
+        //     return this.timestreamQuery.send(command).promise();
     }
 
     private parseMetric(row: any): Metric {

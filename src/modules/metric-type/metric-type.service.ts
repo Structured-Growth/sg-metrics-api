@@ -33,6 +33,7 @@ export class MetricTypeService {
             relatedTo: params.relatedTo,
             version: params.version,
             status: params.status || "inactive",
+            metadata: params.metadata,
         });
     }
 
@@ -54,6 +55,7 @@ export class MetricTypeService {
                     relatedTo: params.relatedTo,
                     version: params.version,
                     status: params.status,
+                    metadata: params.metadata,
                 },
                 isUndefined
             ) as MetricTypeUpdateAttributes

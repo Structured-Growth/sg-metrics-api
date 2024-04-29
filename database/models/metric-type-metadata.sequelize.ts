@@ -11,13 +11,12 @@ import {MetricCategoryMetadataAttributes} from "./metric-category-metadata.seque
 
 export interface MetricTypeMetadataAttributes
 	extends Omit<DefaultModelInterface, 'accountId'> {
-	id?: number | any;
 	orgId: number;
 	accountId?: number;
 	metricCategoryId: number;
 	metricTypeId: number;
 	name: string;
-	value: number;
+	value: string;
 }
 
 export interface MetricTypeMetadataCreationAttributes
@@ -62,7 +61,7 @@ export class MetricTypeMetadata
 	name: string;
 
 	@Column
-	value: number;
+	value: string;
 
 	static get arnPattern(): string {
 		return [container.resolve("appPrefix"), "<region>", "<orgId>", '<accountId>', "metric-category/<metricCategoryId>/metric-type/<metricTypeId>/metadata/<metricTypeMetadataId>"].join(":");

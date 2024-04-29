@@ -69,7 +69,7 @@ export class MetricTypeController extends BaseController {
 	async search(@Queries() query: MetricTypeSearchParamsInterface
 	): Promise<SearchResultInterface<PublicMetricTypeAttributes>> {
 		const { data, ...result } = await this.metricTypeRepository.search(query);
-
+		this.response.status(200);
 		return {
 			data: data.map((metricType) => ({
 				...(pick(metricType.toJSON(), publicMetricTypeAttributes) as PublicMetricTypeAttributes),
@@ -109,7 +109,7 @@ export class MetricTypeController extends BaseController {
 	@DescribeResource("MetricType", ({ params }) => Number(params.metricTypeId))
 	async get(@Path() metricTypeId: number): Promise<PublicMetricTypeAttributes> {
 		const metricType = await this.metricTypeRepository.read(metricTypeId);
-
+		this.response.status(200);
 		if (!metricType) {
 			throw new NotFoundError(`Metric Category ${metricTypeId} not found`);
 		}
@@ -135,7 +135,7 @@ export class MetricTypeController extends BaseController {
 		@Body() body: MetricTypeUpdateBodyInterface
 	): Promise<PublicMetricTypeAttributes> {
 		const metricType = await this.metricTypeService.update(metricTypeId, body);
-		this.response.status(201);
+		this.response.status(200);
 
 		return {
 			...(pick(metricType.toJSON(), publicMetricTypeAttributes) as PublicMetricTypeAttributes),

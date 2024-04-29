@@ -64,7 +64,7 @@ export class MetricCategoryController extends BaseController {
 		@Queries() query: MetricCategorySearchParamsInterface
 	): Promise<SearchResultInterface<PublicMetricCategoryAttributes>> {
 		const { data, ...result } = await this.metricCategoryRepository.search(query);
-
+		this.response.status(200);
 		return {
 			data: data.map((metricCategory) => ({
 				...(pick(metricCategory.toJSON(), publicMetricCategoryAttributes) as PublicMetricCategoryAttributes),
@@ -106,7 +106,7 @@ export class MetricCategoryController extends BaseController {
 	@DescribeResource("MetricCategory", ({ params }) => Number(params.metricCategoryId))
 	async get(@Path() metricCategoryId: number): Promise<PublicMetricCategoryAttributes> {
 		const metricCategory = await this.metricCategoryRepository.read(metricCategoryId);
-
+		this.response.status(200);
 		if (!metricCategory) {
 			throw new NotFoundError(`Metric Category ${metricCategoryId} not found`);
 		}

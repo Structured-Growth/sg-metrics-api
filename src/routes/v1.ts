@@ -1,16 +1,16 @@
 /**
-* IMPORTANT NOTE!
-* This file was auto-generated with tsoa.
-* Please do not modify it. Re-run tsoa to re-generate this file
-*/
+ * IMPORTANT NOTE!
+ * This file was auto-generated with tsoa.
+ * Please do not modify it. Re-run tsoa to re-generate this file
+ */
 
 import { Router } from "express";
 import { container, handleRequest } from "@structured-growth/microservice-sdk";
 import * as Controllers from "../controllers/v1";
 
 const handlerOpts = {
-    logRequestBody: container.resolve<boolean>('logRequestBody'),
-    logResponses: container.resolve<boolean>('logResponses'),
+	logRequestBody: container.resolve<boolean>('logRequestBody'),
+	logResponses: container.resolve<boolean>('logResponses'),
 }
 
 export const router = Router();

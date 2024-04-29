@@ -1,4 +1,4 @@
-import { Op } from "sequelize";
+import {Op, Transaction} from "sequelize";
 import {
     autoInjectable,
     RepositoryInterface,
@@ -10,12 +10,15 @@ import MetricType, {
     MetricTypeUpdateAttributes,
 } from "../../../database/models/metric-type.sequelize";
 import { MetricTypeSearchParamsInterface } from "../../interfaces/metric-type-search-params.interface";
+import MetricTypeMetadata from "../../../database/models/metric-type-metadata.sequelize";
 
 @autoInjectable()
 export class MetricTypeRepository
-    implements RepositoryInterface<MetricType, MetricTypeSearchParamsInterface, MetricTypeCreationAttributes>
+    implements RepositoryInterface<MetricType, MetricTypeSearchParamsInterface , MetricTypeCreationAttributes>
 {
-    public async search(params: MetricTypeSearchParamsInterface): Promise<SearchResultInterface<MetricType>> {
+    public async search(params: MetricTypeSearchParamsInterface & {
+        metadata?: Record<string, string>;
+    }): Promise<SearchResultInterface<MetricType>> {
         const page = params.page || 1;
         const limit = params.limit || 20;
         const offset = (page - 1) * limit;
@@ -42,6 +45,23 @@ export class MetricTypeRepository
                 [Op.or]: params.code.map((str) => ({ [Op.iLike]: str.replace(/\*/g, "%") })),
             };
         }
+        if (params.metadata && Object.keys(params.metadata).length > 0) {
+            const metadataSearchQuery = Object.entries(params.metadata).map(([name, value]) => ({
+                name,
+                value: { [Op.iLike]: `%${value}%` }, // Adjust the operator according to your requirements
+            }));
+
+            const metadataTypes = await MetricTypeMetadata.findAll({
+                where: {
+                    [Op.and]: metadataSearchQuery,
+                },
+                attributes: ["metricTypeId"],
+                raw: true,
+            });
+
+            const metricTypeIds = metadataTypes.map((metadata) => metadata.metricTypeId);
+            where["id"] = { [Op.in]: metricTypeIds };
+        }
 
         // TODO search by arn with wildcards
 
@@ -60,35 +80,113 @@ export class MetricTypeRepository
         };
     }
 
-    public async create(params: MetricTypeCreationAttributes): Promise<MetricType> {
-        return MetricType.create(params);
+    public async create(params: MetricTypeCreationAttributes& {
+                            metadata?: Record<string, string>;
+                        }
+    ): Promise<MetricType> {
+        const { metadata, ...metricAttributes } = params;
+
+        return MetricType.create(
+            {
+                ...metricAttributes,
+                metadata: Object.keys(metadata).map((name) => ({
+                    orgId: metricAttributes.orgId,
+                    accountId: metricAttributes.accountId,
+                    metricCategoryId: metricAttributes.metricCategoryId,
+                    region: metricAttributes.region,
+                    name,
+                    value: metadata[name],
+                })),
+            } as any,
+            {
+                include: [MetricTypeMetadata],
+            }
+        );
     }
 
     public async read(
         id: number,
         params?: {
             attributes?: string[];
+            transaction?: Transaction;
+            metadata?: Record<string, string>;
         }
     ): Promise<MetricType | null> {
-        return MetricType.findByPk(id, {
-            attributes: params?.attributes,
-            rejectOnEmpty: false,
+        return MetricType.sequelize.transaction(async (transaction) => {
+            const metricType = await this.read(id, {
+                transaction,
+            });
+
+            if (!metricType) return null;
+
+            if (params?.metadata) {
+                const metadata = await MetricTypeMetadata.findAll({
+                    where: {
+                        metricTypeId: metricType.id,
+                    },
+                    transaction,
+                    raw: true,
+                });
+            }
+
+            return metricType;
         });
     }
 
-    // pick some attributes
-    public async update(id: number, params: MetricTypeUpdateAttributes): Promise<MetricType> {
-        const metricType = await this.read(id);
-        metricType.setAttributes(params);
+    public async update(
+        id: number,
+        params: MetricTypeUpdateAttributes & {
+            metadata?: Record<string, string>;
+        }
+    ): Promise<MetricType> {
+        return MetricType.sequelize.transaction(async (transaction) => {
+            const metricType = await this.read(id, {
+                transaction,
+            });
+            metricType.setAttributes(params);
+            await metricType.save({
+                transaction,
+            });
 
-        return metricType.save();
+            if (params.metadata) {
+                await MetricTypeMetadata.destroy({
+                    where: {
+                        metricTypeId: metricType.id,
+                    },
+                    transaction,
+                });
+                await MetricTypeMetadata.bulkCreate(
+                    Object.keys(params.metadata).map((name) => ({
+                        orgId: metricType.orgId,
+                        accountId: metricType.accountId,
+                        region: metricType.region,
+                        metricCategoryId: metricType.metricCategoryId,
+                        metricTypeId: metricType.id,
+                        name,
+                        value: params.metadata[name],
+                    })),
+                    {
+                        transaction,
+                    }
+                );
+            }
+
+            return metricType;
+        });
     }
 
     public async delete(id: number): Promise<void> {
-        const n = await MetricType.destroy({ where: { id } });
-
-        if (n === 0) {
+        const metricType = await MetricType.findByPk(id);
+        if (!metricType) {
             throw new NotFoundError(`Metric Type ${id} not found`);
         }
+
+        await MetricTypeMetadata.destroy({
+            where: {
+                metricTypeId: id,
+            },
+        });
+
+        await MetricType.destroy({ where: { id } });
     }
 }

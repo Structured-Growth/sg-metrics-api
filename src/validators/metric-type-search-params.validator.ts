@@ -15,7 +15,7 @@ export const MetricTypeSearchParamsValidator = joi.object({
 			version: joi.number().positive().label("Version"),
 			lonic_code: joi.number().positive().label("Lonic code"),
 			lonic_url: joi.string().max(50).label("Lonic URL"),
-			status: joi.string().valid("active", "inactive").label("Status"),
+			status: joi.array().items(joi.string().valid("active", "inactive", "archived").required().label("Status")),
 	})
 		.concat(CommonSearchParamsValidator),
 });
