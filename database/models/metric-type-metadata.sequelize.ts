@@ -26,7 +26,7 @@ export interface MetricTypeMetadataUpdateAttributes
 	extends Pick<MetricTypeMetadataAttributes, "name"  |  "value"> {}
 
 @Table({
-	tableName: "metric-types-metadata",
+	tableName: "metric_types_metadata",
 	timestamps: true,
 	underscored: true,
 })

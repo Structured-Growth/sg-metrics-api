@@ -38,12 +38,12 @@ module.exports = {
         unique: true,
       },
       unit: {
-        type: Sequelize.STRING(15),
+        type: Sequelize.STRING(25),
       },
       factor: {
         type: Sequelize.SMALLINT,
       },
-      relatedTo: {
+      related_to: {
         type: Sequelize.STRING(50),
       },
       version: {

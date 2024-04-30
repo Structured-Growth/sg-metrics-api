@@ -23,18 +23,26 @@ describe("GET /api/v1/metric-category:metricCategoryId", () => {
 		assert.isNumber(body.id);
 		context.createdMetricCategoryId = body.id;
 	});
+
 	it("Should return metric category", async () => {
 		const { statusCode, body } = await server.get(`/v1/metric-category/${context.createdMetricCategoryId}`).send({
-			MetricCategoryId: context["createdMetricCategoryId"]
+			MetricCategoryId: context["createdMetricCategoryId"],
 		});
 		assert.equal(statusCode, 200);
+		assert.equal(body.id, context["createdMetricCategoryId"]);
+		assert.isString(body.createdAt);
+		assert.isString(body.updatedAt);
+		assert.equal(body.region, "us");
+		assert.isString(body.title, code);
+		assert.equal(body.status, "active");
+		assert.isString(body.arn);
 	});
 
 	it("Should return error is metric category id is wrong", async () => {
-		const { statusCode, body } = await server.get(`/v1/metric-category/a`).send({
+		const { statusCode, body } = await server.get(`/v1/metric-category/9999`).send({
 			MetricCategoryId: "a"
 		});
-		assert.equal(statusCode, 422);
+		assert.equal(statusCode, 404);
 		assert.isString(body.message);
 	});
 });

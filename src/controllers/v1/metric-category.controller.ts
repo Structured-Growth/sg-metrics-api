@@ -33,7 +33,7 @@ const publicMetricCategoryAttributes = [
 ] as const;
 type MetricCategoryKeys = (typeof publicMetricCategoryAttributes)[number];
 type PublicMetricCategoryAttributes = Pick<MetricCategoryAttributes, MetricCategoryKeys> & {
-	metadata: Record<any, any>;
+	metadata: Record<string, string>;
 };
 
 @Route("v1/metric-category")
@@ -68,6 +68,7 @@ export class MetricCategoryController extends BaseController {
 		return {
 			data: data.map((metricCategory) => ({
 				...(pick(metricCategory.toJSON(), publicMetricCategoryAttributes) as PublicMetricCategoryAttributes),
+				metadata: metricCategory.metadata,
 				arn: metricCategory.arn,
 			})),
 			...result,
@@ -113,6 +114,7 @@ export class MetricCategoryController extends BaseController {
 
 		return {
 			...(pick(metricCategory.toJSON(), publicMetricCategoryAttributes) as PublicMetricCategoryAttributes),
+			metadata: metricCategory.metadata,
 			arn: metricCategory.arn,
 		};
 	}

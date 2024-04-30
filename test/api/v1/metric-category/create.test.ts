@@ -54,6 +54,5 @@ describe("POST /api/v1/metric-category", () => {
 		assert.isString(body.validation.body.code[0]);
 		assert.isString(body.validation.body.status[0]);
 
-
 	});
 });

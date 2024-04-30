@@ -37,8 +37,8 @@ describe("DELETE /api/v1/metric-category/:metricCategoryId", () => {
 	});
 
 	it("Should return validation error if id is wrong", async () => {
-		const { statusCode, body } = await server.delete("/v1/metric-category/main");
-		assert.equal(statusCode, 422);
+		const { statusCode, body } = await server.delete("/v1/metric-category/9999");
+		assert.equal(statusCode, 404);
 		assert.isString(body.message);
 	});
 });

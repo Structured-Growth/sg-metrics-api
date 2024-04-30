@@ -12,6 +12,8 @@ import MetricType, {
 import { MetricTypeSearchParamsInterface } from "../../interfaces/metric-type-search-params.interface";
 import MetricTypeMetadata from "../../../database/models/metric-type-metadata.sequelize";
 
+
+
 @autoInjectable()
 export class MetricTypeRepository
     implements RepositoryInterface<MetricType, MetricTypeSearchParamsInterface , MetricTypeCreationAttributes>
@@ -72,6 +74,20 @@ export class MetricTypeRepository
             order,
         });
 
+        await Promise.all(rows.map(async (type) => {
+            const metadata = await MetricTypeMetadata.findAll({
+                where: {
+                    metricTypeId: type.id,
+                },
+                raw: true,
+            });
+
+            type.metadata = metadata.reduce((acc, item) => {
+                acc[item.name] = item.value;
+                return acc;
+            }, {});
+        }));
+
         return {
             data: rows,
             total: count,
@@ -111,26 +127,31 @@ export class MetricTypeRepository
             transaction?: Transaction;
             metadata?: Record<string, string>;
         }
-    ): Promise<MetricType | null> {
-        return MetricType.sequelize.transaction(async (transaction) => {
-            const metricType = await this.read(id, {
-                transaction,
-            });
-
-            if (!metricType) return null;
-
-            if (params?.metadata) {
-                const metadata = await MetricTypeMetadata.findAll({
-                    where: {
-                        metricTypeId: metricType.id,
-                    },
-                    transaction,
-                    raw: true,
-                });
-            }
-
-            return metricType;
+    ): Promise<(MetricType & { metadata?: Record<string, string> }) | null> {
+        const metricType = await MetricType.findByPk(id, {
+            transaction: params?.transaction,
         });
+
+        if (!metricType) {
+            throw new NotFoundError(`Metric Type ${id} not found`);
+        }
+
+
+        const metadata = await MetricTypeMetadata.findAll({
+            where: {
+                metricTypeId: metricType.id,
+            },
+            transaction: params?.transaction,
+            raw: true,
+        });
+
+            metricType.metadata = metadata.reduce((acc, item) => {
+                acc[item.name] = item.value;
+                return acc;
+            }, {});
+
+
+        return metricType;
     }
 
     public async update(
@@ -169,6 +190,18 @@ export class MetricTypeRepository
                         transaction,
                     }
                 );
+                const metadata = await MetricTypeMetadata.findAll({
+                    where: {
+                        metricTypeId: metricType.id,
+                    },
+                    transaction,
+                    raw: true,
+                });
+
+                metricType.metadata = metadata.reduce((acc, item) => {
+                    acc[item.name] = item.value;
+                    return acc;
+                }, {});
             }
 
             return metricType;

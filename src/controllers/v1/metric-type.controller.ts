@@ -30,6 +30,7 @@ const publicMetricTypeAttributes = [
 	"code",
 	"unit",
 	"factor",
+	"relatedTo",
 	"version",
 	"status",
 	"createdAt",
@@ -38,7 +39,7 @@ const publicMetricTypeAttributes = [
 ] as const;
 type MetricTypeKeys = (typeof publicMetricTypeAttributes)[number];
 type PublicMetricTypeAttributes = Pick<MetricTypeAttributes, MetricTypeKeys> & {
-	metadata: Record<any, any>;
+	metadata: Record<string, string>;
 };
 
 
@@ -73,6 +74,7 @@ export class MetricTypeController extends BaseController {
 		return {
 			data: data.map((metricType) => ({
 				...(pick(metricType.toJSON(), publicMetricTypeAttributes) as PublicMetricTypeAttributes),
+				metadata: metricType.metadata,
 				arn: metricType.arn,
 			})),
 			...result,
@@ -111,11 +113,12 @@ export class MetricTypeController extends BaseController {
 		const metricType = await this.metricTypeRepository.read(metricTypeId);
 		this.response.status(200);
 		if (!metricType) {
-			throw new NotFoundError(`Metric Category ${metricTypeId} not found`);
+			throw new NotFoundError(`Metric Type ${metricTypeId} not found`);
 		}
 
 		return {
 			...(pick(metricType.toJSON(), publicMetricTypeAttributes) as PublicMetricTypeAttributes),
+			metadata: metricType.metadata,
 			arn: metricType.arn,
 		};
 	}

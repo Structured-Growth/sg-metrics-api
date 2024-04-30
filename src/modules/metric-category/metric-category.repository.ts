@@ -71,6 +71,20 @@ export class MetricCategoryRepository
 			order,
 		});
 
+		await Promise.all(rows.map(async (category) => {
+			const metadata = await MetricCategoryMetadata.findAll({
+				where: {
+					metricCategoryId: category.id,
+				},
+				raw: true,
+			});
+
+			category.metadata = metadata.reduce((acc, item) => {
+				acc[item.name] = item.value;
+				return acc;
+			}, {});
+		}));
+
 		return {
 			data: rows,
 			total: count,
@@ -108,29 +122,30 @@ export class MetricCategoryRepository
 		params?: {
 			attributes?: string[];
 			transaction?: Transaction;
-			metadata?: Record<string, string>;
 		}
+
 	): Promise<(MetricCategory & { metadata?: Record<string, string> }) | null> {
 		const metricCategory = await MetricCategory.findByPk(id, {
 			transaction: params?.transaction,
 		});
 
-		if (!metricCategory) return null;
-
-		if (params?.metadata) {
-			const metadata = await MetricCategoryMetadata.findAll({
-				where: {
-					metricCategoryId: metricCategory.id,
-				},
-				transaction: params?.transaction,
-				raw: true,
-			});
-
-			metricCategory.metadata = metadata.reduce((acc, item) => {
-				acc[item.name] = item.value;
-				return acc;
-			}, {});
+		if (!metricCategory) {
+			throw new NotFoundError(`Metric Category ${id} not found`);
 		}
+
+
+		const metadata = await MetricCategoryMetadata.findAll({
+			where: {
+				metricCategoryId: metricCategory.id,
+			},
+			transaction: params?.transaction,
+			raw: true,
+		});
+
+		metricCategory.metadata = metadata.reduce((acc, item) => {
+			acc[item.name] = item.value;
+			return acc;
+		}, {});
 
 		return metricCategory;
 	}
@@ -171,6 +186,18 @@ export class MetricCategoryRepository
 						transaction,
 					}
 				);
+				const metadata = await MetricCategoryMetadata.findAll({
+					where: {
+						metricCategoryId: metricCategory.id,
+					},
+					transaction,
+					raw: true,
+				});
+
+				metricCategory.metadata = metadata.reduce((acc, item) => {
+					acc[item.name] = item.value;
+					return acc;
+				}, {});
 			}
 
 			return metricCategory;
