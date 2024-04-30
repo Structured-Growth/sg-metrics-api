@@ -25,9 +25,7 @@ describe("GET /api/v1/metric-category:metricCategoryId", () => {
 	});
 
 	it("Should return metric category", async () => {
-		const { statusCode, body } = await server.get(`/v1/metric-category/${context.createdMetricCategoryId}`).send({
-			MetricCategoryId: context["createdMetricCategoryId"],
-		});
+		const { statusCode, body } = await server.get(`/v1/metric-category/${context.createdMetricCategoryId}`);
 		assert.equal(statusCode, 200);
 		assert.equal(body.id, context["createdMetricCategoryId"]);
 		assert.isString(body.createdAt);
