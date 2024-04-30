@@ -100,22 +100,40 @@ export class MetricCategoryRepository
 	): Promise<MetricCategory> {
 		const { metadata, ...metricAttributes } = params;
 
-		return MetricCategory.create(
-			{
-				...metricAttributes,
-				metadata: Object.keys(metadata).map((name) => ({
-					orgId: metricAttributes.orgId,
-					accountId: metricAttributes.accountId,
-					region: metricAttributes.region,
+		// Create the metric category
+		const metricCategory = await MetricCategory.create(metricAttributes);
+
+		// If metadata is provided, create metadata entries for the category
+		if (metadata) {
+			await MetricCategoryMetadata.bulkCreate(
+				Object.keys(metadata).map((name) => ({
+					orgId: metricCategory.orgId,
+					accountId: metricCategory.accountId,
+					region: metricCategory.region,
+					metricCategoryId: metricCategory.id,
 					name,
 					value: metadata[name],
-				})),
-			} as any,
-			{
-				include: [MetricCategoryMetadata],
-			}
-		);
+				}))
+			);
+
+			// Fetch the created metadata entries for the category
+			const createdMetadata = await MetricCategoryMetadata.findAll({
+				where: {
+					metricCategoryId: metricCategory.id,
+				},
+				raw: true,
+			});
+
+			// Assign the metadata to the metricCategory object
+			metricCategory.metadata = createdMetadata.reduce((acc, item) => {
+				acc[item.name] = item.value;
+				return acc;
+			}, {});
+		}
+
+		return metricCategory;
 	}
+
 
 	public async read(
 		id: number,

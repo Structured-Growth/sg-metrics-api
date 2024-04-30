@@ -97,6 +97,7 @@ export class MetricTypeController extends BaseController {
 
 		return {
 			...(pick(metricType.toJSON(), publicMetricTypeAttributes) as PublicMetricTypeAttributes),
+			metadata: metricType.metadata,
 			arn: metricType.arn,
 		};
 	}
@@ -142,6 +143,7 @@ export class MetricTypeController extends BaseController {
 
 		return {
 			...(pick(metricType.toJSON(), publicMetricTypeAttributes) as PublicMetricTypeAttributes),
+			metadata: metricType.metadata,
 			arn: metricType.arn,
 		};
 	}

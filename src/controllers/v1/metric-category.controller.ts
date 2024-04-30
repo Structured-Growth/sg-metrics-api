@@ -93,6 +93,7 @@ export class MetricCategoryController extends BaseController {
 
 		return {
 			...(pick(metricCategory.toJSON(), publicMetricCategoryAttributes) as PublicMetricCategoryAttributes),
+			metadata: metricCategory.metadata,
 			arn: metricCategory.arn,
 		};
 	}
@@ -138,6 +139,7 @@ export class MetricCategoryController extends BaseController {
 
 		return {
 			...(pick(metricCategory.toJSON(), publicMetricCategoryAttributes) as PublicMetricCategoryAttributes),
+			metadata: metricCategory.metadata,
 			arn: metricCategory.arn,
 		};
 	}

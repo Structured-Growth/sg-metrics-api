@@ -15,5 +15,6 @@ export const MetricTypeUpdateParamsValidator = joi.object({
 		lonic_code: joi.number().positive().label("Lonic code"),
 		lonic_url: joi.string().max(50).label("Lonic URL"),
 		status: joi.string().valid("active", "inactive", "archived").label("Status"),
+		metadata: joi.object().label("Metric type metadata"),
 	}),
 });

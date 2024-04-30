@@ -12,8 +12,6 @@ import MetricType, {
 import { MetricTypeSearchParamsInterface } from "../../interfaces/metric-type-search-params.interface";
 import MetricTypeMetadata from "../../../database/models/metric-type-metadata.sequelize";
 
-
-
 @autoInjectable()
 export class MetricTypeRepository
     implements RepositoryInterface<MetricType, MetricTypeSearchParamsInterface , MetricTypeCreationAttributes>
@@ -96,28 +94,46 @@ export class MetricTypeRepository
         };
     }
 
-    public async create(params: MetricTypeCreationAttributes& {
-                            metadata?: Record<string, string>;
-                        }
+    public async create(
+        params: MetricTypeCreationAttributes & {
+            metadata?: Record<string, string>;
+        }
     ): Promise<MetricType> {
         const { metadata, ...metricAttributes } = params;
 
-        return MetricType.create(
-            {
-                ...metricAttributes,
-                metadata: Object.keys(metadata).map((name) => ({
-                    orgId: metricAttributes.orgId,
-                    accountId: metricAttributes.accountId,
-                    metricCategoryId: metricAttributes.metricCategoryId,
-                    region: metricAttributes.region,
+        // Create the metric category
+        const metricType = await MetricType.create(metricAttributes);
+
+        // If metadata is provided, create metadata entries for the category
+        if (metadata) {
+            await MetricTypeMetadata.bulkCreate(
+                Object.keys(metadata).map((name) => ({
+                    orgId: metricType.orgId,
+                    accountId: metricType.accountId,
+                    region: metricType.region,
+                    metricCategoryId: metricType.metricCategoryId,
+                    metricTypeId: metricType.id,
                     name,
                     value: metadata[name],
-                })),
-            } as any,
-            {
-                include: [MetricTypeMetadata],
-            }
-        );
+                }))
+            );
+
+            // Fetch the created metadata entries for the category
+            const createdMetadata = await MetricTypeMetadata.findAll({
+                where: {
+                    metricTypeId: metricType.id,
+                },
+                raw: true,
+            });
+
+            // Assign the metadata to the metricCategory object
+            metricType.metadata = createdMetadata.reduce((acc, item) => {
+                acc[item.name] = item.value;
+                return acc;
+            }, {});
+        }
+
+        return metricType;
     }
 
     public async read(
