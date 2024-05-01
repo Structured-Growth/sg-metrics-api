@@ -2,7 +2,8 @@ import { Metric, MetricAttributes, MetricCreationAttributes } from "../../../dat
 import { MetricSearchParamsInterface } from "../../interfaces/metric-search-params.interface";
 // import { TimestreamWrite, WriteRecordsCommand, WriteRecordsInput, WriteRecordsOutput } from "aws-sdk/clients/timestreamwrite";
 // import { QueryExecutionContext, TimestreamQuery, TimestreamQueryClient, QueryCommand } from "aws-sdk/clients/timestreamquery";
-import { autoInjectable, NotFoundError } from "@structured-growth/microservice-sdk";
+import { autoInjectable, inject, NotFoundError, RegionEnum } from "@structured-growth/microservice-sdk";
+import { TimestreamWrite } from "aws-sdk";
 
 @autoInjectable()
 export class MetricRepository {
@@ -17,6 +18,16 @@ export class MetricRepository {
     //     this.databaseName = databaseName;
     //     this.tableName = tableName;
     // }
+
+    private writeClient: TimestreamWrite;
+
+    constructor(
+      @inject("region") private region: string
+    ) {
+        this.writeClient = new TimestreamWrite({
+            region: this.region
+        })
+    }
 
     public async create(params: MetricCreationAttributes): Promise<void> {
         const metric: Metric = new Metric(params);
@@ -94,34 +105,34 @@ export class MetricRepository {
     }
 
     private async writeRecord(metric: Metric): Promise<void> {
-        // const command = new WriteRecordsCommand({
-        //     DatabaseName: this.databaseName,
-        //     TableName: this.tableName,
-        //     Records: [
-        //         {
-        //             Dimensions: [
-        //                 { Name: 'orgId', Value: metric.orgId.toString() },
-        //                 { Name: 'region', Value: metric.region.toString() },
-        //                 { Name: 'accountId', Value: metric.accountId.toString() },
-        //                 { Name: 'userId', Value: metric.userId.toString() },
-        //                 { Name: 'metricCategoryId', Value: metric.metricCategoryId.toString() },
-        //                 { Name: 'metricTypeId', Value: metric.metricTypeId.toString() },
-        //                 { Name: 'metricTypeVersion', Value: metric.metricTypeVersion.toString() },
-        //                 { Name: 'deviceId', Value: metric.deviceId.toString() },
-        //                 { Name: 'batchId', Value: metric.batchId.toString() },
-        //                 { Name: 'takenAt', Value: metric.takenAt.toString() },
-        //                 { Name: 'takenAtOffset', Value: metric.takenAtOffset.toString() },
-        //                 { Name: 'isActive', Value: metric.isActive.toString() },
-        //             ],
-        //             MeasureName: 'value',
-        //             MeasureValue: metric.value.toString(),
-        //             MeasureValueType: 'BIGINT',
-        //             Time: metric.recordedAt.getTime().toString(),
-        //             TimeUnit: 'MILLISECONDS',
-        //         }
-        //     ],
-        // });
-        // await this.timestreamWrite.send(command).promise();
+        const command = {
+            DatabaseName: "starTimeDB_dev",
+            TableName: "metrics_dev",
+            Records: [
+                {
+                    Dimensions: [
+                        { Name: 'orgId', Value: metric.orgId.toString() },
+                        { Name: 'region', Value: metric.region?.toString() || RegionEnum.US },
+                        { Name: 'accountId', Value: metric.accountId.toString() },
+                        { Name: 'userId', Value: metric.userId.toString() },
+                        { Name: 'metricCategoryId', Value: metric.metricCategoryId.toString() },
+                        { Name: 'metricTypeId', Value: metric.metricTypeId.toString() },
+                        { Name: 'metricTypeVersion', Value: metric.metricTypeVersion.toString() },
+                        { Name: 'deviceId', Value: metric.deviceId.toString() },
+                        { Name: 'batchId', Value: metric.batchId.toString() },
+                        { Name: 'takenAt', Value: metric.takenAt.toString() },
+                        { Name: 'takenAtOffset', Value: metric.takenAtOffset.toString() },
+                        //{ Name: 'recordedAt', Value: new Date().toISOString() },
+                    ],
+                    MeasureName: 'value',
+                    MeasureValue: metric.value.toString(),
+                    MeasureValueType: 'BIGINT',
+                    Time: new Date().getTime().toString(),
+                    TimeUnit: 'MILLISECONDS',
+                }
+            ],
+        };
+        await this.writeClient.writeRecords(command).promise();
     }
 
     private async executeQuery(query: string): Promise<any> {
