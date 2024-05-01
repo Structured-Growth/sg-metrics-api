@@ -18,6 +18,7 @@ import { MetricUpdateBodyInterface } from "../../interfaces/metric-update-body.i
 import { MetricSearchParamsValidator } from "../../validators/metric-search-params.validator";
 import { MetricCreateParamsValidator } from "../../validators/metric-create-params.validator";
 import { MetricUpdateParamsValidator } from "../../validators/metric-update-params.validator";
+import {pick} from "lodash";
 
 
 const publicMetricAttributes = [
@@ -79,7 +80,13 @@ export class MetricController extends BaseController {
 	@DescribeResource("Device", ({ body }) => Number(body.deviceId))
 	@ValidateFuncArgs(MetricCreateParamsValidator)
 	public async create(@Body() body: MetricCreateBodyInterface): Promise<PublicMetricAttributes> {
-		return undefined;
+		const metric = await this.metricRepository.create(body);
+		this.response.status(201);
+
+		return {
+			...(pick(metric.toJSON(), publicMetricAttributes) as PublicMetricAttributes),
+			arn: metric.arn,
+		};
 	}
 	/**
 	 * Get Metric Types records

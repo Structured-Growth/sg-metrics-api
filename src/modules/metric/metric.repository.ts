@@ -2,10 +2,17 @@ import { Metric, MetricAttributes, MetricCreationAttributes } from "../../../dat
 import { MetricSearchParamsInterface } from "../../interfaces/metric-search-params.interface";
 // import { TimestreamWrite, WriteRecordsCommand, WriteRecordsInput, WriteRecordsOutput } from "aws-sdk/clients/timestreamwrite";
 // import { QueryExecutionContext, TimestreamQuery, TimestreamQueryClient, QueryCommand } from "aws-sdk/clients/timestreamquery";
-import { autoInjectable, NotFoundError } from "@structured-growth/microservice-sdk";
+import { autoInjectable, inject, NotFoundError, RegionEnum } from "@structured-growth/microservice-sdk";
+import { TimestreamWrite } from "aws-sdk";
+import {MetricCreateBodyInterface} from "../../interfaces/metric-create-body.interface";
 
 @autoInjectable()
 export class MetricRepository {
+
+     configuration = {
+        DatabaseName: "starTimeDB_dev",
+        TableName: "metrics_dev",
+    }
     // private timestreamWrite: TimestreamWrite;
     // private timestreamQuery: TimestreamQuery;
     // private databaseName: string;
@@ -18,20 +25,38 @@ export class MetricRepository {
     //     this.tableName = tableName;
     // }
 
-    public async create(params: MetricCreationAttributes): Promise<void> {
+    private writeClient: TimestreamWrite;
+
+    constructor(
+        @inject("region") private region: string
+    ) {
+        this.writeClient = new TimestreamWrite({
+            region: this.region
+        })
+    }
+
+    public async create(params: MetricCreateBodyInterface): Promise<Metric> {
         const metric: Metric = new Metric(params);
         await this.writeRecord(metric);
+
+        return metric;
     }
 
     public async read(id: number): Promise<Metric | null> {
-        // const query = `SELECT * FROM "${this.databaseName}"."${this.tableName}" WHERE id = ${id} LIMIT 1`;
-        // const result = await this.executeQuery(query);
-        // if (result.Rows && result.Rows.length > 0) {
-        //     return this.parseMetric(result.Rows[0]);
-        // } else {
-        //     throw new NotFoundError(`Metric ${id} not found`);
-        // }
-        return  undefined;
+        try {
+            const query = `SELECT * FROM ${this.configuration.DatabaseName}.${this.configuration.TableName} WHERE id = ${id} LIMIT 1`;
+            const result = await this.executeQuery(query);
+
+            if (result.Rows && result.Rows.length > 0) {
+                const metric = this.parseMetric(result.Rows[0]);
+                return metric;
+            } else {
+                throw new NotFoundError(`Metric ${id} not found`);
+            }
+        } catch (error) {
+            console.error("Error occurred while reading metric:", error);
+            throw error;
+        }
     }
 
     public async update(id: number, params: Partial<MetricAttributes>): Promise<void> {
@@ -94,34 +119,35 @@ export class MetricRepository {
     }
 
     private async writeRecord(metric: Metric): Promise<void> {
-        // const command = new WriteRecordsCommand({
-        //     DatabaseName: this.databaseName,
-        //     TableName: this.tableName,
-        //     Records: [
-        //         {
-        //             Dimensions: [
-        //                 { Name: 'orgId', Value: metric.orgId.toString() },
-        //                 { Name: 'region', Value: metric.region.toString() },
-        //                 { Name: 'accountId', Value: metric.accountId.toString() },
-        //                 { Name: 'userId', Value: metric.userId.toString() },
-        //                 { Name: 'metricCategoryId', Value: metric.metricCategoryId.toString() },
-        //                 { Name: 'metricTypeId', Value: metric.metricTypeId.toString() },
-        //                 { Name: 'metricTypeVersion', Value: metric.metricTypeVersion.toString() },
-        //                 { Name: 'deviceId', Value: metric.deviceId.toString() },
-        //                 { Name: 'batchId', Value: metric.batchId.toString() },
-        //                 { Name: 'takenAt', Value: metric.takenAt.toString() },
-        //                 { Name: 'takenAtOffset', Value: metric.takenAtOffset.toString() },
-        //                 { Name: 'isActive', Value: metric.isActive.toString() },
-        //             ],
-        //             MeasureName: 'value',
-        //             MeasureValue: metric.value.toString(),
-        //             MeasureValueType: 'BIGINT',
-        //             Time: metric.recordedAt.getTime().toString(),
-        //             TimeUnit: 'MILLISECONDS',
-        //         }
-        //     ],
-        // });
-        // await this.timestreamWrite.send(command).promise();
+        const command = {
+            DatabaseName: this.configuration.DatabaseName,
+            TableName: this.configuration.TableName,
+            Records: [
+                {
+                    Dimensions: [
+                        { Name: 'orgId', Value: metric.orgId.toString() },
+                        { Name: 'region', Value: metric.region?.toString() || RegionEnum.US },
+                        { Name: 'accountId', Value: metric.accountId.toString() },
+                        { Name: 'userId', Value: metric.userId.toString() },
+                        { Name: 'metricCategoryId', Value: metric.metricCategoryId.toString() },
+                        { Name: 'metricTypeId', Value: metric.metricTypeId.toString() },
+                        { Name: 'metricTypeVersion', Value: metric.metricTypeVersion.toString() },
+                        { Name: 'deviceId', Value: metric.deviceId.toString() },
+                        { Name: 'batchId', Value: metric.batchId.toString() },
+                        { Name: 'takenAt', Value: metric.takenAt.toString() },
+                        { Name: 'takenAtOffset', Value: metric.takenAtOffset.toString() },
+                        { Name: 'isActive', Value: "true".toString() },
+                        //{ Name: 'recordedAt', Value: new Date().toISOString() },
+                    ],
+                    MeasureName: 'value',
+                    MeasureValue: metric.value.toString(),
+                    MeasureValueType: 'BIGINT',
+                    Time: new Date().getTime().toString(),
+                    TimeUnit: 'MILLISECONDS',
+                }
+            ],
+        };
+        await this.writeClient.writeRecords(command).promise();
     }
 
     private async executeQuery(query: string): Promise<any> {
@@ -132,24 +158,24 @@ export class MetricRepository {
     }
 
     private parseMetric(row: any): Metric {
-        // const metric: Metric = {
-        //     id: parseInt(row.data[0].scalarValue),
-        //     orgId: parseInt(row.data[1].scalarValue),
-        //     region: row.data[2].scalarValue,
-        //     accountId: parseInt(row.data[3].scalarValue),
-        //     userId: parseInt(row.data[4].scalarValue),
-        //     metricCategoryId: parseInt(row.data[5].scalarValue),
-        //     metricTypeId: parseInt(row.data[6].scalarValue),
-        //     metricTypeVersion: parseInt(row.data[7].scalarValue),
-        //     deviceId: parseInt(row.data[8].scalarValue),
-        //     batchId: row.data[9].scalarValue,
-        //     value: parseFloat(row.data[10].scalarValue),
-        //     takenAt: new Date(parseInt(row.data[11].scalarValue)),
-        //     takenAtOffset: parseInt(row.data[12].scalarValue),
-        //     recordedAt: new Date(parseInt(row.data[13].scalarValue)),
-        // };
-        // return metric;
-        return undefined;
+        const metric: Metric = {
+             id: parseInt(row.data[0].scalarValue),
+             orgId: parseInt(row.data[1].scalarValue),
+             region: row.data[2].scalarValue,
+             accountId: parseInt(row.data[3].scalarValue),
+             userId: parseInt(row.data[4].scalarValue),
+             metricCategoryId: parseInt(row.data[5].scalarValue),
+             metricTypeId: parseInt(row.data[6].scalarValue),
+             metricTypeVersion: parseInt(row.data[7].scalarValue),
+             deviceId: parseInt(row.data[8].scalarValue),
+             batchId: row.data[9].scalarValue,
+             value: parseFloat(row.data[10].scalarValue),
+             takenAt: new Date(parseInt(row.data[11].scalarValue)),
+             takenAtOffset: parseInt(row.data[12].scalarValue),
+             isActive: row.data[13].scalarValue,
+             recordedAt: new Date(parseInt(row.data[14].scalarValue)),
+        };
+        return metric;
     }
 
     private buildQuery(params: MetricSearchParamsInterface): string {
