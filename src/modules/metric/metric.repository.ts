@@ -10,8 +10,8 @@ import {MetricCreateBodyInterface} from "../../interfaces/metric-create-body.int
 export class MetricRepository {
 
      configuration = {
-        DatabaseName: "starTimeDB_dev",
-        TableName: "metrics_dev",
+        DatabaseName: process.env.TM_NAME,
+        TableName: process.env.TM_TABLE_NAME,
     }
     // private timestreamWrite: TimestreamWrite;
     // private timestreamQuery: TimestreamQuery;
