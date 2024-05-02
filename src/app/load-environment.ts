@@ -42,7 +42,7 @@ export function loadEnvironment() {
 		DB_SCHEMA: joi.string().required(),
 		DB_MIGRATION_TABLE_SCHEMA: joi.string().required(),
 		DB_MIGRATION_TABLE_NAME: joi.string().required(),
-		TM_NAME: joi.string().required(),
-		TM_TABLE_NAME: joi.string().required(),
+		TIMESTREAM_DB_NAME: joi.string().required(),
+		TIMESTREAM_TABLE_NAME: joi.string().required(),
 	});
 }
