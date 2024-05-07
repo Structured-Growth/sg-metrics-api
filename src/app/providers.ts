@@ -5,10 +5,8 @@ import { container, Lifecycle, logWriters, Logger } from "@structured-growth/mic
 import { loadEnvironment } from "./load-environment";
 import { MetricTypeService } from "../modules/metric-type/metric-type.service";
 import { MetricTypeRepository } from "../modules/metric-type/metric-type.repository";
-import { MetricTypeMetadataRepository } from "../modules/metric-type-metada/metric-type-metadata.repository";
 import { MetricCategoryService } from "../modules/metric-category/metric-category.service";
 import { MetricCategoryRepository } from "../modules/metric-category/metric-category.repository";
-import { MetricCategoryMetadataRepository } from "../modules/metric-category-metadata/metric-category-metadata.repository";
 import { MetricRepository } from "../modules/metric/metric.repository";
 
 // load and validate env variables
@@ -36,6 +34,4 @@ container.register("MetricTypeService", MetricTypeService);
 // repositories
 container.register("MetricCategoryRepository", MetricCategoryRepository);
 container.register("MetricTypeRepository", MetricTypeRepository);
-container.register("MetricCategoryMetadataRepository", MetricCategoryMetadataRepository);
-container.register("MetricTypeMetadataRepository", MetricTypeMetadataRepository);
 container.register("MetricRepository", MetricRepository);

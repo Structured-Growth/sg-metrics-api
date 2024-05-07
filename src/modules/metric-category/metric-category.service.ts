@@ -9,7 +9,6 @@ import { isUndefined, omitBy } from "lodash";
 export class MetricCategoryService {
     constructor(
         @inject("MetricCategoryRepository") private metricCategoryRepository: MetricCategoryRepository,
-        @inject("MetricCategoryMetadataRepository") private metricCategoryMetadataRepository: MetricCategoryRepository
     ) {}
 
     public async create(params: MetricCategoryCreateBodyInterface): Promise<MetricCategory> {

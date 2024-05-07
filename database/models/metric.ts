@@ -19,9 +19,9 @@ export interface MetricAttributes {
 	arn: string;
 }
 
-export interface MetricCreationAttributes extends Omit<MetricAttributes, "id" | "arn" | "recordedAt"> {}
+export interface MetricCreationAttributes extends Omit<MetricAttributes, "arn" | "recordedAt"> {}
 
-export interface MetricUpdateAttributes extends Pick<MetricAttributes, "isActive"> {}
+//export interface MetricUpdateAttributes extends Pick<MetricAttributes, "isActive"> {}
 
 export class Metric implements MetricAttributes {
 	id: number;

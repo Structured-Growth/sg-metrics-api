@@ -36,7 +36,7 @@ const publicMetricAttributes = [
 	"takenAt",
 	"takenAtOffset",
 	"recordedAt",
-	"isActive",
+	//"isActive",
 	"arn"
 ] as const;
 type MetricKeys = (typeof publicMetricAttributes)[number];
@@ -62,7 +62,15 @@ export class MetricController extends BaseController {
 	public async search(
 		@Queries() query: MetricSearchParamsInterface
 	): Promise<SearchResultInterface<PublicMetricAttributes>> {
-		return undefined;
+		const { data, ...result } = await this.metricRepository.search(query);
+		this.response.status(200);
+		return {
+			data: data.map((metric) => ({
+				...(pick(metric.toJSON(), publicMetricAttributes) as PublicMetricAttributes),
+				arn: metric.arn,
+			})),
+			...result,
+		};
 	}
 
 	/**
@@ -79,7 +87,10 @@ export class MetricController extends BaseController {
 	@DescribeResource("MetricType", ({ body }) => Number(body.metricTypeId))
 	@DescribeResource("Device", ({ body }) => Number(body.deviceId))
 	@ValidateFuncArgs(MetricCreateParamsValidator)
-	public async create(@Body() body: MetricCreateBodyInterface): Promise<PublicMetricAttributes> {
+	async create(
+		@Queries() query: {},
+		@Body() body: MetricCreateBodyInterface
+	): Promise<PublicMetricAttributes> {
 		const metric = await this.metricRepository.create(body);
 		this.response.status(201);
 
@@ -96,8 +107,17 @@ export class MetricController extends BaseController {
 	@SuccessResponse(200, "Returns metric")
 	@DescribeAction("metrics/read")
 	@DescribeResource("Metric", ({ params }) => Number(params.metricId))
-	public async get(@Path() metricId: string): Promise<PublicMetricAttributes> {
-		return undefined;
+	public async get(@Path() metricId: number): Promise<PublicMetricAttributes> {
+		const metric = await this.metricRepository.read(metricId);
+		this.response.status(200);
+		if (!metric) {
+			throw new NotFoundError(`Metric ${metricId} not found`);
+		}
+
+		return {
+			...(pick(metric.toJSON(), publicMetricAttributes) as PublicMetricAttributes),
+			arn: metric.arn,
+		};
 	}
 	/**
 	 * Update Metric  with one or few attributes

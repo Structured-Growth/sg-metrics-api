@@ -1,10 +1,10 @@
 import { Metric, MetricAttributes, MetricCreationAttributes } from "../../../database/models/metric";
-import { MetricSearchParamsInterface } from "../../interfaces/metric-search-params.interface";
-// import { TimestreamWrite, WriteRecordsCommand, WriteRecordsInput, WriteRecordsOutput } from "aws-sdk/clients/timestreamwrite";
-// import { QueryExecutionContext, TimestreamQuery, TimestreamQueryClient, QueryCommand } from "aws-sdk/clients/timestreamquery";
 import { autoInjectable, inject, NotFoundError, RegionEnum } from "@structured-growth/microservice-sdk";
-import { TimestreamWrite } from "aws-sdk";
+import { TimestreamWrite, TimestreamQuery } from "aws-sdk";
 import { MetricCreateBodyInterface } from "../../interfaces/metric-create-body.interface";
+import { MetricSearchParamsInterface } from "../../interfaces/metric-search-params.interface";
+import { v4 as uuidv4 } from 'uuid';
+import {SearchResultInterface} from "@structured-growth/microservice-sdk/";
 
 @autoInjectable()
 export class MetricRepository {
@@ -12,30 +12,48 @@ export class MetricRepository {
 		DatabaseName: process.env.TIMESTREAM_DB_NAME,
 		TableName: process.env.TIMESTREAM_TABLE_NAME,
 	};
-	// private timestreamWrite: TimestreamWrite;
-	// private timestreamQuery: TimestreamQuery;
-	// private databaseName: string;
-	// private tableName: string;
-	//
-	// constructor(timestreamWrite: TimestreamWrite, timestreamQuery: TimestreamQuery, databaseName: string, tableName: string) {
-	//     this.timestreamWrite = timestreamWrite;
-	//     this.timestreamQuery = timestreamQuery;
-	//     this.databaseName = databaseName;
-	//     this.tableName = tableName;
-	// }
 
 	private writeClient: TimestreamWrite;
+	private timestreamQuery: TimestreamQuery;
+
+	private generateQueryId(): string {
+		return uuidv4();
+	}
+
+	private generateClientRequestToken(): string {
+		const uniqueId = uuidv4();
+		const timestamp = Date.now();
+		return `${uniqueId}-${timestamp}`;
+	}
 
 	constructor(@inject("region") private region: string) {
 		this.writeClient = new TimestreamWrite({
-			region: this.region,
+			region: process.env.REGION,
+			credentials: {
+				accessKeyId: process.env.AWS_ACCESS_KEY_ID,
+				secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY,
+			}
+		});
+		this.timestreamQuery = new TimestreamQuery({
+			region: process.env.REGION,
+			credentials: {
+				accessKeyId: process.env.AWS_ACCESS_KEY_ID,
+				secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY,
+			}
 		});
 	}
 
 	public async create(params: MetricCreateBodyInterface): Promise<Metric> {
+		const id = this.generateNumericId();
 		const metric: Metric = new Metric(params);
 
-		return this.writeRecord(metric);
+		return this.writeRecord(metric, id);
+	}
+
+	private generateNumericId(): number {
+		const uuid = uuidv4();
+		const numericId = parseInt(uuid.replace(/-/g, ''), 16);
+		return Math.floor(Math.abs(numericId));
 	}
 
 	public async read(id: number): Promise<Metric | null> {
@@ -44,7 +62,9 @@ export class MetricRepository {
                      FROM ${this.configuration.DatabaseName}.${this.configuration.TableName}
                      WHERE id = ${id}
                      LIMIT 1`;
-			const result = await this.executeQuery(query);
+			const queryId = this.generateQueryId();
+			const clientRequestToken = this.generateClientRequestToken();
+			const result = await this.executeQuery(query, queryId, clientRequestToken);
 
 			if (result.Rows && result.Rows.length > 0) {
 				const metric = this.parseMetric(result.Rows[0]);
@@ -85,8 +105,6 @@ export class MetricRepository {
 		//     throw new NotFoundError(`Metric ${id} not found`);
 		// }
 		//
-		// // 2. Mark the metric as inactive
-		// await this.markMetricAsInactive(id);
 	}
 
 	private async markMetricAsInactive(id: number): Promise<void> {
@@ -110,14 +128,30 @@ export class MetricRepository {
 		// await this.timestreamWrite.send(command).promise();
 	}
 
-	public async search(params: MetricSearchParamsInterface): Promise<Metric[]> {
-		// const query = this.buildQuery(params);
-		// const result = await this.executeQuery(query);
-		// return this.parseResult(result);
-		return undefined;
+	public async search(
+		params: MetricSearchParamsInterface & {
+		}
+	): Promise<SearchResultInterface<Metric>> {
+		const page = params.page || 1;
+		const limit = params.limit || 20;
+		const offset = (page - 1) * limit;
+		const where = {};
+		const order = params.sort ? (params.sort.map((item) => item.split(":")) as any) : [["createdAt", "desc"]];
+
+		const queryId = this.generateQueryId();
+		const clientRequestToken = this.generateClientRequestToken();
+
+		const query = this.buildQuery(params, offset, limit, order);
+		const result = await this.executeQuery(query, queryId, clientRequestToken);
+		return {
+			data: this.parseResult(result),
+			page: page,
+			limit: limit,
+		};
 	}
 
-	private async writeRecord(metric: Metric): Promise<Metric> {
+
+	private async writeRecord(metric: Metric, id): Promise<Metric> {
 		const recordedAt = new Date();
 
 		const command = {
@@ -126,6 +160,7 @@ export class MetricRepository {
 			Records: [
 				{
 					Dimensions: [
+						{ Name: "id", Value: id.toString() },
 						{ Name: "orgId", Value: metric.orgId.toString() },
 						{ Name: "region", Value: metric.region?.toString() || RegionEnum.US },
 						{ Name: "accountId", Value: metric.accountId.toString() },
@@ -155,16 +190,8 @@ export class MetricRepository {
 		return metric;
 	}
 
-	private async executeQuery(query: string): Promise<any> {
-		//     const command = new QueryCommand({
-		//         QueryString: query,
-		//     });
-		//     return this.timestreamQuery.send(command).promise();
-	}
-
 	private parseMetric(row: any): Metric {
 		// ?? arn
-
 		const metric: Metric = new Metric({
 			id: parseInt(row.data[0].scalarValue),
 			orgId: parseInt(row.data[1].scalarValue),
@@ -185,30 +212,47 @@ export class MetricRepository {
 		return metric;
 	}
 
-	private buildQuery(params: MetricSearchParamsInterface): string {
-		// let query = `SELECT * FROM "${this.databaseName}"."${this.tableName}"`;
-		//
-		// const filters: string[] = [];
-		// if (params.orgId) filters.push(`orgId = ${params.orgId}`);
-		// if (params.accountId) filters.push(`accountId = ${params.accountId}`);
-		// if (params.userId) filters.push(`userId = ${params.userId}`);
-		// if (params.metricCategoryId) filters.push(`metricCategoryId = ${params.metricCategoryId}`);
-		// if (params.metricTypeId) filters.push(`metricTypeId = ${params.metricTypeId}`);
-		// if (params.metricTypeVersion) filters.push(`metricTypeVersion = ${params.metricTypeVersion}`);
-		// if (params.deviceId) filters.push(`deviceId = ${params.deviceId}`);
-		// if (params.batchId) filters.push(`batchId = '${params.batchId}'`);
-		// if (params.value) filters.push(`value = ${params.value}`);
-		// if (params.takenAt) filters.push(`takenAt = '${params.takenAt.toISOString()}'`);
-		// if (params.takenAtOffset) filters.push(`takenAtOffset = ${params.takenAtOffset}`);
-		// if (params.recordedAt) filters.push(`recordedAt = '${params.recordedAt.toISOString()}'`);
-		//
-		// if (filters.length > 0) {
-		//     query += ` WHERE ${filters.join(" AND ")}`;
-		// }
-		//
-		// query += " LIMIT 100";
-		// return query;
-		return undefined;
+	private buildQuery(params: MetricSearchParamsInterface, offset: number, limit: number, order: any): string {
+		let query = `SELECT * FROM "${this.configuration.DatabaseName}"."${this.configuration.TableName}"`;
+
+		const filters: string[] = [];
+		if (params.orgId) filters.push(`orgId = ${params.orgId}`);
+		if (params.accountId) filters.push(`accountId = ${params.accountId}`);
+		if (params.userId) filters.push(`userId = ${params.userId}`);
+		if (params.metricCategoryId) filters.push(`metricCategoryId = ${params.metricCategoryId}`);
+		if (params.metricTypeId) filters.push(`metricTypeId = ${params.metricTypeId}`);
+		if (params.metricTypeVersion) filters.push(`metricTypeVersion = ${params.metricTypeVersion}`);
+		if (params.deviceId) filters.push(`deviceId = ${params.deviceId}`);
+		if (params.batchId) filters.push(`batchId = '${params.batchId}'`);
+		if (params.value) filters.push(`value = ${params.value}`);
+		if (params.takenAt) filters.push(`takenAt = '${params.takenAt.toISOString()}'`);
+		if (params.takenAtOffset) filters.push(`takenAtOffset = ${params.takenAtOffset}`);
+		if (params.recordedAt) filters.push(`recordedAt = '${params.recordedAt.toISOString()}'`);
+
+		if (filters.length > 0) {
+			query += ` WHERE ${filters.join(" AND ")}`;
+		}
+
+		query += ` ORDER BY ${order.map((item: any) => `${item[0]} ${item[1]}`).join(", ")}`;
+		query += ` LIMIT ${limit} OFFSET ${offset}`;
+		return query;
+	}
+
+
+	private async executeQuery(query: string, queryId: string, clientRequestToken: string): Promise<any> {
+		try {
+			const params = {
+				QueryString: query,
+				QueryId: queryId,
+				ClientRequestToken: clientRequestToken,
+			};
+
+			const result = await this.timestreamQuery.query(params).promise();
+			return result;
+		} catch (error) {
+			console.error("Error occurred while executing Timestream query:", error, "QueryString:", query, "QueryId:", queryId);
+			throw error;
+		}
 	}
 
 	private parseResult(result: any): Metric[] {
