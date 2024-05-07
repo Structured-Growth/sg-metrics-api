@@ -10,6 +10,7 @@ import {initTest} from "../../../common/init-test";
 describe("GET /api/v1/metrics:metricId", () => {
 	const { server, context } = initTest();
 	const code = `code-${Date.now()}`;
+	context["createdMetricId"] = 1;
 
 	before(async () => container.resolve<App>("App").ready);
 
