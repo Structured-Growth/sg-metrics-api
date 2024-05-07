@@ -49,8 +49,8 @@ describe("POST /api/v1/metrics", () => {
 		});
 		assert.equal(statusCode, 201);
 		assert.isNumber(body.id);
-
 	});
+
 	it("Should create metric", async () => {
 		const { statusCode, body } = await server.post("/v1/metrics").send({
 			orgId: 1,

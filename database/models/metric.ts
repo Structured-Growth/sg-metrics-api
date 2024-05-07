@@ -1,7 +1,7 @@
 import { container, RegionEnum } from "@structured-growth/microservice-sdk";
 
 export interface MetricAttributes {
-	id: number;
+	id: string;
 	orgId: number;
 	region: RegionEnum;
 	accountId?: number;
@@ -11,6 +11,7 @@ export interface MetricAttributes {
 	metricTypeVersion: number;
 	deviceId: number;
 	batchId: string;
+	relatedToRn?: string;
 	value: number;
 	takenAt: Date;
 	takenAtOffset: number;
@@ -24,25 +25,25 @@ export interface MetricCreationAttributes extends Omit<MetricAttributes, "arn" |
 //export interface MetricUpdateAttributes extends Pick<MetricAttributes, "isActive"> {}
 
 export class Metric implements MetricAttributes {
-	id: number;
+	id: string;
 	orgId: number;
 	region: RegionEnum;
-	accountId: number;
-	userId: number;
+	accountId?: number;
+	userId?: number;
 	metricCategoryId: number;
 	metricTypeId: number;
 	metricTypeVersion: number;
 	deviceId: number;
 	batchId: string;
+	relatedToRn?: string;
 	value: number;
 	takenAt: Date;
 	takenAtOffset: number;
 	recordedAt: Date;
-	isActive: boolean;
+	// isActive: boolean;
 
 	constructor(
-		data: Omit<MetricAttributes, "id" | "recordedAt" | "arn"> & {
-			id?: number;
+		data: Omit<MetricAttributes, "recordedAt" | "arn"> & {
 			recordedAt?: Date;
 		}
 	) {
@@ -56,6 +57,7 @@ export class Metric implements MetricAttributes {
 		this.metricTypeVersion = data.metricTypeVersion;
 		this.deviceId = data.deviceId;
 		this.batchId = data.batchId;
+		this.relatedToRn = data.relatedToRn;
 		this.value = data.value;
 		this.takenAt = data.takenAt;
 		this.takenAtOffset = data.takenAtOffset;

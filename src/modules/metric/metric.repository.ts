@@ -28,55 +28,46 @@ export class MetricRepository {
 
 	constructor(@inject("region") private region: string) {
 		this.writeClient = new TimestreamWrite({
-			region: process.env.REGION,
-			credentials: {
-				accessKeyId: process.env.AWS_ACCESS_KEY_ID,
-				secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY,
-			}
+			region: this.region,
+			// credentials: {
+			// 	accessKeyId: process.env.AWS_ACCESS_KEY_ID,
+			// 	secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY,
+			// 	sessionToken: process.env.AWS_SESSION_TOKEN
+			// }
 		});
 		this.timestreamQuery = new TimestreamQuery({
-			region: process.env.REGION,
-			credentials: {
-				accessKeyId: process.env.AWS_ACCESS_KEY_ID,
-				secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY,
-			}
+			region: this.region,
+			// credentials: {
+			// 	accessKeyId: process.env.AWS_ACCESS_KEY_ID,
+			// 	secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY,
+			// }
 		});
 	}
 
 	public async create(params: MetricCreateBodyInterface): Promise<Metric> {
-		const id = this.generateNumericId();
-		const metric: Metric = new Metric(params);
+		const metric = new Metric({
+			id: uuidv4(),
+			...params
+		});
 
-		return this.writeRecord(metric, id);
-	}
-
-	private generateNumericId(): number {
-		const uuid = uuidv4();
-		const numericId = parseInt(uuid.replace(/-/g, ''), 16);
-		return Math.floor(Math.abs(numericId));
+		return this.writeRecord(metric);
 	}
 
 	public async read(id: number): Promise<Metric | null> {
-		try {
 			const query = `SELECT *
-                     FROM ${this.configuration.DatabaseName}.${this.configuration.TableName}
-                     WHERE id = ${id}
-                     LIMIT 1`;
+										 FROM ${this.configuration.DatabaseName}.${this.configuration.TableName}
+										 WHERE id = ${id}
+										 LIMIT 1`;
 			const queryId = this.generateQueryId();
 			const clientRequestToken = this.generateClientRequestToken();
 			const result = await this.executeQuery(query, queryId, clientRequestToken);
 
 			if (result.Rows && result.Rows.length > 0) {
-				const metric = this.parseMetric(result.Rows[0]);
-				return metric;
+				return this.parseMetric(result.Rows[0]);
 			} else {
 				throw new NotFoundError(`Metric ${id} not found`);
 			}
-		} catch (error) {
-			console.error("Error occurred while reading metric:", error);
-			throw error;
 		}
-	}
 
 	public async update(id: number, params: Partial<MetricAttributes>): Promise<void> {
 		// // 1. Get the original metric
@@ -150,8 +141,14 @@ export class MetricRepository {
 		};
 	}
 
+	/**
+	 *
+	 * 1. send create metric request and receive ID in response
+	 * 2. Read metric by received ID.
+	 */
 
-	private async writeRecord(metric: Metric, id): Promise<Metric> {
+
+	private async writeRecord(metric: Metric): Promise<Metric> {
 		const recordedAt = new Date();
 
 		const command = {
@@ -160,7 +157,7 @@ export class MetricRepository {
 			Records: [
 				{
 					Dimensions: [
-						{ Name: "id", Value: id.toString() },
+						{ Name: "id", Value: metric.id },
 						{ Name: "orgId", Value: metric.orgId.toString() },
 						{ Name: "region", Value: metric.region?.toString() || RegionEnum.US },
 						{ Name: "accountId", Value: metric.accountId.toString() },
@@ -184,7 +181,6 @@ export class MetricRepository {
 		};
 
 		await this.writeClient.writeRecords(command).promise();
-		// metric.id = result.id;
 		metric.recordedAt = recordedAt;
 
 		return metric;
@@ -193,7 +189,7 @@ export class MetricRepository {
 	private parseMetric(row: any): Metric {
 		// ?? arn
 		const metric: Metric = new Metric({
-			id: parseInt(row.data[0].scalarValue),
+			id: row.data[0].scalarValue,
 			orgId: parseInt(row.data[1].scalarValue),
 			region: row.data[2].scalarValue as RegionEnum,
 			accountId: parseInt(row.data[3].scalarValue),
@@ -235,6 +231,7 @@ export class MetricRepository {
 
 		query += ` ORDER BY ${order.map((item: any) => `${item[0]} ${item[1]}`).join(", ")}`;
 		query += ` LIMIT ${limit} OFFSET ${offset}`;
+
 		return query;
 	}
 
@@ -247,8 +244,7 @@ export class MetricRepository {
 				ClientRequestToken: clientRequestToken,
 			};
 
-			const result = await this.timestreamQuery.query(params).promise();
-			return result;
+			return await this.timestreamQuery.query(params).promise();
 		} catch (error) {
 			console.error("Error occurred while executing Timestream query:", error, "QueryString:", query, "QueryId:", queryId);
 			throw error;
