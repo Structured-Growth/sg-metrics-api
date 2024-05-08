@@ -215,15 +215,15 @@ export class MetricRepository {
 		if (params.orgId) filters.push(`orgId = ${params.orgId}`);
 		if (params.accountId) filters.push(`accountId = ${params.accountId}`);
 		if (params.userId) filters.push(`userId = ${params.userId}`);
-		if (params.metricCategoryId) filters.push(`metricCategoryId = ${params.metricCategoryId}`);
+		// if (params.metricCategoryId) filters.push(`metricCategoryId = ${params.metricCategoryId}`);
 		if (params.metricTypeId) filters.push(`metricTypeId = ${params.metricTypeId}`);
 		if (params.metricTypeVersion) filters.push(`metricTypeVersion = ${params.metricTypeVersion}`);
 		if (params.deviceId) filters.push(`deviceId = ${params.deviceId}`);
 		if (params.batchId) filters.push(`batchId = '${params.batchId}'`);
 		if (params.value) filters.push(`value = ${params.value}`);
-		if (params.takenAt) filters.push(`takenAt = '${params.takenAt.toISOString()}'`);
-		if (params.takenAtOffset) filters.push(`takenAtOffset = ${params.takenAtOffset}`);
-		if (params.recordedAt) filters.push(`recordedAt = '${params.recordedAt.toISOString()}'`);
+		// if (params.takenAt) filters.push(`takenAt = '${params.takenAt.toISOString()}'`);
+		// if (params.takenAtOffset) filters.push(`takenAtOffset = ${params.takenAtOffset}`);
+		// if (params.recordedAt) filters.push(`recordedAt = '${params.recordedAt.toISOString()}'`);
 
 		if (filters.length > 0) {
 			query += ` WHERE ${filters.join(" AND ")}`;

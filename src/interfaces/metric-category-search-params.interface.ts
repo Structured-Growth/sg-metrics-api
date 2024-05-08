@@ -17,5 +17,5 @@ export interface MetricCategorySearchParamsInterface extends Omit<DefaultSearchP
 	 * `code: ["Starts*", "-*ends"]`
 	 */
 	code?: string[];
-	metadata?: Record<string, string>;
+	// metadata?: Record<string, string>;
 }
