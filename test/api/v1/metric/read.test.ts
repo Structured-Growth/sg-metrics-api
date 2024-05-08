@@ -1,8 +1,6 @@
 import "../../../../src/app/providers";
 import { App } from "../../../../src/app/app";
 import { container, webServer } from "@structured-growth/microservice-sdk";
-import { agent } from "supertest";
-import { routes } from "../../../../src/routes";
 import { RegionEnum } from "@structured-growth/microservice-sdk";
 import {assert} from "chai";
 import {initTest} from "../../../common/init-test";
@@ -10,7 +8,7 @@ import {initTest} from "../../../common/init-test";
 describe("GET /api/v1/metrics:metricId", () => {
 	const { server, context } = initTest();
 	const code = `code-${Date.now()}`;
-	context["createdMetricId"] = 1;
+
 
 	before(async () => container.resolve<App>("App").ready);
 
@@ -28,6 +26,7 @@ describe("GET /api/v1/metrics:metricId", () => {
 		});
 		assert.equal(statusCode, 201);
 		assert.isNumber(body.id);
+		context.createdMetricCategoryId = body.id;
 
 	});
 
@@ -35,7 +34,7 @@ describe("GET /api/v1/metrics:metricId", () => {
 		const { statusCode, body } = await server.post("/v1/metric-type").send({
 			orgId: 1,
 			region: RegionEnum.US,
-			metricCategoryId: 1,
+			metricCategoryId: context["createdMetricCategoryId"],
 			title: code,
 			code: code,
 			unit: code,
@@ -50,16 +49,17 @@ describe("GET /api/v1/metrics:metricId", () => {
 		});
 		assert.equal(statusCode, 201);
 		assert.isNumber(body.id);
+		context.createdMetricTypeId = body.id;
 
 	});
 	it("Should create metric", async () => {
 		const { statusCode, body } = await server.post("/v1/metrics").send({
 			orgId: 1,
-			accountId: 1,
-			userId: 1,
-			metricCategoryId: 1,
-			metricTypeId: 1,
-			metricTypeVersion: 1,
+			accountId: 13,
+			userId: 88,
+			metricCategoryId: context["createdMetricCategoryId"],
+			metricTypeId: context["createdMetricTypeId"],
+			metricTypeVersion: 2,
 			deviceId: 101,
 			batchId: "123456",
 			value: 35,
@@ -67,31 +67,30 @@ describe("GET /api/v1/metrics:metricId", () => {
 			takenAtOffset: 90,
 		});
 		assert.equal(statusCode, 201);
+		context.createdMetricId = body.id;
 	});
 
 	it("Should return metric", async () => {
-		const { statusCode, body } = await server.get(`/v1/metric/${context.createdMetricId}`).send({
-			MetricTypeId: context["createdMetricId"]
+		const { statusCode, body } = await server.get(`/v1/metrics/${context.createdMetricId}`).send({
 		});
 		assert.equal(statusCode, 200);
-		assert.isDefined(body.validation);
-		assert.isString(body.message);
-		assert.isString(body.validation.body.orgId[0]);
-		assert.isString(body.validation.body.accountId[0]);
-		assert.isString(body.validation.body.userId[0]);
-		assert.isString(body.validation.body.metricCategoryId[0]);
-		assert.isString(body.validation.body.metricTypeId[0]);
-		assert.isString(body.validation.body.metricTypeVersion[0]);
-		assert.isString(body.validation.body.deviceId[0]);
-		assert.isString(body.validation.body.batchId[0]);
-		assert.isString(body.validation.body.value[0]);
-		assert.isString(body.validation.body.takenAt[0]);
-		assert.isString(body.validation.body.takenAtOffset[0]);
+		assert.equal(body.id, context["createdMetricId"]);
+		assert.equal(body.orgId, 1);
+		assert.equal(body.accountId, 13);
+		assert.equal(body.userId, 88);
+		assert.equal(body.metricCategoryId, context["createdMetricCategoryId"]);
+		assert.equal(body.metricTypeId, context["createdMetricTypeId"]);
+		assert.equal(body.metricTypeVersion, 2);
+		assert.equal(body.deviceId, 101);
+		assert.equal(body.batchId,"123456");
+		assert.equal(body.value, 35);
+		assert.equal(body.takenAt, "2024-05-06T14:30:00.000Z");
+		assert.equal(body.takenAtOffset, 90);
+		assert.isString(body.recordedAt);
 	});
 
 	it("Should return error is metric type id is wrong", async () => {
-		const { statusCode, body } = await server.get(`/v1/metric/9999`).send({
-			MetricId: "9999"
+		const { statusCode, body } = await server.get(`/v1/metrics/9999`).send({
 		});
 		assert.equal(statusCode, 404);
 		assert.isString(body.message);

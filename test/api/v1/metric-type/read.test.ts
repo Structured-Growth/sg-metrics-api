@@ -32,7 +32,7 @@ describe("GET /api/v1/metric-type:metricTypeId", () => {
 		const { statusCode, body } = await server.post("/v1/metric-type").send({
 			orgId: 1,
 			region: RegionEnum.US,
-			metricCategoryId: 1,
+			metricCategoryId: context["createdMetricCategoryId"],
 			title: code,
 			code: code,
 			unit: code,

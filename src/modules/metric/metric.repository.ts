@@ -5,6 +5,7 @@ import { MetricCreateBodyInterface } from "../../interfaces/metric-create-body.i
 import { MetricSearchParamsInterface } from "../../interfaces/metric-search-params.interface";
 import { v4 as uuidv4 } from 'uuid';
 import {SearchResultInterface} from "@structured-growth/microservice-sdk/";
+import {parseInt} from "lodash";
 
 @autoInjectable()
 export class MetricRepository {
@@ -15,16 +16,6 @@ export class MetricRepository {
 
 	private writeClient: TimestreamWrite;
 	private timestreamQuery: TimestreamQuery;
-
-	private generateQueryId(): string {
-		return uuidv4();
-	}
-
-	private generateClientRequestToken(): string {
-		const uniqueId = uuidv4();
-		const timestamp = Date.now();
-		return `${uniqueId}-${timestamp}`;
-	}
 
 	constructor(@inject("region") private region: string) {
 		this.writeClient = new TimestreamWrite({
@@ -55,12 +46,10 @@ export class MetricRepository {
 
 	public async read(id: number): Promise<Metric | null> {
 			const query = `SELECT *
-										 FROM ${this.configuration.DatabaseName}.${this.configuration.TableName}
-										 WHERE id = ${id}
-										 LIMIT 1`;
-			const queryId = this.generateQueryId();
-			const clientRequestToken = this.generateClientRequestToken();
-			const result = await this.executeQuery(query, queryId, clientRequestToken);
+						    FROM "${this.configuration.DatabaseName}"."${this.configuration.TableName}"
+						    WHERE id = '${id}'
+							LIMIT 1`;
+			const result = await this.executeQuery(query);
 
 			if (result.Rows && result.Rows.length > 0) {
 				return this.parseMetric(result.Rows[0]);
@@ -129,11 +118,8 @@ export class MetricRepository {
 		const where = {};
 		const order = params.sort ? (params.sort.map((item) => item.split(":")) as any) : [["createdAt", "desc"]];
 
-		const queryId = this.generateQueryId();
-		const clientRequestToken = this.generateClientRequestToken();
-
 		const query = this.buildQuery(params, offset, limit, order);
-		const result = await this.executeQuery(query, queryId, clientRequestToken);
+		const result = await this.executeQuery(query);
 		return {
 			data: this.parseResult(result),
 			page: page,
@@ -187,26 +173,39 @@ export class MetricRepository {
 	}
 
 	private parseMetric(row: any): Metric {
-		// ?? arn
-		const metric: Metric = new Metric({
-			id: row.data[0].scalarValue,
-			orgId: parseInt(row.data[1].scalarValue),
-			region: row.data[2].scalarValue as RegionEnum,
-			accountId: parseInt(row.data[3].scalarValue),
-			userId: parseInt(row.data[4].scalarValue),
-			metricCategoryId: parseInt(row.data[5].scalarValue),
-			metricTypeId: parseInt(row.data[6].scalarValue),
-			metricTypeVersion: parseInt(row.data[7].scalarValue),
-			deviceId: parseInt(row.data[8].scalarValue),
-			batchId: row.data[9].scalarValue as string,
-			value: parseInt(row.data[10].scalarValue),
-			takenAt: new Date(parseInt(row.data[11].scalarValue)),
-			takenAtOffset: parseInt(row.data[12].scalarValue),
-			// isActive: row.data[13].scalarValue,
-			recordedAt: new Date(parseInt(row.data[14].scalarValue)),
+		const metricData: { [key: string]: any } = {};
+		const fieldNames = [
+			"metricCategoryId", "batchId", "deviceId", "userId", "orgId", "takenAtOffset",
+			"accountId", "metricTypeId", "takenAt", "metricTypeVersion", "id",
+			"region", "nullValue", "declarationValue", "recordedAt", "value"
+		];
+
+		row.Data.forEach((item: any, index: number) => {
+			const fieldName = fieldNames[index];
+			const value = item.ScalarValue;
+			metricData[fieldName] = value;
 		});
+
+		const metric: Metric = new Metric({
+			metricTypeVersion: parseInt(metricData["metricTypeVersion"]),
+			takenAt: new Date(metricData["takenAt"]),
+			takenAtOffset: parseInt(metricData["takenAtOffset"]),
+			id: metricData["id"],
+			orgId: parseInt(metricData["orgId"]),
+			region: metricData["region"],
+			accountId: parseInt(metricData["accountId"]),
+			userId: parseInt(metricData["userId"]),
+			metricCategoryId: parseInt(metricData["metricCategoryId"]),
+			metricTypeId: parseInt(metricData["metricTypeId"]),
+			deviceId: parseInt(metricData["deviceId"]),
+			batchId: metricData["batchId"],
+			value: parseInt(metricData["value"]),
+			recordedAt: new Date(metricData["recordedAt"]),
+		});
+
 		return metric;
 	}
+
 
 	private buildQuery(params: MetricSearchParamsInterface, offset: number, limit: number, order: any): string {
 		let query = `SELECT * FROM "${this.configuration.DatabaseName}"."${this.configuration.TableName}"`;
@@ -236,17 +235,15 @@ export class MetricRepository {
 	}
 
 
-	private async executeQuery(query: string, queryId: string, clientRequestToken: string): Promise<any> {
+	private async executeQuery(query: string): Promise<any> {
 		try {
 			const params = {
 				QueryString: query,
-				QueryId: queryId,
-				ClientRequestToken: clientRequestToken,
 			};
 
 			return await this.timestreamQuery.query(params).promise();
 		} catch (error) {
-			console.error("Error occurred while executing Timestream query:", error, "QueryString:", query, "QueryId:", queryId);
+			console.error("Error occurred while executing Timestream query:", error, "QueryString:", query);
 			throw error;
 		}
 	}
