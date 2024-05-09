@@ -117,10 +117,10 @@ describe("GET /api/v1/metrics", () => {
 		assert.equal(body.data[0].accountId, 13);
 		assert.equal(body.data[0].userId, 88);
 		//assert.equal(body.data[0].metricTypeId, context["createdMetricTypeId"]);
-		assert.equal(body.data[0].metricTypeId, 333);
+		assert.equal(body.data[0].metricTypeId, 444);
 		assert.equal(body.data[0].metricTypeVersion, 2);
 		assert.equal(body.data[0].deviceId, 101);
-		assert.equal(body.data[0].batchId,"123456");
+		assert.equal(body.data[0].batchId,"1234567890");
 		assert.equal(body.data[0].value, 35);
 		assert.equal(body.data[0].takenAt, "2024-05-06T14:30:00.000Z");
 		assert.equal(body.data[0].takenAtOffset, 90);

@@ -116,7 +116,7 @@ export class MetricRepository {
 		const limit = params.limit || 20;
 		const offset = (page - 1) * limit;
 		const where = {};
-		const order = params.sort ? (params.sort.map((item) => item.split(":")) as any) : [["createdAt", "desc"]];
+		const order = params.sort ? (params.sort.map((item) => item.split(":")) as any) : [["time", "desc"]];
 
 		const query = this.buildQuery(params, offset, limit, order);
 		const result = await this.executeQuery(query);
@@ -148,6 +148,7 @@ export class MetricRepository {
 						{ Name: "region", Value: metric.region?.toString() || RegionEnum.US },
 						{ Name: "accountId", Value: metric.accountId.toString() },
 						{ Name: "userId", Value: metric.userId.toString() },
+						{ Name: "metricCategoryId", Value: metric.metricCategoryId.toString() },
 						{ Name: "metricTypeId", Value: metric.metricTypeId.toString() },
 						{ Name: "metricTypeVersion", Value: metric.metricTypeVersion.toString() },
 						{ Name: "deviceId", Value: metric.deviceId.toString() },
@@ -232,7 +233,8 @@ export class MetricRepository {
 		}
 
 		query += ` ORDER BY ${sort.map((item: any) => `${item[0]} ${item[1]}`).join(", ")}`;
-		query += ` LIMIT ${limit} OFFSET ${offset}`;
+		//query += ` LIMIT ${limit} OFFSET ${offset}`;
+		query += ` LIMIT ${limit}`;
 
 		return query;
 	}

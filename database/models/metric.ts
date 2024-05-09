@@ -68,25 +68,25 @@ export class Metric implements MetricAttributes {
 	static get arnPattern(): string {
 		return [
 			container.resolve("appPrefix"),
-			"<region>",
-			"<orgId>",
-			"<accountId>",
-			"metric-category/<metricCategoryId>",
-			"metric-type/<metricTypeId>",
-			"metric/<metricId>",
-		].join(":");
+			":<region>",
+			":<orgId>",
+			":<accountId>",
+			"/metric-category/<metricCategoryId>",
+			"/metric-type/<metricTypeId>",
+			"/metric/<metricId>",
+		].join("");
 	}
 
 	get arn(): string {
 		return [
 			container.resolve("appPrefix"),
-			this.region,
-			this.orgId,
-			this.accountId || "-",
-			`metric-category/${this.metricCategoryId}`,
-			`metric-type/${this.metricTypeId}`,
-			`metric/${this.id}`,
-		].join(":");
+			`:${this.region}`,
+			`:${this.orgId}`,
+			`:${this.accountId}`|| "-",
+			`/metric-category/${this.metricCategoryId}`,
+			`/metric-type/${this.metricTypeId}`,
+			`/metric/${this.id}`,
+		].join("");
 	}
 
 	toJSON(): MetricAttributes {
