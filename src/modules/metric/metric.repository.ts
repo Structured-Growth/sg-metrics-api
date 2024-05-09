@@ -148,7 +148,6 @@ export class MetricRepository {
 						{ Name: "region", Value: metric.region?.toString() || RegionEnum.US },
 						{ Name: "accountId", Value: metric.accountId.toString() },
 						{ Name: "userId", Value: metric.userId.toString() },
-						{ Name: "metricCategoryId", Value: metric.metricCategoryId.toString() },
 						{ Name: "metricTypeId", Value: metric.metricTypeId.toString() },
 						{ Name: "metricTypeVersion", Value: metric.metricTypeVersion.toString() },
 						{ Name: "deviceId", Value: metric.deviceId.toString() },
@@ -206,34 +205,37 @@ export class MetricRepository {
 		return metric;
 	}
 
-
-	private buildQuery(params: MetricSearchParamsInterface, offset: number, limit: number, order: any): string {
+	private buildQuery(params: MetricSearchParamsInterface, offset: number, limit: number, sort: any): string {
 		let query = `SELECT * FROM "${this.configuration.DatabaseName}"."${this.configuration.TableName}"`;
-
 		const filters: string[] = [];
-		if (params.orgId) filters.push(`orgId = ${params.orgId}`);
-		if (params.accountId) filters.push(`accountId = ${params.accountId}`);
-		if (params.userId) filters.push(`userId = ${params.userId}`);
-		// if (params.metricCategoryId) filters.push(`metricCategoryId = ${params.metricCategoryId}`);
-		if (params.metricTypeId) filters.push(`metricTypeId = ${params.metricTypeId}`);
-		if (params.metricTypeVersion) filters.push(`metricTypeVersion = ${params.metricTypeVersion}`);
-		if (params.deviceId) filters.push(`deviceId = ${params.deviceId}`);
+
+		if (params.id) filters.push(`id = '${params.id}'`);
+		if (params.orgId) filters.push(`orgId = '${params.orgId}'`);
+		if (params.accountId) filters.push(`accountId = '${params.accountId}'`);
+		if (params.userId) filters.push(`userId = '${params.userId}'`);
+		if (params.metricTypeId) filters.push(`metricTypeId = '${params.metricTypeId}'`);
+		if (params.metricTypeVersion) filters.push(`metricTypeVersion = '${params.metricTypeVersion}'`);
+		if (params.deviceId) filters.push(`deviceId = '${params.deviceId}'`);
 		if (params.batchId) filters.push(`batchId = '${params.batchId}'`);
 		if (params.value) filters.push(`value = ${params.value}`);
-		// if (params.takenAt) filters.push(`takenAt = '${params.takenAt.toISOString()}'`);
-		// if (params.takenAtOffset) filters.push(`takenAtOffset = ${params.takenAtOffset}`);
-		// if (params.recordedAt) filters.push(`recordedAt = '${params.recordedAt.toISOString()}'`);
+		if (params.valueMin !== undefined) filters.push(`value >= ${params.valueMin}`);
+		if (params.valueMax !== undefined) filters.push(`value <= ${params.valueMax}`);
+
+		if (params.takenAtMin) filters.push(`takenAt >= '${params.takenAtMin.toISOString()}'`);
+		if (params.takenAtMax) filters.push(`takenAt <= '${params.takenAtMax.toISOString()}'`);
+
+		if (params.recordedAtMin) filters.push(`recordedAt >= '${params.recordedAtMin.toISOString()}'`);
+		if (params.recordedAtMax) filters.push(`recordedAt <= '${params.recordedAtMax.toISOString()}'`);
 
 		if (filters.length > 0) {
 			query += ` WHERE ${filters.join(" AND ")}`;
 		}
 
-		query += ` ORDER BY ${order.map((item: any) => `${item[0]} ${item[1]}`).join(", ")}`;
+		query += ` ORDER BY ${sort.map((item: any) => `${item[0]} ${item[1]}`).join(", ")}`;
 		query += ` LIMIT ${limit} OFFSET ${offset}`;
 
 		return query;
 	}
-
 
 	private async executeQuery(query: string): Promise<any> {
 		try {

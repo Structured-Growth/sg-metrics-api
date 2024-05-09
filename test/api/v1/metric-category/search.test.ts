@@ -1,8 +1,5 @@
 import "../../../../src/app/providers";
 import { assert } from "chai";
-import { App } from "../../../../src/app/app";
-import { container, webServer } from "@structured-growth/microservice-sdk";
-import { routes } from "../../../../src/routes";
 import { RegionEnum } from "@structured-growth/microservice-sdk";
 import { initTest } from "../../../common/init-test";
 

@@ -1,0 +1,149 @@
+import "../../../../src/app/providers";
+import { App } from "../../../../src/app/app";
+import { container, webServer } from "@structured-growth/microservice-sdk";
+import { RegionEnum } from "@structured-growth/microservice-sdk";
+import {assert} from "chai";
+import {initTest} from "../../../common/init-test";
+
+describe("GET /api/v1/metrics", () => {
+	const { server, context } = initTest();
+	const code = `code-${Date.now()}`;
+
+
+	before(async () => container.resolve<App>("App").ready);
+
+	it("Should create metric category", async () => {
+		const { statusCode, body } = await server.post("/v1/metric-category").send({
+			orgId: 1,
+			region: RegionEnum.US,
+			title: code,
+			code: code,
+			status: "active",
+			metadata: {
+				specUrl: "https://",
+				countryCode: "test",
+			},
+		});
+		assert.equal(statusCode, 201);
+		assert.isNumber(body.id);
+		context.createdMetricCategoryId = body.id;
+
+	});
+
+	it("Should create metric type", async () => {
+		const { statusCode, body } = await server.post("/v1/metric-type").send({
+			orgId: 1,
+			region: RegionEnum.US,
+			metricCategoryId: context["createdMetricCategoryId"],
+			title: code,
+			code: code,
+			unit: code,
+			factor: 1,
+			relatedTo: code,
+			version: 1,
+			status: "inactive",
+			metadata: {
+				specUrl: "https://",
+				countryCode: "test",
+			},
+		});
+		assert.equal(statusCode, 201);
+		assert.isNumber(body.id);
+		context.createdMetricTypeId = body.id;
+
+	});
+	it("Should create metric", async () => {
+		const { statusCode, body } = await server.post("/v1/metrics").send({
+			orgId: 1,
+			accountId: 13,
+			userId: 88,
+			//metricCategoryId: context["createdMetricCategoryId"],
+			metricCategoryId: 333,
+			//metricTypeId: context["createdMetricTypeId"],
+			metricTypeId: 444,
+			metricTypeVersion: 2,
+			deviceId: 101,
+			batchId: "1234567890",
+			value: 35,
+			takenAt: "2024-05-06T14:30:00+00:00",
+			takenAtOffset: 90,
+		});
+		assert.equal(statusCode, 201);
+		context.createdMetricId = body.id;
+	});
+
+	it("Should return metric", async () => {
+		const { statusCode, body } = await server.get(`/v1/metrics/${context.createdMetricId}`).send({
+		});
+		assert.equal(statusCode, 200);
+		assert.equal(body.id, context["createdMetricId"]);
+	});
+
+	it("Should return validation error", async () => {
+		const { statusCode, body } = await server.get("/v1/metrics").query({
+			orgId: "superOrg",
+			accountId: "MyAccount",
+			userId: "SuperUser",
+			metricTypeId: "body",
+			metricTypeVersion: -1,
+			deviceId: "mydevice",
+			batchId: null,
+			value: "bad",
+			takenAt: "today",
+			takenAtOffset: "notneeded",
+		});
+		assert.equal(statusCode, 422);
+		assert.equal(body.name, "ValidationError");
+		assert.isString(body.validation.query.orgId[0]);
+		assert.isString(body.validation.query.accountId[0]);
+		assert.isString(body.validation.query.userId[0]);
+		assert.isString(body.validation.query.metricTypeId[0]);
+		assert.isString(body.validation.query.metricTypeVersion[0]);
+		assert.isString(body.validation.query.deviceId[0]);
+		assert.isString(body.validation.query.batchId[0]);
+		assert.isString(body.validation.query.value[0]);
+		assert.isString(body.validation.query.takenAt[0]);
+		assert.isString(body.validation.query.takenAtOffset[0]);
+
+	});
+
+	it("Should return created metric category by id", async () => {
+		const { statusCode, body } = await server.get("/v1/metrics").query({
+			"id": context["createdMetricId"],
+		});
+		assert.equal(statusCode, 200);
+		assert.equal(body.data[0].id, context["createdMetricId"]);
+		assert.equal(body.data[0].orgId, 1);
+		assert.equal(body.data[0].accountId, 13);
+		assert.equal(body.data[0].userId, 88);
+		//assert.equal(body.data[0].metricTypeId, context["createdMetricTypeId"]);
+		assert.equal(body.data[0].metricTypeId, 333);
+		assert.equal(body.data[0].metricTypeVersion, 2);
+		assert.equal(body.data[0].deviceId, 101);
+		assert.equal(body.data[0].batchId,"123456");
+		assert.equal(body.data[0].value, 35);
+		assert.equal(body.data[0].takenAt, "2024-05-06T14:30:00.000Z");
+		assert.equal(body.data[0].takenAtOffset, 90);
+		assert.isString(body.data[0].recordedAt);
+	});
+/*
+	it("Should search by value", async () => {
+		const { statusCode, body } = await server.get("/v1/metrics").query({
+			"value[0]": 35,
+		});
+		assert.equal(statusCode, 200);
+		assert.equal(body.total, 50);
+		assert.equal(body.data[0].id, 35);
+	});
+
+	it("Should search by value range", async () => {
+		const { statusCode, body } = await server.get("/v1/metrics").query({
+			"valueMin": 20,
+			"valueMax": 50,
+		});
+		assert.equal(statusCode, 200);
+		assert.equal(body.total, 50);
+		assert.equal(body.data[0].id, 35);
+	});
+*/
+});
