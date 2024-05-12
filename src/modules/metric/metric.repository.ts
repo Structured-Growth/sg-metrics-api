@@ -218,15 +218,29 @@ export class MetricRepository {
 		if (params.metricTypeVersion) filters.push(`metricTypeVersion = '${params.metricTypeVersion}'`);
 		if (params.deviceId) filters.push(`deviceId = '${params.deviceId}'`);
 		if (params.batchId) filters.push(`batchId = '${params.batchId}'`);
-		if (params.value) filters.push(`value = ${params.value}`);
-		if (params.valueMin !== undefined) filters.push(`value >= ${params.valueMin}`);
-		if (params.valueMax !== undefined) filters.push(`value <= ${params.valueMax}`);
+		if (params.value) filters.push(`measure_value::bigint = ${params.value}`);
 
-		if (params.takenAtMin) filters.push(`takenAt >= '${params.takenAtMin.toISOString()}'`);
-		if (params.takenAtMax) filters.push(`takenAt <= '${params.takenAtMax.toISOString()}'`);
+		if (params.valueMin !== undefined) filters.push(`measure_value::bigint >= ${params.valueMin}`);
+		if (params.valueMax !== undefined) filters.push(`measure_value::bigint <= ${params.valueMax}`);
 
-		if (params.recordedAtMin) filters.push(`recordedAt >= '${params.recordedAtMin.toISOString()}'`);
-		if (params.recordedAtMax) filters.push(`recordedAt <= '${params.recordedAtMax.toISOString()}'`);
+		if (params.takenAtMin) {
+			const takenAtMinDate = new Date(params.takenAtMin);
+			const takenAtMinISO = takenAtMinDate.toISOString()
+			filters.push(`takenAt >= '${takenAtMinISO}'`);
+
+		}
+		if (params.takenAtMax) {
+			const takenAtMaxDate = new Date(params.takenAtMax);
+			const takenAtMaxISO = takenAtMaxDate.toISOString()
+			filters.push(`takenAt <= '${takenAtMaxISO}'`);
+		}
+		if (params.recordedAtMin && params.recordedAtMax) {
+			const recordedAtMinDate = new Date(params.recordedAtMin);
+			const recordedAtMinISO = recordedAtMinDate.toISOString().replace("T", " ").replace(/\.\d{3}Z$/, "");
+			const recordedAtMaxDate = new Date(params.recordedAtMax);
+			const recordedAtMaxISO = recordedAtMaxDate.toISOString().replace("T", " ").replace(/\.\d{3}Z$/, "");
+			filters.push(`time BETWEEN TIMESTAMP '${recordedAtMinISO}' AND TIMESTAMP '${recordedAtMaxISO}'`);
+		}
 
 		if (filters.length > 0) {
 			query += ` WHERE ${filters.join(" AND ")}`;
@@ -234,7 +248,7 @@ export class MetricRepository {
 
 		query += ` ORDER BY ${sort.map((item: any) => `${item[0]} ${item[1]}`).join(", ")}`;
 		//query += ` LIMIT ${limit} OFFSET ${offset}`;
-		query += ` LIMIT ${limit}`;
+		query += ` LIMIT ${limit} `;
 
 		return query;
 	}

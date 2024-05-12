@@ -57,15 +57,15 @@ describe("GET /api/v1/metrics", () => {
 			orgId: 1,
 			accountId: 13,
 			userId: 88,
-			//metricCategoryId: context["createdMetricCategoryId"],
-			metricCategoryId: 333,
-			//metricTypeId: context["createdMetricTypeId"],
-			metricTypeId: 444,
+			metricCategoryId: context["createdMetricCategoryId"],
+			//metricCategoryId: 333,
+			metricTypeId: context["createdMetricTypeId"],
+			//metricTypeId: 444,
 			metricTypeVersion: 2,
 			deviceId: 101,
 			batchId: "1234567890",
 			value: 35,
-			takenAt: "2024-05-06T14:30:00+00:00",
+			takenAt: "2023-05-10T14:30:00+00:00",
 			takenAtOffset: 90,
 		});
 		assert.equal(statusCode, 201);
@@ -125,25 +125,53 @@ describe("GET /api/v1/metrics", () => {
 		assert.equal(body.data[0].takenAt, "2024-05-06T14:30:00.000Z");
 		assert.equal(body.data[0].takenAtOffset, 90);
 		assert.isString(body.data[0].recordedAt);
-	});
-/*
-	it("Should search by value", async () => {
-		const { statusCode, body } = await server.get("/v1/metrics").query({
-			"value[0]": 35,
-		});
-		assert.equal(statusCode, 200);
-		assert.equal(body.total, 50);
-		assert.equal(body.data[0].id, 35);
+		assert.equal(body.page, 1);
+		assert.equal(body.limit, 20);
 	});
 
-	it("Should search by value range", async () => {
+	it("Should search by value", async () => {
 		const { statusCode, body } = await server.get("/v1/metrics").query({
-			"valueMin": 20,
-			"valueMax": 50,
+			"value": 35,
 		});
 		assert.equal(statusCode, 200);
-		assert.equal(body.total, 50);
-		assert.equal(body.data[0].id, 35);
+		assert.equal(body.data[0].value, 35);
 	});
-*/
+
+	it("Should search by deviceId", async () => {
+		const { statusCode, body } = await server.get("/v1/metrics").query({
+			"deviceId": 101,
+		});
+		assert.equal(statusCode, 200);
+		assert.equal(body.data[0].deviceId, 101);
+	});
+
+
+        it("Should search by value range", async () => {
+            const { statusCode, body } = await server.get("/v1/metrics").query({
+                "valueMin": 20,
+                "valueMax": 50,
+            });
+            assert.equal(statusCode, 200);
+            assert.equal(body.data[0].value, 35);
+        });
+
+
+	it("Should search by taken time range", async () => {
+		const { statusCode, body } = await server.get("/v1/metrics").query({
+			"takenAtMin": "2024-05-01T14:30:00+00:00",
+			"takenAtMax": "2024-05-08T14:30:00+00:00",
+		});
+		assert.equal(statusCode, 200);
+		assert.isString(body.data[0].takenAt);
+	});
+
+        it("Should search by recorder time range", async () => {
+            const { statusCode, body } = await server.get("/v1/metrics").query({
+                "recordedAtMin": "2024-05-01T14:30:00+00:00",
+                "recordedAtMax": "2024-05-08T14:30:00+00:00",
+            });
+            assert.equal(statusCode, 200);
+            assert.isString(body.data[0].recordedAt);
+        });
+
 });
