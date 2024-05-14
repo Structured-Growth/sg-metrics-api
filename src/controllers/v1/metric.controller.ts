@@ -83,13 +83,7 @@ export class MetricController extends BaseController {
 		const { data, ...result } = await this.metricRepository.aggregate(query);
 		this.response.status(200);
 		return {
-			data: data.map((aggregatedMetric) => ({
-				count: aggregatedMetric.count,
-				min: aggregatedMetric.min,
-				max: aggregatedMetric.max,
-				sum: aggregatedMetric.sum,
-				avg: aggregatedMetric.avg,
-			})),
+			data,
 			page: result.page,
 			limit: result.limit,
 		};
@@ -109,14 +103,14 @@ export class MetricController extends BaseController {
 	@DescribeResource("MetricType", ({ body }) => Number(body.metricTypeId))
 	@DescribeResource("Device", ({ body }) => Number(body.deviceId))
 	@ValidateFuncArgs(MetricCreateParamsValidator)
-	async create(@Queries() query: {}, @Body() body: MetricCreateBodyInterface): Promise<PublicMetricAttributes> {
-		const metric = await this.metricRepository.create(body);
+	async create(@Queries() query: {}, @Body() body: MetricCreateBodyInterface[]): Promise<PublicMetricAttributes[]> {
+		const metrics = await this.metricRepository.create(body);
 		this.response.status(201);
 
-		return {
+		return metrics.map(metric => ({
 			...(pick(metric.toJSON(), publicMetricAttributes) as PublicMetricAttributes),
 			arn: metric.arn,
-		};
+		}));
 	}
 
 	/**

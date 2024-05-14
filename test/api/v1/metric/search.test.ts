@@ -2,13 +2,13 @@ import "../../../../src/app/providers";
 import { App } from "../../../../src/app/app";
 import { container, webServer } from "@structured-growth/microservice-sdk";
 import { RegionEnum } from "@structured-growth/microservice-sdk";
-import {assert} from "chai";
-import {initTest} from "../../../common/init-test";
+import { assert } from "chai";
+import { initTest } from "../../../common/init-test";
 
 describe("GET /api/v1/metrics", () => {
 	const { server, context } = initTest();
 	const code = `code-${Date.now()}`;
-
+	const userId = Date.now();
 
 	before(async () => container.resolve<App>("App").ready);
 
@@ -27,7 +27,6 @@ describe("GET /api/v1/metrics", () => {
 		assert.equal(statusCode, 201);
 		assert.isNumber(body.id);
 		context.createdMetricCategoryId = body.id;
-
 	});
 
 	it("Should create metric type", async () => {
@@ -50,31 +49,31 @@ describe("GET /api/v1/metrics", () => {
 		assert.equal(statusCode, 201);
 		assert.isNumber(body.id);
 		context.createdMetricTypeId = body.id;
-
 	});
 	it("Should create metric", async () => {
-		const { statusCode, body } = await server.post("/v1/metrics").send({
-			orgId: 1,
-			accountId: 13,
-			userId: 88,
-			metricCategoryId: context["createdMetricCategoryId"],
-			//metricCategoryId: 333,
-			metricTypeId: context["createdMetricTypeId"],
-			//metricTypeId: 444,
-			metricTypeVersion: 2,
-			deviceId: 101,
-			batchId: "1234567890",
-			value: 35,
-			takenAt: "2023-05-10T14:30:00+00:00",
-			takenAtOffset: 90,
-		});
+		const { statusCode, body } = await server.post("/v1/metrics").send([
+			{
+				orgId: 1,
+				accountId: 13,
+				userId: userId,
+				metricCategoryId: context["createdMetricCategoryId"],
+				//metricCategoryId: 333,
+				metricTypeId: context["createdMetricTypeId"],
+				//metricTypeId: 444,
+				metricTypeVersion: 2,
+				deviceId: 101,
+				batchId: "1234567890",
+				value: 35,
+				takenAt: "2024-05-07T14:30:00+00:00",
+				takenAtOffset: 90,
+			},
+		]);
 		assert.equal(statusCode, 201);
-		context.createdMetricId = body.id;
+		context.createdMetricId = body[0].id;
 	});
 
 	it("Should return metric", async () => {
-		const { statusCode, body } = await server.get(`/v1/metrics/${context.createdMetricId}`).send({
-		});
+		const { statusCode, body } = await server.get(`/v1/metrics/${context.createdMetricId}`).send({});
 		assert.equal(statusCode, 200);
 		assert.equal(body.id, context["createdMetricId"]);
 	});
@@ -104,25 +103,25 @@ describe("GET /api/v1/metrics", () => {
 		assert.isString(body.validation.query.value[0]);
 		assert.isString(body.validation.query.takenAt[0]);
 		assert.isString(body.validation.query.takenAtOffset[0]);
-
 	});
 
 	it("Should return created metric category by id", async () => {
 		const { statusCode, body } = await server.get("/v1/metrics").query({
-			"id": context["createdMetricId"],
+			userId,
+			id: context["createdMetricId"],
 		});
 		assert.equal(statusCode, 200);
 		assert.equal(body.data[0].id, context["createdMetricId"]);
 		assert.equal(body.data[0].orgId, 1);
 		assert.equal(body.data[0].accountId, 13);
-		assert.equal(body.data[0].userId, 88);
-		//assert.equal(body.data[0].metricTypeId, context["createdMetricTypeId"]);
-		assert.equal(body.data[0].metricTypeId, 444);
+		assert.equal(body.data[0].userId, userId);
+		assert.equal(body.data[0].metricTypeId, context["createdMetricTypeId"]);
+		// assert.equal(body.data[0].metricTypeId, 444);
 		assert.equal(body.data[0].metricTypeVersion, 2);
 		assert.equal(body.data[0].deviceId, 101);
-		assert.equal(body.data[0].batchId,"1234567890");
+		assert.equal(body.data[0].batchId, "1234567890");
 		assert.equal(body.data[0].value, 35);
-		assert.equal(body.data[0].takenAt, "2024-05-06T14:30:00.000Z");
+		assert.equal(body.data[0].takenAt, "2024-05-07T14:30:00.000Z");
 		assert.equal(body.data[0].takenAtOffset, 90);
 		assert.isString(body.data[0].recordedAt);
 		assert.equal(body.page, 1);
@@ -131,7 +130,8 @@ describe("GET /api/v1/metrics", () => {
 
 	it("Should search by value", async () => {
 		const { statusCode, body } = await server.get("/v1/metrics").query({
-			"value": 35,
+			userId,
+			value: 35,
 		});
 		assert.equal(statusCode, 200);
 		assert.equal(body.data[0].value, 35);
@@ -139,39 +139,45 @@ describe("GET /api/v1/metrics", () => {
 
 	it("Should search by deviceId", async () => {
 		const { statusCode, body } = await server.get("/v1/metrics").query({
-			"deviceId": 101,
+			userId,
+			deviceId: 101,
 		});
 		assert.equal(statusCode, 200);
 		assert.equal(body.data[0].deviceId, 101);
 	});
 
-
-        it("Should search by value range", async () => {
-            const { statusCode, body } = await server.get("/v1/metrics").query({
-                "valueMin": 20,
-                "valueMax": 50,
-            });
-            assert.equal(statusCode, 200);
-            assert.equal(body.data[0].value, 35);
-        });
-
+	it("Should search by value range", async () => {
+		const { statusCode, body } = await server.get("/v1/metrics").query({
+			userId,
+			valueMin: 20,
+			valueMax: 50,
+		});
+		assert.equal(statusCode, 200);
+		assert.equal(body.data[0].value, 35);
+	});
 
 	it("Should search by taken time range", async () => {
 		const { statusCode, body } = await server.get("/v1/metrics").query({
-			"takenAtMin": "2024-05-01T14:30:00+00:00",
-			"takenAtMax": "2024-05-08T14:30:00+00:00",
+			userId,
+			takenAtMin: "2024-05-01T14:30:00+00:00",
+			takenAtMax: "2024-05-08T14:30:00+00:00",
 		});
 		assert.equal(statusCode, 200);
 		assert.isString(body.data[0].takenAt);
 	});
 
-        it("Should search by recorder time range", async () => {
-            const { statusCode, body } = await server.get("/v1/metrics").query({
-                "recordedAtMin": "2024-05-01T14:30:00+00:00",
-                "recordedAtMax": "2024-05-08T14:30:00+00:00",
-            });
-            assert.equal(statusCode, 200);
-            assert.isString(body.data[0].recordedAt);
-        });
+	it("Should search by recorder time range", async () => {
+		const dateMin = new Date();
+		const dateMax = new Date();
+		dateMin.setMinutes(dateMin.getMinutes() - 60);
+		dateMax.setMinutes(dateMax.getMinutes() + 60);
 
+		const { statusCode, body } = await server.get("/v1/metrics").query({
+			userId,
+			recordedAtMin: dateMin.toISOString(),
+			recordedAtMax: dateMax.toISOString(),
+		});
+		assert.equal(statusCode, 200);
+		assert.isString(body.data[0].recordedAt);
+	});
 });
