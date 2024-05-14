@@ -81,7 +81,7 @@ describe("GET /api/v1/metrics/aggregate", () => {
 
 	it("Should aggregate metrics", async () => {
 		const { statusCode, body } = await server.get(`/v1/metrics/aggregate`).query({
-			"aggregationInterval": "1M",
+			"aggregationInterval": "60d",
 		});
 		assert.equal(statusCode, 200);
 	});

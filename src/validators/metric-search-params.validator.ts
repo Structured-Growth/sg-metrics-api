@@ -26,7 +26,7 @@ export const MetricSearchParamsValidator = joi.object({
 			page: joi.number().positive().label("Page"),
 			limit: joi.number().positive().label("Limit"),
 			sort: joi.array().items(joi.string().required()).label("Sort"),
-			aggregationInterval: joi.string().valid("1m" , "5m" , "30m" , "1h" , "4h" , "6h" , "12h" , "1d" , "1w" , "1M").label("Aggregation Interval"),
+			aggregationInterval: joi.string().valid("1m" , "5m" , "30m" , "1h" , "4h" , "6h" , "12h" , "1d" , "7d" , "30d", "60d").label("Aggregation Interval"),
 
 	})
 });
