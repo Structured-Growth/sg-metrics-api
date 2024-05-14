@@ -52,7 +52,8 @@ describe("POST /api/v1/metrics", () => {
 	});
 
 	it("Should create metric", async () => {
-		const { statusCode, body } = await server.post("/v1/metrics").send({
+		const { statusCode, body } = await server.post("/v1/metrics").send([
+			{
 			orgId: 1,
 			accountId: 1,
 			userId: 1,
@@ -64,7 +65,8 @@ describe("POST /api/v1/metrics", () => {
 			value: 35,
 			takenAt: "2024-05-06T14:30:00+00:00",
 			takenAtOffset: 90,
-		});
+		}
+		]);
 		assert.equal(statusCode, 201);
 		assert.equal(body.orgId, 1);
 		assert.equal(body.accountId, 1);

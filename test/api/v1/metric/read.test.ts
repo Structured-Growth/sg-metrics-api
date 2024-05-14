@@ -53,7 +53,8 @@ describe("GET /api/v1/metrics:metricId", () => {
 
 	});
 	it("Should create metric", async () => {
-		const { statusCode, body } = await server.post("/v1/metrics").send({
+		const { statusCode, body } = await server.post("/v1/metrics").send([
+			{
 			orgId: 1,
 			accountId: 13,
 			userId: 88,
@@ -65,7 +66,8 @@ describe("GET /api/v1/metrics:metricId", () => {
 			value: 35,
 			takenAt: "2024-05-06T14:30:00+00:00",
 			takenAtOffset: 90,
-		});
+		}
+		]);
 		assert.equal(statusCode, 201);
 		context.createdMetricId = body.id;
 	});
