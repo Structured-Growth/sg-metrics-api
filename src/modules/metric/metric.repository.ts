@@ -3,9 +3,12 @@ import { autoInjectable, inject, NotFoundError, RegionEnum } from "@structured-g
 import { TimestreamWrite, TimestreamQuery } from "aws-sdk";
 import { MetricCreateBodyInterface } from "../../interfaces/metric-create-body.interface";
 import { MetricSearchParamsInterface } from "../../interfaces/metric-search-params.interface";
-import { v4 as uuidv4 } from 'uuid';
+import { MetricAggregationInterface, MetricAggregateResultInterface } from "../../interfaces/metric-aggregate-result.interface";
+import {MetricAggregateParamsInterface} from "../../interfaces/metric-aggregate-params.interface";
 import {SearchResultInterface} from "@structured-growth/microservice-sdk/";
+import { v4 as uuidv4 } from 'uuid';
 import {parseInt} from "lodash";
+
 
 @autoInjectable()
 export class MetricRepository {
@@ -127,11 +130,138 @@ export class MetricRepository {
 		};
 	}
 
-	/**
-	 *
-	 * 1. send create metric request and receive ID in response
-	 * 2. Read metric by received ID.
-	 */
+/*
+	public async aggregate(params: MetricAggregateParamsInterface, offset: number, limit: number, sort: any): Promise<MetricAggregateResultInterface> {
+		let timeRangeFilter = '';
+		const timeRange = params.aggregationInterval;
+		const validTimeRanges = ["1m", "5m", "30m", "1h", "4h", "6h", "12h", "1d", "1w", "1M"];
+
+		if (!validTimeRanges.includes(timeRange)) {
+			throw new Error(`Invalid time range: ${params.aggregationInterval}`);
+		}
+
+		if (timeRange.endsWith('m')) {
+			const minutes = parseInt(timeRange);
+			timeRangeFilter = `ago(${minutes}m)`;
+		} else if (timeRange.endsWith('h')) {
+			const hours = parseInt(timeRange);
+			timeRangeFilter = `ago(${hours}h)`;
+		} else if (timeRange.endsWith('d')) {
+			const days = parseInt(timeRange);
+			timeRangeFilter = `ago(${days}d)`;
+		} else if (timeRange.endsWith('w')) {
+			const weeks = parseInt(timeRange);
+			timeRangeFilter = `ago(${weeks}w)`;
+		} else if (timeRange.endsWith('M')) {
+			const months = parseInt(timeRange);
+			timeRangeFilter = `ago(${months}M)`;
+		}
+
+		let query = `SELECT * FROM "${this.configuration.DatabaseName}"."${this.configuration.TableName}"`;
+		const filters: string[] = [];
+
+		if (timeRangeFilter) {
+			const recordedAtMinDate = new Date(params.recordedAtMin);
+			const recordedAtMinISO = recordedAtMinDate.toISOString().replace("T", " ").replace(/\.\d{3}Z$/, "");
+			filters.push(`time > '${recordedAtMinISO}'`);
+		}
+
+		if (filters.length > 0) {
+			query += ` WHERE ${filters.join(" AND ")}`;
+		}
+
+		query += ` ORDER BY ${sort.map((item: any) => `${item[0]} ${item[1]}`).join(", ")}`;
+		//query += ` LIMIT ${limit} OFFSET ${offset}`;
+		query += ` LIMIT ${limit} `;
+
+		const result = await this.executeQuery(query);
+
+		const aggregatedData: MetricAggregationInterface[] = result.Rows.map((row: any) => ({
+			count: parseInt(row.Data[4].ScalarValue),
+			min: parseFloat(row.Data[2].ScalarValue),
+			max: parseFloat(row.Data[3].ScalarValue),
+			sum: parseFloat(row.Data[5].ScalarValue),
+			avg: parseFloat(row.Data[1].ScalarValue),
+		}));
+
+		return {
+			data: aggregatedData,
+			page: params.page || 1,
+			limit: params.limit || 20,
+		};
+	}
+*/
+	public async aggregate(
+		params: MetricAggregateParamsInterface & { page?: number; limit?: number; sort?: any }
+	): Promise<MetricAggregateResultInterface> {
+		const page = params.page || 1;
+		const limit = params.limit || 20;
+		const offset = (page - 1) * limit;
+
+		let timeRangeFilter = '';
+		const timeRange = params.aggregationInterval;
+		const validTimeRanges = ["1m", "5m", "30m", "1h", "4h", "6h", "12h", "1d", "1w", "1M"];
+
+		if (!validTimeRanges.includes(timeRange)) {
+			throw new Error(`Invalid time range: ${params.aggregationInterval}`);
+		}
+
+		if (timeRange.endsWith('m')) {
+			const minutes = parseInt(timeRange);
+			timeRangeFilter = `ago(${minutes}m)`;
+		} else if (timeRange.endsWith('h')) {
+			const hours = parseInt(timeRange);
+			timeRangeFilter = `ago(${hours}h)`;
+		} else if (timeRange.endsWith('d')) {
+			const days = parseInt(timeRange);
+			timeRangeFilter = `ago(${days}d)`;
+		} else if (timeRange.endsWith('w')) {
+			const weeks = parseInt(timeRange);
+			timeRangeFilter = `ago(${weeks}w)`;
+		} else if (timeRange.endsWith('M')) {
+			const months = parseInt(timeRange);
+			timeRangeFilter = `ago(${months}M)`;
+		}
+
+		let query = `SELECT
+                    bin(time, ${params.aggregationInterval}) as binned_time,
+                    AVG(CASE WHEN measure_name = 'value' THEN measure_value::bigint ELSE NULL END) AS avg,
+                    MIN(CASE WHEN measure_name = 'value' THEN measure_value::bigint ELSE NULL END) AS min,
+                    MAX(CASE WHEN measure_name = 'value' THEN measure_value::bigint ELSE NULL END) AS max,
+                    COUNT(*) AS count,
+                    SUM(CASE WHEN measure_name = 'value' THEN measure_value::bigint ELSE NULL END) AS sum,
+                    MIN(takenAt) AS earliest_takenAt,
+                    MIN(takenAtOffset) AS earliest_takenAtOffset,
+                    MIN(recordedAt) AS earliest_recordedAt
+                FROM
+                    "${this.configuration.DatabaseName}"."${this.configuration.TableName}"
+                WHERE
+                    time >= ${timeRangeFilter} AND measure_name = 'value'
+                GROUP BY
+                    bin(time, ${params.aggregationInterval})`;
+
+		query += ` ORDER BY time ASC`;
+		query += ` LIMIT ${limit} OFFSET ${offset}`;
+
+		const result = await this.executeQuery(query);
+
+		const aggregatedData: MetricAggregateResultInterface[] = result.Rows.map((row: any) => ({
+			count: parseInt(row.Data[4].ScalarValue),
+			min: parseFloat(row.Data[2].ScalarValue),
+			max: parseFloat(row.Data[3].ScalarValue),
+			sum: parseFloat(row.Data[5].ScalarValue),
+			avg: parseFloat(row.Data[1].ScalarValue),
+			earliest_takenAt: new Date(row.Data[6].ScalarValue),
+			earliest_takenAtOffset: parseInt(row.Data[7].ScalarValue),
+			earliest_recordedAt: new Date(row.Data[8].ScalarValue),
+		}));
+
+		return {
+			data: aggregatedData,
+			page: page,
+			limit: limit,
+		};
+	}
 
 
 	private async writeRecord(metric: Metric): Promise<Metric> {
@@ -227,19 +357,30 @@ export class MetricRepository {
 			const takenAtMinDate = new Date(params.takenAtMin);
 			const takenAtMinISO = takenAtMinDate.toISOString()
 			filters.push(`takenAt >= '${takenAtMinISO}'`);
-
 		}
 		if (params.takenAtMax) {
 			const takenAtMaxDate = new Date(params.takenAtMax);
 			const takenAtMaxISO = takenAtMaxDate.toISOString()
 			filters.push(`takenAt <= '${takenAtMaxISO}'`);
 		}
+		/*
 		if (params.recordedAtMin && params.recordedAtMax) {
 			const recordedAtMinDate = new Date(params.recordedAtMin);
 			const recordedAtMinISO = recordedAtMinDate.toISOString().replace("T", " ").replace(/\.\d{3}Z$/, "");
 			const recordedAtMaxDate = new Date(params.recordedAtMax);
 			const recordedAtMaxISO = recordedAtMaxDate.toISOString().replace("T", " ").replace(/\.\d{3}Z$/, "");
 			filters.push(`time BETWEEN TIMESTAMP '${recordedAtMinISO}' AND TIMESTAMP '${recordedAtMaxISO}'`);
+		}
+*/
+		if (params.recordedAtMin) {
+			const recordedAtMinDate = new Date(params.recordedAtMin);
+			const recordedAtMinISO = recordedAtMinDate.toISOString().replace("T", " ").replace(/\.\d{3}Z$/, "");
+			filters.push(`time >= '${recordedAtMinISO}'`);
+		}
+		if (params.recordedAtMax) {
+			const recordedAtMaxDate = new Date(params.recordedAtMax);
+			const recordedAtMaxISO = recordedAtMaxDate.toISOString().replace("T", " ").replace(/\.\d{3}Z$/, "");
+			filters.push(`time <= '${recordedAtMaxISO}'`);
 		}
 
 		if (filters.length > 0) {
@@ -252,6 +393,7 @@ export class MetricRepository {
 
 		return query;
 	}
+
 
 	private async executeQuery(query: string): Promise<any> {
 		try {

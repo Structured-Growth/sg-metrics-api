@@ -41,7 +41,8 @@ const publicMetricAttributes = [
 	"arn",
 ] as const;
 type MetricKeys = (typeof publicMetricAttributes)[number];
-type PublicMetricAttributes = Pick<MetricAttributes, MetricKeys>;
+type PublicMetricAttributes = Pick<MetricAttributes, MetricKeys>& {
+};
 
 @Route("v1/metrics")
 @Tags("Metric")
@@ -79,7 +80,19 @@ export class MetricController extends BaseController {
 	@DescribeAction("metrics/aggregate")
 	@ValidateFuncArgs(MetricSearchParamsValidator)
 	public async aggregate(@Queries() query: MetricAggregateParamsInterface): Promise<MetricAggregateResultInterface> {
-		return undefined;
+		const { data, ...result } = await this.metricRepository.aggregate(query);
+		this.response.status(200);
+		return {
+			data: data.map((aggregatedMetric) => ({
+				count: aggregatedMetric.count,
+				min: aggregatedMetric.min,
+				max: aggregatedMetric.max,
+				sum: aggregatedMetric.sum,
+				avg: aggregatedMetric.avg,
+			})),
+			page: result.page,
+			limit: result.limit,
+		};
 	}
 
 	/**

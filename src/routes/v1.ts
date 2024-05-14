@@ -24,6 +24,7 @@ router.get(pathPrefix + '/v1/ping/alive', handleRequest(Controllers.PingControll
 
 //MetricController
 router.get(pathPrefix + '/v1/metrics', handleRequest(Controllers.MetricController, "search", handlerOpts));
+router.get(pathPrefix + '/v1/metrics/aggregate', handleRequest(Controllers.MetricController, "aggregate", handlerOpts));
 router.post(pathPrefix + '/v1/metrics', handleRequest(Controllers.MetricController, "create", handlerOpts));
 router.get(pathPrefix + '/v1/metrics/:metricId', handleRequest(Controllers.MetricController, "get", handlerOpts));
 router.put(pathPrefix + '/v1/metrics/:metricId', handleRequest(Controllers.MetricController, "update", handlerOpts));
