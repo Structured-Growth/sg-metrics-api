@@ -171,4 +171,11 @@ describe("LOAD TEST /api/v1/metrics", () => {
         }
     }).timeout(1800000);
 
+    it("Should aggregate metrics", async () => {
+        const { statusCode, body } = await server.get(`/v1/metrics/aggregate`).query({
+            "aggregationInterval": "60d",
+        });
+        assert.equal(statusCode, 200);
+    });
+
 });
