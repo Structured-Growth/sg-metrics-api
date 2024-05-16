@@ -3,6 +3,11 @@ import "./load-environment";
 import { App } from "./app";
 import { container, Lifecycle, logWriters, Logger } from "@structured-growth/microservice-sdk";
 import { loadEnvironment } from "./load-environment";
+import { MetricTypeService } from "../modules/metric-type/metric-type.service";
+import { MetricTypeRepository } from "../modules/metric-type/metric-type.repository";
+import { MetricCategoryService } from "../modules/metric-category/metric-category.service";
+import { MetricCategoryRepository } from "../modules/metric-category/metric-category.repository";
+import { MetricRepository } from "../modules/metric/metric.repository";
 
 // load and validate env variables
 loadEnvironment();
@@ -23,3 +28,10 @@ container.register("LogWriter", logWriters[process.env.LOG_WRITER] || "ConsoleLo
 });
 container.register("Logger", Logger);
 container.register("App", App, { lifecycle: Lifecycle.Singleton });
+container.register("MetricCategoryService", MetricCategoryService);
+container.register("MetricTypeService", MetricTypeService);
+
+// repositories
+container.register("MetricCategoryRepository", MetricCategoryRepository);
+container.register("MetricTypeRepository", MetricTypeRepository);
+container.register("MetricRepository", MetricRepository);

@@ -6,7 +6,7 @@ export function loadEnvironment() {
 	loader.loadAndValidate(process.env.__PATH_TO_ENV_FILE || ".env", {
 		APP_PREFIX: joi.string().required().max(30).min(2),
 		HTTP_PORT: joi.number().positive().required(),
-		STAGE: joi.string().valid("dev", "qual", "prod").required(),
+		STAGE: joi.string().valid("dev", "test", "prod").required(),
 		REGION: joi
 			.valid(
 				"us-east-1",
@@ -42,5 +42,7 @@ export function loadEnvironment() {
 		DB_SCHEMA: joi.string().required(),
 		DB_MIGRATION_TABLE_SCHEMA: joi.string().required(),
 		DB_MIGRATION_TABLE_NAME: joi.string().required(),
+		TIMESTREAM_DB_NAME: joi.string().required(),
+		TIMESTREAM_TABLE_NAME: joi.string().required(),
 	});
 }

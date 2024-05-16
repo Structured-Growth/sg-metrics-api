@@ -3,7 +3,7 @@ import { autoInjectable, BaseController, DescribeAction } from "@structured-grow
 import { inject } from "@structured-growth/microservice-sdk";
 
 @Route("v1/ping")
-@Tags("PingController")
+@Tags("Ping")
 @autoInjectable()
 export class PingController extends BaseController {
 	constructor(@inject("appPrefix") private appPrefix?: string) {

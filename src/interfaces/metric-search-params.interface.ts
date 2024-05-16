@@ -1,16 +1,18 @@
 import { DefaultSearchParamsInterface } from "@structured-growth/microservice-sdk";
 
-export interface MetricSearchParamsInterface extends Omit<DefaultSearchParamsInterface, "orgId" | "accountId"> {
-	orgId?: number;
+export interface MetricSearchParamsInterface extends Omit<DefaultSearchParamsInterface, "accountId"> {
+	orgId: number;
+	metricTypeId: number;
+	metricTypeVersion: number;
 	accountId?: number;
 	userId?: number;
-	metricCategoryId?: number;
-	metricTypeId?: number;
-	metricTypeVersion?: number;
 	deviceId?: number;
 	batchId?: string;
 	value?: number;
-	takenAt?: Date;
-	takenAtOffset?: number;
-	recordedAt?: Date;
+	valueMin?: number;
+	valueMax?: number;
+	takenAtMin?: Date;
+	takenAtMax?: Date;
+	recordedAtMin?: Date;
+	recordedAtMax?: Date;
 }

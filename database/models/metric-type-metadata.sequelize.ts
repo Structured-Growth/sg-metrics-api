@@ -7,26 +7,26 @@ import {
 } from "@structured-growth/microservice-sdk";
 import MetricCategory from "./metric-category.sequelize";
 import MetricType from "./metric-type.sequelize";
+import {MetricCategoryMetadataAttributes} from "./metric-category-metadata.sequelize";
 
 export interface MetricTypeMetadataAttributes
 	extends Omit<DefaultModelInterface, 'accountId'> {
-	id?: number | any;
 	orgId: number;
 	accountId?: number;
 	metricCategoryId: number;
 	metricTypeId: number;
 	name: string;
-	value: number;
+	value: string;
 }
 
 export interface MetricTypeMetadataCreationAttributes
 	extends Omit<MetricTypeMetadataAttributes, "id" | "arn" | "createdAt" | "updatedAt" | "deletedAt"> {}
 
-export interface MetricTypeUpdateAttributes
+export interface MetricTypeMetadataUpdateAttributes
 	extends Pick<MetricTypeMetadataAttributes, "name"  |  "value"> {}
 
 @Table({
-	tableName: "metric-types-metadata",
+	tableName: "metric_types_metadata",
 	timestamps: true,
 	underscored: true,
 })
@@ -61,14 +61,14 @@ export class MetricTypeMetadata
 	name: string;
 
 	@Column
-	value: number;
+	value: string;
 
 	static get arnPattern(): string {
-		return [container.resolve("appPrefix"), "<region>", "<orgId>", '<accountId>', "metric-category/<metricCategoryId>", "metric-type/<metricTypeId>", "metadata/<metricTypeMetadataId>"].join(":");
+		return [container.resolve("appPrefix"), "<region>", "<orgId>", '<accountId>', "metric-category/<metricCategoryId>/metric-type/<metricTypeId>/metadata/<metricTypeMetadataId>"].join(":");
 	}
 
 	get arn(): string {
-		return [container.resolve("appPrefix"), this.region, this.orgId, this.accountId || '-', `metric-category/${this.metricCategoryId}`, `metric-type/${this.metricTypeId}`, `metadata/${this.id}`].join(":");
+		return [container.resolve("appPrefix"), this.region, this.orgId, this.accountId || '-', `metric-category/${this.metricCategoryId}/metric-type/${this.metricTypeId}/metadata/${this.id}`].join(":");
 	}
 }
 

@@ -18,6 +18,8 @@ import { MetricCategoryUpdateBodyInterface } from "../../interfaces/metric-categ
 import { MetricCategorySearchParamsValidator } from "../../validators/metric-category-search-params.validator";
 import { MetricCategoryCreateParamsValidator } from "../../validators/metric-category-create-params.validator";
 import { MetricCategoryUpdateSearchParamsValidator } from "../../validators/metric-category-update-params.validator";
+import { MetricCategoryService } from "../../modules/metric-category/metric-category.service";
+import { MetricCategoryRepository } from "../../modules/metric-category/metric-category.repository";
 
 const publicMetricCategoryAttributes = [
 	"id",
@@ -31,13 +33,19 @@ const publicMetricCategoryAttributes = [
 ] as const;
 type MetricCategoryKeys = (typeof publicMetricCategoryAttributes)[number];
 type PublicMetricCategoryAttributes = Pick<MetricCategoryAttributes, MetricCategoryKeys> & {
-	metadata: Record<any, any>;
+	metadata: Record<string, string>;
 };
 
 @Route("v1/metric-category")
-@Tags("MetricCategoryController")
+@Tags("Metric Category")
 @autoInjectable()
 export class MetricCategoryController extends BaseController {
+	constructor(
+		@inject("MetricCategoryRepository") private metricCategoryRepository: MetricCategoryRepository,
+		@inject("MetricCategoryService") private metricCategoryService: MetricCategoryService
+	) {
+		super();
+	}
 	/**
 	 * Search Metric Categories records
 	 */
@@ -55,7 +63,16 @@ export class MetricCategoryController extends BaseController {
 	async search(
 		@Queries() query: MetricCategorySearchParamsInterface
 	): Promise<SearchResultInterface<PublicMetricCategoryAttributes>> {
-		return undefined;
+		const { data, ...result } = await this.metricCategoryRepository.search(query);
+		this.response.status(200);
+		return {
+			data: data.map((metricCategory) => ({
+				...(pick(metricCategory.toJSON(), publicMetricCategoryAttributes) as PublicMetricCategoryAttributes),
+				metadata: metricCategory.metadata,
+				arn: metricCategory.arn,
+			})),
+			...result,
+		};
 	}
 
 	/**
@@ -71,7 +88,14 @@ export class MetricCategoryController extends BaseController {
 		@Queries() query: {},
 		@Body() body: MetricCategoryCreateBodyInterface
 	): Promise<PublicMetricCategoryAttributes> {
-		return undefined;
+		const metricCategory = await this.metricCategoryService.create(body);
+		this.response.status(201);
+
+		return {
+			...(pick(metricCategory.toJSON(), publicMetricCategoryAttributes) as PublicMetricCategoryAttributes),
+			metadata: metricCategory.metadata,
+			arn: metricCategory.arn,
+		};
 	}
 
 	/**
@@ -83,7 +107,17 @@ export class MetricCategoryController extends BaseController {
 	@DescribeAction("metric-category/read")
 	@DescribeResource("MetricCategory", ({ params }) => Number(params.metricCategoryId))
 	async get(@Path() metricCategoryId: number): Promise<PublicMetricCategoryAttributes> {
-		return undefined;
+		const metricCategory = await this.metricCategoryRepository.read(metricCategoryId);
+		this.response.status(200);
+		if (!metricCategory) {
+			throw new NotFoundError(`Metric Category ${metricCategoryId} not found`);
+		}
+
+		return {
+			...(pick(metricCategory.toJSON(), publicMetricCategoryAttributes) as PublicMetricCategoryAttributes),
+			metadata: metricCategory.metadata,
+			arn: metricCategory.arn,
+		};
 	}
 
 	/**
@@ -100,7 +134,14 @@ export class MetricCategoryController extends BaseController {
 		@Queries() query: {},
 		@Body() body: MetricCategoryUpdateBodyInterface
 	): Promise<PublicMetricCategoryAttributes> {
-		return undefined;
+		const metricCategory = await this.metricCategoryService.update(metricCategoryId, body);
+		this.response.status(200);
+
+		return {
+			...(pick(metricCategory.toJSON(), publicMetricCategoryAttributes) as PublicMetricCategoryAttributes),
+			metadata: metricCategory.metadata,
+			arn: metricCategory.arn,
+		};
 	}
 
 	/**
@@ -112,6 +153,12 @@ export class MetricCategoryController extends BaseController {
 	@DescribeAction("metric-category/delete")
 	@DescribeResource("MetricCategory", ({ params }) => Number(params.metricCategoryId))
 	async delete(@Path() metricCategoryId: number): Promise<void> {
-		return undefined;
+		const metricCategory = await this.metricCategoryRepository.read(metricCategoryId);
+
+		if (!metricCategory) {
+			throw new NotFoundError(`Metric Category ${metricCategoryId} not found`);
+		}
+		await this.metricCategoryRepository.delete(metricCategoryId);
+		this.response.status(204);
 	}
 }

@@ -19,11 +19,11 @@ export interface MetricCategoryMetadataAttributes
 export interface MetricCategoryMetadataCreationAttributes
 	extends Omit<MetricCategoryMetadataAttributes, "id" | "arn" | "createdAt" | "updatedAt" | "deletedAt"> {}
 
-export interface MetricCategoryUpdateAttributes
+export interface MetricCategoryMetadataUpdateAttributes
 	extends Pick<MetricCategoryMetadataAttributes, "name"  |  "value"> {}
 
 @Table({
-	tableName: "metric_category_metadata",
+	tableName: "metric_categories_metadata",
 	timestamps: true,
 	underscored: true,
 })
@@ -55,11 +55,11 @@ export class MetricCategoryMetadata
 	value: string;
 
 	static get arnPattern(): string {
-		return [container.resolve("appPrefix"), "<region>", "<orgId>", '<accountId>', "metric-category/<metricCategoryId>",  "metadata/<metricCategoryMetadataId>"].join(":");
+		return [container.resolve("appPrefix"), "<region>", "<orgId>", '<accountId>', "metric-category/<metricCategoryId>/metadata/<metricCategoryMetadataId>"].join(":");
 	}
 
 	get arn(): string {
-		return [container.resolve("appPrefix"), this.region, this.orgId, this.accountId || '-', `metric-category/${this.metricCategoryId}`,  `metadata/${this.id}`].join(":");
+		return [container.resolve("appPrefix"), this.region, this.orgId, this.accountId || '-', `metric-category/${this.metricCategoryId}/metadata/${this.id}`].join(":");
 	}
 }
 

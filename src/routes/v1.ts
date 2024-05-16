@@ -1,16 +1,16 @@
 /**
-* IMPORTANT NOTE!
-* This file was auto-generated with tsoa.
-* Please do not modify it. Re-run tsoa to re-generate this file
-*/
+ * IMPORTANT NOTE!
+ * This file was auto-generated with tsoa.
+ * Please do not modify it. Re-run tsoa to re-generate this file
+ */
 
 import { Router } from "express";
 import { container, handleRequest } from "@structured-growth/microservice-sdk";
 import * as Controllers from "../controllers/v1";
 
 const handlerOpts = {
-    logRequestBody: container.resolve<boolean>('logRequestBody'),
-    logResponses: container.resolve<boolean>('logResponses'),
+	logRequestBody: container.resolve<boolean>('logRequestBody'),
+	logResponses: container.resolve<boolean>('logResponses'),
 }
 
 export const router = Router();
@@ -22,12 +22,27 @@ router.post(pathPrefix + '/v1/system/migrate', handleRequest(Controllers.SystemC
 //PingController
 router.get(pathPrefix + '/v1/ping/alive', handleRequest(Controllers.PingController, "pingGet", handlerOpts));
 
-//ExampleController
-router.get(pathPrefix + '/v1/examples', handleRequest(Controllers.ExampleController, "search", handlerOpts));
-router.post(pathPrefix + '/v1/examples', handleRequest(Controllers.ExampleController, "create", handlerOpts));
-router.get(pathPrefix + '/v1/examples/:exampleId', handleRequest(Controllers.ExampleController, "get", handlerOpts));
-router.put(pathPrefix + '/v1/examples/:exampleId', handleRequest(Controllers.ExampleController, "update", handlerOpts));
-router.delete(pathPrefix + '/v1/examples/:exampleId', handleRequest(Controllers.ExampleController, "delete", handlerOpts));
+//MetricController
+router.get(pathPrefix + '/v1/metrics', handleRequest(Controllers.MetricController, "search", handlerOpts));
+router.get(pathPrefix + '/v1/metrics/aggregate', handleRequest(Controllers.MetricController, "aggregate", handlerOpts));
+router.post(pathPrefix + '/v1/metrics', handleRequest(Controllers.MetricController, "create", handlerOpts));
+router.get(pathPrefix + '/v1/metrics/:metricId', handleRequest(Controllers.MetricController, "get", handlerOpts));
+router.put(pathPrefix + '/v1/metrics/:metricId', handleRequest(Controllers.MetricController, "update", handlerOpts));
+router.delete(pathPrefix + '/v1/metrics/:metricId', handleRequest(Controllers.MetricController, "delete", handlerOpts));
+
+//MetricCategoryController
+router.get(pathPrefix + '/v1/metric-category', handleRequest(Controllers.MetricCategoryController, "search", handlerOpts));
+router.post(pathPrefix + '/v1/metric-category', handleRequest(Controllers.MetricCategoryController, "create", handlerOpts));
+router.get(pathPrefix + '/v1/metric-category/:metricCategoryId', handleRequest(Controllers.MetricCategoryController, "get", handlerOpts));
+router.put(pathPrefix + '/v1/metric-category/:metricCategoryId', handleRequest(Controllers.MetricCategoryController, "update", handlerOpts));
+router.delete(pathPrefix + '/v1/metric-category/:metricCategoryId', handleRequest(Controllers.MetricCategoryController, "delete", handlerOpts));
+
+//MetricTypeController
+router.get(pathPrefix + '/v1/metric-type', handleRequest(Controllers.MetricTypeController, "search", handlerOpts));
+router.post(pathPrefix + '/v1/metric-type', handleRequest(Controllers.MetricTypeController, "create", handlerOpts));
+router.get(pathPrefix + '/v1/metric-type/:metricTypeId', handleRequest(Controllers.MetricTypeController, "get", handlerOpts));
+router.put(pathPrefix + '/v1/metric-type/:metricTypeId', handleRequest(Controllers.MetricTypeController, "update", handlerOpts));
+router.delete(pathPrefix + '/v1/metric-type/:metricTypeId', handleRequest(Controllers.MetricTypeController, "delete", handlerOpts));
 
 //ResolverController
 router.get(pathPrefix + '/v1/resolver/resolve', handleRequest(Controllers.ResolverController, "resolve", handlerOpts));
@@ -38,11 +53,21 @@ router.get(pathPrefix + '/v1/resolver/models', handleRequest(Controllers.Resolve
 export const actionToRouteMap = {
 	"SystemController.migrate": 'post /v1/system/migrate',
 	"PingController.pingGet": 'get /v1/ping/alive',
-	"ExampleController.search": 'get /v1/examples',
-	"ExampleController.create": 'post /v1/examples',
-	"ExampleController.get": 'get /v1/examples/:exampleId',
-	"ExampleController.update": 'put /v1/examples/:exampleId',
-	"ExampleController.delete": 'delete /v1/examples/:exampleId',
+	"MetricController.search": 'get /v1/metrics',
+	"MetricController.create": 'post /v1/metrics',
+	"MetricController.get": 'get /v1/metrics/:metricId',
+	"MetricController.update": 'put /v1/metrics/:metricId',
+	"MetricController.delete": 'delete /v1/metrics/:metricId',
+	"MetricCategoryController.search": 'get /v1/metric-category',
+	"MetricCategoryController.create": 'post /v1/metric-category',
+	"MetricCategoryController.get": 'get /v1/metric-category/:metricCategoryId',
+	"MetricCategoryController.update": 'put /v1/metric-category/:metricCategoryId',
+	"MetricCategoryController.delete": 'delete /v1/metric-category/:metricCategoryId',
+	"MetricTypeController.search": 'get /v1/metric-type',
+	"MetricTypeController.create": 'post /v1/metric-type',
+	"MetricTypeController.get": 'get /v1/metric-type/:metricTypeId',
+	"MetricTypeController.update": 'put /v1/metric-type/:metricTypeId',
+	"MetricTypeController.delete": 'delete /v1/metric-type/:metricTypeId',
 	"ResolverController.resolve": 'get /v1/resolver/resolve',
 	"ResolverController.actions": 'get /v1/resolver/actions',
 	"ResolverController.models": 'get /v1/resolver/models',

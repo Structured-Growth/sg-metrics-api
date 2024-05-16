@@ -1,45 +1,51 @@
-import TimestreamWrite from 'aws-sdk/clients/timestreamwrite';
 import { container, RegionEnum } from "@structured-growth/microservice-sdk";
 
 export interface MetricAttributes {
-	id: number;
+	id: string;
 	orgId: number;
 	region: RegionEnum;
-	accountId: number;
-	userId: number;
+	accountId?: number;
+	userId?: number;
 	metricCategoryId: number;
 	metricTypeId: number;
 	metricTypeVersion: number;
 	deviceId: number;
 	batchId: string;
+	relatedToRn?: string;
 	value: number;
 	takenAt: Date;
 	takenAtOffset: number;
 	recordedAt: Date;
+	// isActive: boolean;
 	arn: string;
 }
 
-export interface MetricCreationAttributes extends MetricAttributes {
-}
+export interface MetricCreationAttributes extends Omit<MetricAttributes, "arn" | "recordedAt"> {}
+
+//export interface MetricUpdateAttributes extends Pick<MetricAttributes, "isActive"> {}
 
 export class Metric implements MetricAttributes {
-	id: number;
+	id: string;
 	orgId: number;
 	region: RegionEnum;
-	accountId: number;
-	userId: number;
+	accountId?: number;
+	userId?: number;
 	metricCategoryId: number;
 	metricTypeId: number;
 	metricTypeVersion: number;
 	deviceId: number;
 	batchId: string;
+	relatedToRn?: string;
 	value: number;
 	takenAt: Date;
 	takenAtOffset: number;
 	recordedAt: Date;
+	// isActive: boolean;
 
 	constructor(
-		data: MetricAttributes,
+		data: Omit<MetricAttributes, "recordedAt" | "arn"> & {
+			recordedAt?: Date;
+		}
 	) {
 		this.id = data.id;
 		this.orgId = data.orgId;
@@ -51,53 +57,36 @@ export class Metric implements MetricAttributes {
 		this.metricTypeVersion = data.metricTypeVersion;
 		this.deviceId = data.deviceId;
 		this.batchId = data.batchId;
+		this.relatedToRn = data.relatedToRn;
 		this.value = data.value;
 		this.takenAt = data.takenAt;
 		this.takenAtOffset = data.takenAtOffset;
 		this.recordedAt = data.recordedAt;
+		// this.isActive = data.isActive;
 	}
-/*
-	static writeToTimestream(metric: Metric) {
-		const region = container.resolve("region");
-		const timestreamWrite = new TimestreamWrite({
-			apiVersion: "2018-11-01",
-			region: region,
-		});
-
-		const metricData = {
-			DatabaseName: 'test',
-			TableName: 'YourTableName',
-			Records: [
-				{
-					Dimensions: [
-						{ Name: 'orgId', Value: metric.orgId.toString() },
-						{ Name: 'region', Value: metric.region },
-					],
-					MeasureName: 'value',
-					MeasureValue: metric.value.toString(),
-					MeasureValueType: 'BIGINT',
-					Time: metric.recordedAt.getTime().toString(),
-					TimeUnit: 'MILLISECONDS',
-				},
-			],
-		};
-
-		timestreamWrite.writeRecords(metricData, (err, data) => {
-			if (err) {
-				console.error('Error inserting metric:', err);
-			} else {
-				console.log('Successfully inserted metric:', data);
-			}
-		});
-	}
-*/
 
 	static get arnPattern(): string {
-		return [container.resolve("appPrefix"), "<region>", "<orgId>", '<accountId>', "metric-category/<metricCategoryId>", "metric-type/<metricTypeId>", "metric/<metricId>"].join(":");
+		return [
+			container.resolve("appPrefix"),
+			":<region>",
+			":<orgId>",
+			":<accountId>",
+			"/metric-category/<metricCategoryId>",
+			"/metric-type/<metricTypeId>",
+			"/metric/<metricId>",
+		].join("");
 	}
 
 	get arn(): string {
-		return [container.resolve("appPrefix"), this.region, this.orgId, this.accountId || '-', `metric-category/${this.metricCategoryId}`, `metric-type/${this.metricTypeId}`, `metric/${this.id}`].join(":");
+		return [
+			container.resolve("appPrefix"),
+			`:${this.region}`,
+			`:${this.orgId}`,
+			`:${this.accountId}`|| "-",
+			`/metric-category/${this.metricCategoryId}`,
+			`/metric-type/${this.metricTypeId}`,
+			`/metric/${this.id}`,
+		].join("");
 	}
 
 	toJSON(): MetricAttributes {
@@ -116,7 +105,8 @@ export class Metric implements MetricAttributes {
 			takenAt: this.takenAt,
 			takenAtOffset: this.takenAtOffset,
 			recordedAt: this.recordedAt,
-			arn: this.arn
+			// isActive: this.isActive,
+			arn: this.arn,
 		};
 	}
 }

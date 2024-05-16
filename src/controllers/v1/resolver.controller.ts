@@ -14,7 +14,7 @@ import { ResolveActionsResponseInterface } from "../../interfaces/resolve-action
 import { ResolveModelsResponseInterface } from "../../interfaces/resolve-models-response.interface";
 
 @Route("v1/resolver")
-@Tags("ResolverController")
+@Tags("Resolver")
 @autoInjectable()
 export class ResolverController extends BaseController {
 	constructor(@inject("App") private app?: App, @inject("appPrefix") private appPrefix?: string) {

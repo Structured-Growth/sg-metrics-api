@@ -2,7 +2,7 @@ import { joi } from "@structured-growth/microservice-sdk";
 
 export const MetricCreateParamsValidator = joi.object({
 	query: joi.object(),
-	body: joi.object({
+	body: joi.array().items(joi.object({
 		orgId: joi.number().positive().required().label("Organization Id"),
 		accountId: joi.number().positive().label("Account Id"),
 		userId: joi.number().positive().required().label("User Id"),
@@ -14,5 +14,5 @@ export const MetricCreateParamsValidator = joi.object({
 		value: joi.number().required().label("Value"),
 		takenAt: joi.date().iso().required().label("Taken at"),
 		takenAtOffset: joi.number().required().label("Taken at Offset"),
-	}),
+	}).required()).min(1).required(),
 });

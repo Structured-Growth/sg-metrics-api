@@ -7,7 +7,7 @@
   "scripts": {
     "prepare": "husky install && cp -n .env.example .env 2>/dev/null || :",
     "start": "node .dist/src/cli",
-    "test": "mocha",
+    "test": "mocha --timeout 120000",
     "build": "tsc && npm run after-build",
     "after-build": "cp .sequelizerc .dist/.sequelizerc",
     "build-docker": "docker build --build-arg github_token=$GITHUB_TOKEN --platform linux/amd64 -t structured-growth/api-service-starter-kit:latest .",
@@ -38,7 +38,7 @@
     "readme.md"
   ],
   "dependencies": {
-    "@structured-growth/microservice-sdk": "1.10.0",
+    "@structured-growth/microservice-sdk": "1.10.5",
     "aws-sdk": "^2.1534.0",
     "commander": "^11.1.0",
     "dotenv": "^16.3.1",

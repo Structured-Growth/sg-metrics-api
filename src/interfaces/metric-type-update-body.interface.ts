@@ -4,10 +4,11 @@ export interface MetricTypeUpdateBodyInterface {
 	accountId?: number;
 	metricCategoryId?: number;
 	title?: string;
-	code?: number;
+	code?: string;
 	unit?: string;
 	factor?: number;
 	relatedTo?: string;
 	version?: number;
 	status?: MetricTypeAttributes["status"];
+	metadata?: Record<string, string>;
 }

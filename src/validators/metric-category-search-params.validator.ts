@@ -8,7 +8,7 @@ export const MetricCategorySearchParamsValidator = joi.object({
 			accountId: joi.number().positive().label("Account Id"),
 			title: joi.array().items(joi.string().max(50).required()).label("Category title"),
 			code: joi.array().items(joi.string().max(50).required()).label("Category code"),
-			status: joi.string().valid("active", "inactive").label("Status"),
+			status: joi.array().items(joi.string().valid("active", "inactive", "archived").required().label("Status")),
 	})
 		.concat(CommonSearchParamsValidator),
 });

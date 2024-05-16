@@ -17,6 +17,9 @@ import { MetricTypeUpdateBodyInterface } from "../../interfaces/metric-type-upda
 import { MetricTypeSearchParamsValidator } from "../../validators/metric-type-search-params.validator";
 import { MetricTypeCreateParamsValidator } from "../../validators/metric-type-create-params.validator";
 import { MetricTypeUpdateParamsValidator } from "../../validators/metric-type-update-params.validator";
+import { MetricTypeService } from "../../modules/metric-type/metric-type.service";
+import { MetricTypeRepository } from "../../modules/metric-type/metric-type.repository";
+import {pick} from "lodash";
 
 const publicMetricTypeAttributes = [
 	"id",
@@ -27,6 +30,7 @@ const publicMetricTypeAttributes = [
 	"code",
 	"unit",
 	"factor",
+	"relatedTo",
 	"version",
 	"status",
 	"createdAt",
@@ -34,13 +38,21 @@ const publicMetricTypeAttributes = [
 	"arn",
 ] as const;
 type MetricTypeKeys = (typeof publicMetricTypeAttributes)[number];
-type PublicAccountAttributes = Pick<MetricTypeAttributes, MetricTypeKeys>;
+type PublicMetricTypeAttributes = Pick<MetricTypeAttributes, MetricTypeKeys> & {
+	metadata: Record<string, string>;
+};
 
 
 @Route("v1/metric-type")
-@Tags("MetricTypeController")
+@Tags("Metric Type")
 @autoInjectable()
 export class MetricTypeController extends BaseController {
+	constructor(
+		@inject("MetricTypeRepository") private metricTypeRepository: MetricTypeRepository,
+		@inject("MetricTypeService") private metricTypeService: MetricTypeService
+	) {
+		super();
+	}
 	/**
 	 * Search Metric Types records
 	 */
@@ -56,12 +68,21 @@ export class MetricTypeController extends BaseController {
 	)
 	@ValidateFuncArgs(MetricTypeSearchParamsValidator)
 	async search(@Queries() query: MetricTypeSearchParamsInterface
-	): Promise<SearchResultInterface<PublicAccountAttributes>> {
-		return undefined;
+	): Promise<SearchResultInterface<PublicMetricTypeAttributes>> {
+		const { data, ...result } = await this.metricTypeRepository.search(query);
+		this.response.status(200);
+		return {
+			data: data.map((metricType) => ({
+				...(pick(metricType.toJSON(), publicMetricTypeAttributes) as PublicMetricTypeAttributes),
+				metadata: metricType.metadata,
+				arn: metricType.arn,
+			})),
+			...result,
+		};
 	}
 
 	/**
-	 * Create Metric Types
+	 * Create Metric Type record
 	 */
 	@OperationId("Create")
 	@Post("/")
@@ -70,24 +91,41 @@ export class MetricTypeController extends BaseController {
 	@DescribeResource("Organization", ({ body }) => Number(body.orgId))
 	@DescribeResource("MetricCategory", ({ body }) => Number(body.metricCategoryId))
 	@ValidateFuncArgs(MetricTypeCreateParamsValidator)
-	async create(@Queries() query: {}, @Body() body: MetricTypeCreateBodyInterface): Promise<PublicAccountAttributes> {
-		return undefined;
+	async create(@Queries() query: {}, @Body() body: MetricTypeCreateBodyInterface): Promise<PublicMetricTypeAttributes> {
+		const metricType = await this.metricTypeService.create(body);
+		this.response.status(201);
+
+		return {
+			...(pick(metricType.toJSON(), publicMetricTypeAttributes) as PublicMetricTypeAttributes),
+			metadata: metricType.metadata,
+			arn: metricType.arn,
+		};
 	}
 
 	/**
-	 * Get Metric Types
+	 * Get Metric Types records
 	 */
 	@OperationId("Read")
 	@Get("/:metricTypeId")
 	@SuccessResponse(200, "Returns model")
 	@DescribeAction("metric-type/read")
 	@DescribeResource("MetricType", ({ params }) => Number(params.metricTypeId))
-	async get(@Path() metricTypeId: number): Promise<PublicAccountAttributes> {
-		return undefined;
+	async get(@Path() metricTypeId: number): Promise<PublicMetricTypeAttributes> {
+		const metricType = await this.metricTypeRepository.read(metricTypeId);
+		this.response.status(200);
+		if (!metricType) {
+			throw new NotFoundError(`Metric Type ${metricTypeId} not found`);
+		}
+
+		return {
+			...(pick(metricType.toJSON(), publicMetricTypeAttributes) as PublicMetricTypeAttributes),
+			metadata: metricType.metadata,
+			arn: metricType.arn,
+		};
 	}
 
 	/**
-	 * Update Metric Types
+	 * Update Metric Type with one or few attributes
 	 */
 	@OperationId("Update")
 	@Put("/:metricTypeId")
@@ -99,12 +137,19 @@ export class MetricTypeController extends BaseController {
 		@Path() metricTypeId: number,
 		@Queries() query: {},
 		@Body() body: MetricTypeUpdateBodyInterface
-	): Promise<PublicAccountAttributes> {
-		return undefined;
+	): Promise<PublicMetricTypeAttributes> {
+		const metricType = await this.metricTypeService.update(metricTypeId, body);
+		this.response.status(200);
+
+		return {
+			...(pick(metricType.toJSON(), publicMetricTypeAttributes) as PublicMetricTypeAttributes),
+			metadata: metricType.metadata,
+			arn: metricType.arn,
+		};
 	}
 
 	/**
-	 * Delete Metric Types
+	 * Mark Metric Type as deleted. Will be permanently deleted in 90 days.
 	 */
 	@OperationId("Delete")
 	@Delete("/:metricTypeId")
@@ -112,6 +157,12 @@ export class MetricTypeController extends BaseController {
 	@DescribeAction("metric-type/delete")
 	@DescribeResource("MetricType", ({ params }) => Number(params.metricTypeId))
 	async delete(@Path() metricTypeId: number): Promise<void> {
-		return undefined;
+		const metricType = await this.metricTypeRepository.read(metricTypeId);
+
+		if (!metricType) {
+			throw new NotFoundError(`Metric Type ${metricTypeId} not found`);
+		}
+		await this.metricTypeRepository.delete(metricTypeId);
+		this.response.status(204);
 	}
 }
