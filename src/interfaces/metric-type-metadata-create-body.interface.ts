@@ -1,4 +1,3 @@
-
 export interface MetricCategoryMetadataCreateBodyInterface {
 	orgId: number;
 	accountId?: number;

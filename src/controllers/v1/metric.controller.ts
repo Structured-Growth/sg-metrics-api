@@ -41,8 +41,7 @@ const publicMetricAttributes = [
 	"arn",
 ] as const;
 type MetricKeys = (typeof publicMetricAttributes)[number];
-type PublicMetricAttributes = Pick<MetricAttributes, MetricKeys>& {
-};
+type PublicMetricAttributes = Pick<MetricAttributes, MetricKeys> & {};
 
 @Route("v1/metrics")
 @Tags("Metric")
@@ -107,7 +106,7 @@ export class MetricController extends BaseController {
 		const metrics = await this.metricRepository.create(body);
 		this.response.status(201);
 
-		return metrics.map(metric => ({
+		return metrics.map((metric) => ({
 			...(pick(metric.toJSON(), publicMetricAttributes) as PublicMetricAttributes),
 			arn: metric.arn,
 		}));

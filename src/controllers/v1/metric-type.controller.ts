@@ -19,7 +19,7 @@ import { MetricTypeCreateParamsValidator } from "../../validators/metric-type-cr
 import { MetricTypeUpdateParamsValidator } from "../../validators/metric-type-update-params.validator";
 import { MetricTypeService } from "../../modules/metric-type/metric-type.service";
 import { MetricTypeRepository } from "../../modules/metric-type/metric-type.repository";
-import {pick} from "lodash";
+import { pick } from "lodash";
 
 const publicMetricTypeAttributes = [
 	"id",
@@ -41,7 +41,6 @@ type MetricTypeKeys = (typeof publicMetricTypeAttributes)[number];
 type PublicMetricTypeAttributes = Pick<MetricTypeAttributes, MetricTypeKeys> & {
 	metadata: Record<string, string>;
 };
-
 
 @Route("v1/metric-type")
 @Tags("Metric Type")
@@ -67,7 +66,8 @@ export class MetricTypeController extends BaseController {
 		`${container.resolve("appPrefix")}:<region>:<orgId>:metric-type-status/<metricTypeStatus>`
 	)
 	@ValidateFuncArgs(MetricTypeSearchParamsValidator)
-	async search(@Queries() query: MetricTypeSearchParamsInterface
+	async search(
+		@Queries() query: MetricTypeSearchParamsInterface
 	): Promise<SearchResultInterface<PublicMetricTypeAttributes>> {
 		const { data, ...result } = await this.metricTypeRepository.search(query);
 		this.response.status(200);

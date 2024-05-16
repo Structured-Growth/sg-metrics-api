@@ -71,19 +71,21 @@ export class MetricCategoryRepository
 			order,
 		});
 
-		await Promise.all(rows.map(async (category) => {
-			const metadata = await MetricCategoryMetadata.findAll({
-				where: {
-					metricCategoryId: category.id,
-				},
-				raw: true,
-			});
+		await Promise.all(
+			rows.map(async (category) => {
+				const metadata = await MetricCategoryMetadata.findAll({
+					where: {
+						metricCategoryId: category.id,
+					},
+					raw: true,
+				});
 
-			category.metadata = metadata.reduce((acc, item) => {
-				acc[item.name] = item.value;
-				return acc;
-			}, {});
-		}));
+				category.metadata = metadata.reduce((acc, item) => {
+					acc[item.name] = item.value;
+					return acc;
+				}, {});
+			})
+		);
 
 		return {
 			data: rows,
@@ -134,14 +136,12 @@ export class MetricCategoryRepository
 		return metricCategory;
 	}
 
-
 	public async read(
 		id: number,
 		params?: {
 			attributes?: string[];
 			transaction?: Transaction;
 		}
-
 	): Promise<(MetricCategory & { metadata?: Record<string, string> }) | null> {
 		const metricCategory = await MetricCategory.findByPk(id, {
 			transaction: params?.transaction,
@@ -150,7 +150,6 @@ export class MetricCategoryRepository
 		if (!metricCategory) {
 			throw new NotFoundError(`Metric Category ${id} not found`);
 		}
-
 
 		const metadata = await MetricCategoryMetadata.findAll({
 			where: {

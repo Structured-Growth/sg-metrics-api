@@ -7,42 +7,40 @@ import { isUndefined, omitBy } from "lodash";
 
 @autoInjectable()
 export class MetricCategoryService {
-    constructor(
-        @inject("MetricCategoryRepository") private metricCategoryRepository: MetricCategoryRepository,
-    ) {}
+	constructor(@inject("MetricCategoryRepository") private metricCategoryRepository: MetricCategoryRepository) {}
 
-    public async create(params: MetricCategoryCreateBodyInterface): Promise<MetricCategory> {
-        const metricCategory = await this.metricCategoryRepository.create({
-            orgId: params.orgId,
-            region: params.region,
-            title: params.title,
-            code: params.code,
-            status: params.status || "inactive",
-            metadata: params.metadata,
-        });
+	public async create(params: MetricCategoryCreateBodyInterface): Promise<MetricCategory> {
+		const metricCategory = await this.metricCategoryRepository.create({
+			orgId: params.orgId,
+			region: params.region,
+			title: params.title,
+			code: params.code,
+			status: params.status || "inactive",
+			metadata: params.metadata,
+		});
 
-        return metricCategory;
-    }
+		return metricCategory;
+	}
 
-    public async update(metricCategoryId: any, params: MetricCategoryUpdateBodyInterface): Promise<MetricCategory> {
-        // Check if the metric category exists
-        const checkMetricCategoryId = await this.metricCategoryRepository.read(metricCategoryId);
-        if (!checkMetricCategoryId) {
-            throw new NotFoundError(`Metric Category ${metricCategoryId} not found`);
-        }
+	public async update(metricCategoryId: any, params: MetricCategoryUpdateBodyInterface): Promise<MetricCategory> {
+		// Check if the metric category exists
+		const checkMetricCategoryId = await this.metricCategoryRepository.read(metricCategoryId);
+		if (!checkMetricCategoryId) {
+			throw new NotFoundError(`Metric Category ${metricCategoryId} not found`);
+		}
 
-        // Update the metric category
-        return this.metricCategoryRepository.update(
-            metricCategoryId,
-            omitBy(
-                {
-                    title: params.title,
-                    code: params.code,
-                    status: params.status,
-                    metadata: params.metadata,
-                },
-                isUndefined
-            ) as MetricCategoryUpdateAttributes
-        );
-    }
+		// Update the metric category
+		return this.metricCategoryRepository.update(
+			metricCategoryId,
+			omitBy(
+				{
+					title: params.title,
+					code: params.code,
+					status: params.status,
+					metadata: params.metadata,
+				},
+				isUndefined
+			) as MetricCategoryUpdateAttributes
+		);
+	}
 }
