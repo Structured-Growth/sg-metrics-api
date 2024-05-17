@@ -25,6 +25,7 @@ const publicMetricTypeAttributes = [
 	"id",
 	"orgId",
 	"region",
+	"accountId",
 	"metricCategoryId",
 	"title",
 	"code",
