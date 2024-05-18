@@ -24,8 +24,8 @@ describe("LOAD TEST /api/v1/metrics", () => {
     const code = `code-${Date.now()}`;
     const userId = Date.now();
 
-    const startDate = '2024-05-01';
-    const endDate = '2024-05-14';
+    const startDate = '2024-05-04';
+    const endDate = '2024-05-18';
     const numMetricsPerDay = 3600;
     const chunkSize = 100;
 
@@ -171,11 +171,25 @@ describe("LOAD TEST /api/v1/metrics", () => {
         }
     }).timeout(1800000);
 
-    it("Should aggregate metrics", async () => {
+    it("Should aggregate metrics for 60 days", async () => {
         const { statusCode, body } = await server.get(`/v1/metrics/aggregate`).query({
             "aggregationInterval": "60d",
         });
         assert.equal(statusCode, 200);
-    });
+    }).timeout(1800000);
+
+    it("Should aggregate metrics for 1 day", async () => {
+        const { statusCode, body } = await server.get(`/v1/metrics/aggregate`).query({
+            "aggregationInterval": "1d",
+        });
+        assert.equal(statusCode, 200);
+    }).timeout(1800000);
+
+    it("Should aggregate metrics for 7 days", async () => {
+        const { statusCode, body } = await server.get(`/v1/metrics/aggregate`).query({
+            "aggregationInterval": "7d",
+        });
+        assert.equal(statusCode, 200);
+    }).timeout(1800000);
 
 });
