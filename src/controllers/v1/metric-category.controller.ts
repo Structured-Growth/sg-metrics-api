@@ -25,6 +25,7 @@ const publicMetricCategoryAttributes = [
 	"id",
 	"orgId",
 	"region",
+	"accountId",
 	"title",
 	"status",
 	"createdAt",

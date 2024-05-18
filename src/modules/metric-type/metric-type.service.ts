@@ -8,57 +8,57 @@ import { isUndefined, omitBy } from "lodash";
 
 @autoInjectable()
 export class MetricTypeService {
-    constructor(
-        @inject("MetricTypeRepository") private metricTypeRepository: MetricTypeRepository,
-        @inject("MetricCategoryRepository") private metricCategoryRepository: MetricCategoryRepository,
-    ) {}
+	constructor(
+		@inject("MetricTypeRepository") private metricTypeRepository: MetricTypeRepository,
+		@inject("MetricCategoryRepository") private metricCategoryRepository: MetricCategoryRepository
+	) {}
 
-    public async create(params: MetricTypeCreateBodyInterface): Promise<MetricType> {
-        if (params.metricCategoryId) {
-            const checkMetricCategoryId = await this.metricCategoryRepository.read(params.metricCategoryId);
-            if (!checkMetricCategoryId) {
-                throw new NotFoundError(`Metric Category ${params.metricCategoryId} not found`);
-            }
-        }
+	public async create(params: MetricTypeCreateBodyInterface): Promise<MetricType> {
+		if (params.metricCategoryId) {
+			const checkMetricCategoryId = await this.metricCategoryRepository.read(params.metricCategoryId);
+			if (!checkMetricCategoryId) {
+				throw new NotFoundError(`Metric Category ${params.metricCategoryId} not found`);
+			}
+		}
 
-        return this.metricTypeRepository.create({
-            orgId: params.orgId,
-            region: params.region,
-            accountId: params.accountId,
-            metricCategoryId: params.metricCategoryId,
-            title: params.title,
-            code: params.code,
-            unit: params.unit,
-            factor: params.factor,
-            relatedTo: params.relatedTo,
-            version: params.version,
-            status: params.status || "inactive",
-            metadata: params.metadata,
-        });
-    }
+		return this.metricTypeRepository.create({
+			orgId: params.orgId,
+			region: params.region,
+			accountId: params.accountId,
+			metricCategoryId: params.metricCategoryId,
+			title: params.title,
+			code: params.code,
+			unit: params.unit,
+			factor: params.factor,
+			relatedTo: params.relatedTo,
+			version: params.version,
+			status: params.status || "inactive",
+			metadata: params.metadata,
+		});
+	}
 
-    public async update(metricTypeId, params: MetricTypeUpdateBodyInterface): Promise<MetricType> {
-        const checkMetricTypeId = await this.metricTypeRepository.read(metricTypeId);
-        if (!checkMetricTypeId) {
-            throw new NotFoundError(`Metric Type ${metricTypeId} not found`);
-        }
-        return this.metricTypeRepository.update(
-            metricTypeId,
-            omitBy(
-                {
-                    accountId: params.accountId,
-                    metricCategoryId: params.metricCategoryId,
-                    title: params.title,
-                    code: params.code,
-                    unit: params.unit,
-                    factor: params.factor,
-                    relatedTo: params.relatedTo,
-                    version: params.version,
-                    status: params.status,
-                    metadata: params.metadata,
-                },
-                isUndefined
-            ) as MetricTypeUpdateAttributes
-        );
-    }
+	public async update(metricTypeId, params: MetricTypeUpdateBodyInterface): Promise<MetricType> {
+		const checkMetricTypeId = await this.metricTypeRepository.read(metricTypeId);
+		if (!checkMetricTypeId) {
+			throw new NotFoundError(`Metric Type ${metricTypeId} not found`);
+		}
+		return this.metricTypeRepository.update(
+			metricTypeId,
+			omitBy(
+				{
+					accountId: params.accountId,
+					metricCategoryId: params.metricCategoryId,
+					title: params.title,
+					code: params.code,
+					unit: params.unit,
+					factor: params.factor,
+					relatedTo: params.relatedTo,
+					version: params.version,
+					status: params.status,
+					metadata: params.metadata,
+				},
+				isUndefined
+			) as MetricTypeUpdateAttributes
+		);
+	}
 }

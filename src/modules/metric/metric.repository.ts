@@ -148,7 +148,9 @@ export class MetricRepository {
 		const timeRangeFilter = `ago(${params.aggregationInterval})`;
 		const timeRange = params.aggregationInterval;
 		const validTimeRanges = ["1m", "5m", "30m", "1h", "4h", "6h", "12h", "1d", "7d", "30d", "60d"];
-		const formattedTimeRangeFilter = this.formatDate(new Date(new Date().getTime() - this.parseTimeInterval(timeRangeFilter)));
+		const formattedTimeRangeFilter = this.formatDate(
+			new Date(new Date().getTime() - this.parseTimeInterval(timeRangeFilter))
+		);
 
 		if (!validTimeRanges.includes(timeRange)) {
 			throw new Error(`Invalid time range: ${params.aggregationInterval}`);

@@ -1,5 +1,5 @@
 {
-  "name": "@structured-growth/api-service-starter-kit",
+  "name": "@structured-growth/sg-metrics-api",
   "version": "1.0.0",
   "description": "",
   "main": ".dist/src/api",
@@ -10,7 +10,7 @@
     "test": "mocha --timeout 120000",
     "build": "tsc && npm run after-build",
     "after-build": "cp .sequelizerc .dist/.sequelizerc",
-    "build-docker": "docker build --build-arg github_token=$GITHUB_TOKEN --platform linux/amd64 -t structured-growth/api-service-starter-kit:latest .",
+    "build-docker": "docker build --build-arg github_token=$GITHUB_TOKEN --platform linux/amd64 -t structured-growth/sg-metrics-api:latest .",
     "dev": "nodemon src/cli.ts web",
     "dev-cli": "ts-node src/cli.ts",
     "dev-link-sdk": "npm link @structured-growth/microservice-sdk",
@@ -27,7 +27,7 @@
   "license": "Commercial",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/Structured-Growth/api-service-starter-kit.git"
+    "url": "git+https://github.com/Structured-Growth/sg-metrics-api.git"
   },
   "publishConfig": {
     "registry": "https://npm.pkg.github.com/"

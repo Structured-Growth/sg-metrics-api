@@ -39,6 +39,6 @@ export class App {
 	protected async connectToDatabase() {
 		const config = await dbConfig();
 		this.sequelize = await connectDatabase(Sequelize, config, this.logDbRequests);
-		this.sequelize.addModels([path.join(__dirname, "..", "..", "database", "models", "*.sequelize.ts")]);
+		this.sequelize.addModels([path.join(__dirname, "..", "..", "database", "models", "*.sequelize.*")]);
 	}
 }
