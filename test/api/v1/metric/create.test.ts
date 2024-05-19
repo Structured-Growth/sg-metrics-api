@@ -10,6 +10,7 @@ import {initTest} from "../../../common/init-test";
 describe("POST /api/v1/metrics", () => {
 	const { server, context } = initTest();
 	const code = `code-${Date.now()}`;
+	const userId = Date.now();
 
 	before(async () => container.resolve<App>("App").ready);
 
@@ -55,11 +56,11 @@ describe("POST /api/v1/metrics", () => {
 		const { statusCode, body } = await server.post("/v1/metrics").send([
 			{
 			orgId: 1,
-			accountId: 1,
-			userId: 1,
-			metricCategoryId: 1,
-			metricTypeId: 1,
-			metricTypeVersion: 1,
+			accountId: 2,
+			userId: userId,
+			metricCategoryId: 13,
+			metricTypeId: 14,
+			metricTypeVersion: 10,
 			deviceId: 101,
 			batchId: "123456",
 			value: 35,
@@ -68,22 +69,24 @@ describe("POST /api/v1/metrics", () => {
 		}
 		]);
 		assert.equal(statusCode, 201);
-		assert.equal(body.orgId, 1);
-		assert.equal(body.accountId, 1);
-		assert.equal(body.userId, 1);
-		assert.equal(body.metricCategoryId, 1);
-		assert.equal(body.metricTypeId, 1);
-		assert.equal(body.metricTypeVersion, 1);
-		assert.equal(body.deviceId, 101);
-		assert.equal(body.batchId, "123456");
-		assert.equal(body.value, 35);
-		assert.isString(body.takenAt);
-		assert.equal(body.takenAtOffset, 90);
-		assert.isString(body.arn);
+		assert.equal(body[0].orgId, 1);
+		assert.equal(body[0].accountId, 2);
+		assert.equal(body[0].userId, userId);
+		assert.equal(body[0].metricCategoryId, 13);
+		assert.equal(body[0].metricTypeId, 14);
+		assert.equal(body[0].metricTypeVersion, 10);
+		assert.equal(body[0].deviceId, 101);
+		assert.equal(body[0].batchId, "123456");
+		assert.equal(body[0].value, 35);
+		assert.isString(body[0].takenAt);
+		assert.equal(body[0].takenAtOffset, 90);
+		assert.isString(body[0].arn);
+		context.createdMetricId = body[0].id;
 	});
 
 	it("Should return validation error", async () => {
-		const { statusCode, body } = await server.post("/v1/metrics").send({
+		const { statusCode, body } = await server.post("/v1/metrics").send([
+			{
 			orgId: "main",
 			accountId: -1,
 			userId: -2,
@@ -95,21 +98,22 @@ describe("POST /api/v1/metrics", () => {
 			value: "bad",
 			takenAt: "now",
 			takenAtOffset: "kk",
-		});
+		}
+		]);
 		assert.equal(statusCode, 422);
 		assert.isDefined(body.validation);
 		assert.isString(body.message);
-		assert.isString(body.validation.body.orgId[0]);
-		assert.isString(body.validation.body.accountId[0]);
-		assert.isString(body.validation.body.userId[0]);
-		assert.isString(body.validation.body.metricCategoryId[0]);
-		assert.isString(body.validation.body.metricTypeId[0]);
-		assert.isString(body.validation.body.metricTypeVersion[0]);
-		assert.isString(body.validation.body.deviceId[0]);
-		assert.isString(body.validation.body.batchId[0]);
-		assert.isString(body.validation.body.value[0]);
-		assert.isString(body.validation.body.takenAt[0]);
-		assert.isString(body.validation.body.takenAtOffset[0]);
+		assert.isString(body.validation.body[0].orgId[0]);
+		assert.isString(body.validation.body[0].accountId[0]);
+		assert.isString(body.validation.body[0].userId[0]);
+		assert.isString(body.validation.body[0].metricCategoryId[0]);
+		assert.isString(body.validation.body[0].metricTypeId[0]);
+		assert.isString(body.validation.body[0].metricTypeVersion[0]);
+		assert.isString(body.validation.body[0].deviceId[0]);
+		assert.isString(body.validation.body[0].batchId[0]);
+		assert.isString(body.validation.body[0].value[0]);
+		assert.isString(body.validation.body[0].takenAt[0]);
+		assert.isString(body.validation.body[0].takenAtOffset[0]);
 
 	});
 });

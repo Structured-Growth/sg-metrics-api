@@ -8,6 +8,7 @@ import {initTest} from "../../../common/init-test";
 describe("GET /api/v1/metrics/aggregate", () => {
 	const { server, context } = initTest();
 	const code = `code-${Date.now()}`;
+	const userId = Date.now();
 
 
 	before(async () => container.resolve<App>("App").ready);
@@ -53,10 +54,11 @@ describe("GET /api/v1/metrics/aggregate", () => {
 
 	});
 	it("Should create metric", async () => {
-		const { statusCode, body } = await server.post("/v1/metrics").send({
+		const { statusCode, body } = await server.post("/v1/metrics").send([
+			{
 			orgId: 1,
 			accountId: 13,
-			userId: 88,
+			userId: userId,
 			metricCategoryId: context["createdMetricCategoryId"],
 			//metricCategoryId: 333,
 			metricTypeId: context["createdMetricTypeId"],
@@ -67,9 +69,10 @@ describe("GET /api/v1/metrics/aggregate", () => {
 			value: 50,
 			takenAt: "2023-05-11T14:30:00+00:00",
 			takenAtOffset: 90,
-		});
+		}
+		]);
 		assert.equal(statusCode, 201);
-		context.createdMetricId = body.id;
+		context.createdMetricId = body[0].id;
 	});
 
 	it("Should return metric", async () => {
