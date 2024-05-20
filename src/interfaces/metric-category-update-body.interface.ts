@@ -3,6 +3,6 @@ import { MetricCategoryAttributes } from "../../database/models/metric-category.
 export interface MetricCategoryUpdateBodyInterface {
 	title?: string;
 	status?: MetricCategoryAttributes["status"];
-	code?: number;
+	code?: string;
 	metadata?: Record<string, string>;
 }

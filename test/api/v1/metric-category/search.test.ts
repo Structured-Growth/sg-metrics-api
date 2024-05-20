@@ -50,6 +50,7 @@ describe("GET /api/v1/metric-category", () => {
 		assert.isString(body.data[0].createdAt);
 		assert.isString(body.data[0].updatedAt);
 		assert.equal(body.data[0].status, "inactive");
+		assert.equal(body.data[0].code, code);
 		assert.isString(body.data[0].arn);
 		assert.equal(body.data[0].orgId, 4);
 		assert.equal(body.data[0].title, code);

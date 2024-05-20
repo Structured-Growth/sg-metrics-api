@@ -31,6 +31,7 @@ describe("GET /api/v1/metric-category:metricCategoryId", () => {
 		assert.isString(body.createdAt);
 		assert.isString(body.updatedAt);
 		assert.equal(body.region, "us");
+		assert.equal(body.code, code);
 		assert.isString(body.title, code);
 		assert.equal(body.status, "active");
 		assert.isString(body.arn);
