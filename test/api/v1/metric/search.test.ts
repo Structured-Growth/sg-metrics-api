@@ -133,7 +133,7 @@ describe("GET /api/v1/metrics", () => {
 		assert.equal(body.data[0].deviceId, deviceId);
 		assert.equal(body.data[0].batchId, batchId);
 		assert.equal(body.data[0].value, value);
-		assert.equal(body.data[0].takenAt, "2024-05-07T14:30:00.000Z");
+		assert.equal(body.data[0].takenAt, "2024-05-16T14:30:00.000Z");
 		assert.equal(body.data[0].takenAtOffset, takenAtOffset);
 		assert.isString(body.data[0].recordedAt);
 		assert.equal(body.page, 1);
@@ -146,7 +146,7 @@ describe("GET /api/v1/metrics", () => {
 			value: value,
 		});
 		assert.equal(statusCode, 200);
-		assert.equal(body.data[0].value, 35);
+		assert.equal(body.data[0].value, value);
 	}).timeout(1800000);
 
 	it("Should search by deviceId", async () => {
@@ -155,7 +155,7 @@ describe("GET /api/v1/metrics", () => {
 			deviceId: deviceId,
 		});
 		assert.equal(statusCode, 200);
-		assert.equal(body.data[0].deviceId, 101);
+		assert.equal(body.data[0].deviceId, deviceId);
 	}).timeout(1800000);
 
 	it("Should search by value range", async () => {
@@ -165,14 +165,14 @@ describe("GET /api/v1/metrics", () => {
 			valueMax: valueMax,
 		});
 		assert.equal(statusCode, 200);
-		assert.equal(body.data[0].value, 35);
+		assert.equal(body.data[0].value, value);
 	}).timeout(1800000);
 
 	it("Should search by taken time range", async () => {
 		const { statusCode, body } = await server.get("/v1/metrics").query({
 			userId,
-			takenAtMin: "2024-05-01T14:30:00+00:00",
-			takenAtMax: "2024-05-08T14:30:00+00:00",
+			takenAtMin: "2024-05-10T14:30:00+00:00",
+			takenAtMax: "2024-05-18T14:30:00+00:00",
 		});
 		assert.equal(statusCode, 200);
 		assert.isString(body.data[0].takenAt);
