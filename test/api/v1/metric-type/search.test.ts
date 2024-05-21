@@ -9,12 +9,16 @@ import { initTest } from "../../../common/init-test";
 describe("GET /api/v1/metric-type", () => {
 	const { server, context } = initTest();
 	const code = `code-${Date.now()}`;
+	const orgId = parseInt(Date.now().toString().slice(0, 3));
+	const factor = parseInt(Date.now().toString().slice(0, 2));
+	const version = orgId - factor;
+	const accountId = orgId - factor - factor;
 
 	before(async () => container.resolve<App>("App").ready);
 
 	it("Should create metric category", async () => {
 		const { statusCode, body } = await server.post("/v1/metric-category").send({
-			orgId: 1,
+			orgId: orgId,
 			region: RegionEnum.US,
 			title: code,
 			code: code,
@@ -31,15 +35,16 @@ describe("GET /api/v1/metric-type", () => {
 
 	it("Should create metric type", async () => {
 		const { statusCode, body } = await server.post("/v1/metric-type").send({
-			orgId: 1,
+			orgId: orgId,
+			accountId: accountId,
 			region: RegionEnum.US,
 			metricCategoryId: context.createdMetricCategoryId,
 			title: code,
 			code: code,
 			unit: code,
-			factor: 1,
+			factor: factor,
 			relatedTo: code,
-			version: 1,
+			version: version,
 			status: "inactive",
 			metadata: {
 				specUrl: "https://",
@@ -89,15 +94,16 @@ describe("GET /api/v1/metric-type", () => {
 		assert.isString(body.data[0].createdAt);
 		assert.isString(body.data[0].updatedAt);
 		assert.equal(body.data[0].code, code);
+		assert.equal(body.data[0].accountId, accountId);
 		assert.equal(body.data[0].status, "inactive");
 		assert.isString(body.data[0].arn);
-		assert.equal(body.data[0].orgId, 1);
+		assert.equal(body.data[0].orgId, orgId);
 		assert.equal(body.data[0].title, code);
 		assert.equal(body.data[0].code, code);
 		assert.equal(body.data[0].unit, code);
-		assert.equal(body.data[0].factor, 1);
+		assert.equal(body.data[0].factor, factor);
 		assert.equal(body.data[0].relatedTo, code);
-		assert.equal(body.data[0].version, 1);
+		assert.equal(body.data[0].version, version);
 		assert.equal(body.page, 1);
 		assert.equal(body.limit, 20);
 		assert.equal(body.total, 1);
@@ -126,6 +132,7 @@ describe("GET /api/v1/metric-type", () => {
 		const { statusCode, body } = await server.get("/v1/metric-type").query({
 			"status[0]": "inactive",
 			"status[1]": "active",
+			"title[0]": code,
 		});
 		assert.equal(statusCode, 200);
 	});

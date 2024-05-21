@@ -11,12 +11,21 @@ describe("POST /api/v1/metrics", () => {
 	const { server, context } = initTest();
 	const code = `code-${Date.now()}`;
 	const userId = Date.now();
+	const orgId = parseInt(Date.now().toString().slice(0, 3));
+	const factor = parseInt(Date.now().toString().slice(0, 2));
+	const version = orgId - factor;
+	const accountId = orgId - factor - factor;
+	const metricTypeVersion = parseInt(Date.now().toString().slice(0, 2));
+	const deviceId = version - accountId;
+	const batchId = `batchId-${Date.now()}`;
+	const value = metricTypeVersion - factor;
+	const takenAtOffset = metricTypeVersion + factor;
 
 	before(async () => container.resolve<App>("App").ready);
 
 	it("Should create metric category", async () => {
 		const { statusCode, body } = await server.post("/v1/metric-category").send({
-			orgId: 1,
+			orgId: orgId,
 			region: RegionEnum.US,
 			title: code,
 			code: code,
@@ -28,20 +37,21 @@ describe("POST /api/v1/metrics", () => {
 		});
 		assert.equal(statusCode, 201);
 		assert.isNumber(body.id);
+		context.createdMetricCategoryId = body.id;
 
 	});
 
 	it("Should create metric type", async () => {
 		const { statusCode, body } = await server.post("/v1/metric-type").send({
-			orgId: 1,
+			orgId: orgId,
 			region: RegionEnum.US,
-			metricCategoryId: 1,
+			metricCategoryId: context.createdMetricCategoryId,
 			title: code,
 			code: code,
 			unit: code,
-			factor: 1,
+			factor: factor,
 			relatedTo: code,
-			version: 1,
+			version: version,
 			status: "inactive",
 			metadata: {
 				specUrl: "https://",
@@ -50,36 +60,37 @@ describe("POST /api/v1/metrics", () => {
 		});
 		assert.equal(statusCode, 201);
 		assert.isNumber(body.id);
+		context.createdMetricTypeId = body.id;
 	});
 
 	it("Should create metric", async () => {
 		const { statusCode, body } = await server.post("/v1/metrics").send([
 			{
-			orgId: 1,
-			accountId: 2,
+			orgId: orgId,
+			accountId: accountId,
 			userId: userId,
-			metricCategoryId: 13,
-			metricTypeId: 14,
-			metricTypeVersion: 10,
-			deviceId: 101,
-			batchId: "123456",
-			value: 35,
-			takenAt: "2024-05-06T14:30:00+00:00",
-			takenAtOffset: 90,
+			metricCategoryId: context.createdMetricCategoryId,
+			metricTypeId: context.createdMetricTypeId,
+			metricTypeVersion: metricTypeVersion,
+			deviceId: deviceId,
+			batchId: batchId,
+			value: value,
+			takenAt: "2024-05-16T14:30:00+00:00",
+			takenAtOffset: takenAtOffset,
 		}
 		]);
 		assert.equal(statusCode, 201);
-		assert.equal(body[0].orgId, 1);
-		assert.equal(body[0].accountId, 2);
+		assert.equal(body[0].orgId, orgId);
+		assert.equal(body[0].accountId, accountId);
 		assert.equal(body[0].userId, userId);
-		assert.equal(body[0].metricCategoryId, 13);
-		assert.equal(body[0].metricTypeId, 14);
-		assert.equal(body[0].metricTypeVersion, 10);
-		assert.equal(body[0].deviceId, 101);
-		assert.equal(body[0].batchId, "123456");
-		assert.equal(body[0].value, 35);
+		assert.equal(body[0].metricCategoryId, context["createdMetricCategoryId"]);
+		assert.equal(body[0].metricTypeId, context["createdMetricTypeId"]);
+		assert.equal(body[0].metricTypeVersion, metricTypeVersion);
+		assert.equal(body[0].deviceId, deviceId);
+		assert.equal(body[0].batchId, batchId);
+		assert.equal(body[0].value, value);
 		assert.isString(body[0].takenAt);
-		assert.equal(body[0].takenAtOffset, 90);
+		assert.equal(body[0].takenAtOffset, takenAtOffset);
 		assert.isString(body[0].arn);
 		context.createdMetricId = body[0].id;
 	});

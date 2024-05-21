@@ -6,10 +6,11 @@ import { initTest } from "../../../common/init-test";
 describe("GET /api/v1/metric-category", () => {
 	const { server, context } = initTest();
 	const code = `code-${Date.now()}`;
+	const orgId = parseInt(Date.now().toString().slice(0, 3));
 
 	it("Should create metric category", async () => {
 		const { statusCode, body } = await server.post("/v1/metric-category").send({
-			orgId: 4,
+			orgId: orgId,
 			region: RegionEnum.US,
 			title: code,
 			code: code,
@@ -26,7 +27,7 @@ describe("GET /api/v1/metric-category", () => {
 	it("Should return validation error", async () => {
 		const { statusCode, body } = await server.get("/v1/metric-category").query({
 			orgId: "fFf",
-			accountId: "mainAcccount",
+			accountId: "mainAccount",
 			region: "Ukraine",
 			title: -2,
 			code: -12,
@@ -44,6 +45,7 @@ describe("GET /api/v1/metric-category", () => {
 	it("Should return created metric category by id", async () => {
 		const { statusCode, body } = await server.get("/v1/metric-category").query({
 			"id[0]": context["createdMetricCategoryId"],
+			"orgId[0]": orgId,
 		});
 		assert.equal(statusCode, 200);
 		assert.equal(body.data[0].id, context["createdMetricCategoryId"]);
@@ -52,7 +54,7 @@ describe("GET /api/v1/metric-category", () => {
 		assert.equal(body.data[0].status, "inactive");
 		assert.equal(body.data[0].code, code);
 		assert.isString(body.data[0].arn);
-		assert.equal(body.data[0].orgId, 4);
+		assert.equal(body.data[0].orgId, orgId);
 		assert.equal(body.data[0].title, code);
 		assert.equal(body.page, 1);
 		assert.equal(body.limit, 20);
@@ -62,6 +64,7 @@ describe("GET /api/v1/metric-category", () => {
 	it("Should search by code", async () => {
 		const { statusCode, body } = await server.get("/v1/metric-category").query({
 			"title[0]": code,
+			"orgId[0]": orgId,
 		});
 		assert.equal(statusCode, 200);
 		assert.equal(body.total, 1);
@@ -82,6 +85,7 @@ describe("GET /api/v1/metric-category", () => {
 		const { statusCode, body } = await server.get("/v1/metric-category").query({
 			"status[0]": "inactive",
 			"status[1]": "active",
+			"orgId[0]": orgId,
 		});
 		assert.equal(statusCode, 200);
 	});

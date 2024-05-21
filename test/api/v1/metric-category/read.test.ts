@@ -6,10 +6,11 @@ import {RegionEnum, webServer} from "@structured-growth/microservice-sdk";
 describe("GET /api/v1/metric-category:metricCategoryId", () => {
 	const { server, context } = initTest();
 	const code = `code-${Date.now()}`;
+	const orgId = parseInt(Date.now().toString().slice(0, 3));
 
 	it("Should create metric category", async () => {
 		const { statusCode, body } = await server.post("/v1/metric-category").send({
-			orgId: 3,
+			orgId: orgId,
 			region: RegionEnum.US,
 			title: code,
 			code: code,
@@ -28,6 +29,7 @@ describe("GET /api/v1/metric-category:metricCategoryId", () => {
 		const { statusCode, body } = await server.get(`/v1/metric-category/${context.createdMetricCategoryId}`);
 		assert.equal(statusCode, 200);
 		assert.equal(body.id, context["createdMetricCategoryId"]);
+		assert.equal(body.orgId, orgId);
 		assert.isString(body.createdAt);
 		assert.isString(body.updatedAt);
 		assert.equal(body.region, "us");

@@ -8,12 +8,16 @@ import {App} from "../../../../src/app/app";
 describe("GET /api/v1/metric-type:metricTypeId", () => {
 	const { server, context } = initTest();
 	const code = `code-${Date.now()}`;
+	const orgId = parseInt(Date.now().toString().slice(0, 3));
+	const factor = parseInt(Date.now().toString().slice(0, 2));
+	const version = orgId - factor;
+	const accountId = orgId - factor - factor;
 
 	before(async () => container.resolve<App>("App").ready);
 
 	it("Should create metric category", async () => {
 		const { statusCode, body } = await server.post("/v1/metric-category").send({
-			orgId: 1,
+			orgId: orgId,
 			region: RegionEnum.US,
 			title: code,
 			code: code,
@@ -25,20 +29,22 @@ describe("GET /api/v1/metric-type:metricTypeId", () => {
 		});
 		assert.equal(statusCode, 201);
 		assert.isNumber(body.id);
+		context.createdMetricCategoryId = body.id;
 
 	});
 
 	it("Should create metric type", async () => {
 		const { statusCode, body } = await server.post("/v1/metric-type").send({
-			orgId: 1,
+			orgId: orgId,
 			region: RegionEnum.US,
 			metricCategoryId: context["createdMetricCategoryId"],
 			title: code,
 			code: code,
 			unit: code,
-			factor: 1,
+			accountId: accountId,
+			factor: factor,
 			relatedTo: code,
-			version: 1,
+			version: version,
 			status: "inactive",
 			metadata: {
 				specUrl: "https://",
@@ -58,13 +64,14 @@ describe("GET /api/v1/metric-type:metricTypeId", () => {
 		assert.isNumber(body.id);
 		assert.isString(body.createdAt);
 		assert.isString(body.updatedAt);
-		assert.equal(body.orgId, 1);
+		assert.equal(body.orgId, orgId);
+		assert.equal(body.accountId, accountId);
 		assert.equal(body.region, "us");
 		assert.isString(body.title, code);
 		assert.isString(body.unit, code);
-		assert.equal(body.factor, 1);
+		assert.equal(body.factor, factor);
 		assert.isString(body.relatedTo, code);
-		assert.equal(body.version, 1);
+		assert.equal(body.version, version);
 		assert.equal(body.status, "inactive");
 		assert.isString(body.arn);
 	});
