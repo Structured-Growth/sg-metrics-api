@@ -37,8 +37,7 @@ type MetricCategoryKeys = (typeof publicMetricCategoryAttributes)[number];
 type PublicMetricCategoryAttributes = Pick<MetricCategoryAttributes, MetricCategoryKeys> & {
 	metadata: Record<string, string>;
 };
-type SearchMetricCategoryAttributes = Omit<PublicMetricCategoryAttributes, 'accountId'>;
-
+type SearchMetricCategoryAttributes = Omit<PublicMetricCategoryAttributes, "accountId">;
 
 @Route("v1/metric-category")
 @Tags("Metric Category")
