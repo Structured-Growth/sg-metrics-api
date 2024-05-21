@@ -63,7 +63,7 @@ describe("GET /api/v1/metric-type", () => {
 			region: "Ukraine",
 			metricCategoryId: -9,
 			title: -2,
-			code: -12,
+			code: "123345678901234567890123456789012345678901234567890",
 			unit: "12345678901234567890123456789012345678901234567890123456789012345678901234567890",
 			factor: "fFf",
 			relatedTo: "12345678901234567890123456789012345678901234567890123456789012345678901234567890",
@@ -74,7 +74,6 @@ describe("GET /api/v1/metric-type", () => {
 		assert.equal(body.name, "ValidationError");
 		assert.isString(body.validation.query.status[0][0]);
 		assert.isString(body.validation.query.title[0]);
-		assert.isString(body.validation.query.code[0]);
 		assert.isString(body.validation.query.unit[0]);
 		assert.isString(body.validation.query.factor[0]);
 		assert.isString(body.validation.query.relatedTo[0]);
@@ -114,8 +113,24 @@ describe("GET /api/v1/metric-type", () => {
 			"title[0]": code,
 		});
 		assert.equal(statusCode, 200);
-		assert.equal(body.total, 1);
 		assert.equal(body.data[0].id, context["createdMetricTypeId"]);
+		assert.equal(body.data[0].metricCategoryId, context["createdMetricCategoryId"]);
+		assert.isString(body.data[0].createdAt);
+		assert.isString(body.data[0].updatedAt);
+		assert.equal(body.data[0].code, code);
+		assert.equal(body.data[0].accountId, accountId);
+		assert.equal(body.data[0].status, "inactive");
+		assert.isString(body.data[0].arn);
+		assert.equal(body.data[0].orgId, orgId);
+		assert.equal(body.data[0].title, code);
+		assert.equal(body.data[0].code, code);
+		assert.equal(body.data[0].unit, code);
+		assert.equal(body.data[0].factor, factor);
+		assert.equal(body.data[0].relatedTo, code);
+		assert.equal(body.data[0].version, version);
+		assert.equal(body.page, 1);
+		assert.equal(body.limit, 20);
+		assert.equal(body.total, 1);
 	});
 
 
@@ -135,5 +150,48 @@ describe("GET /api/v1/metric-type", () => {
 			"title[0]": code,
 		});
 		assert.equal(statusCode, 200);
+		assert.equal(body.data[0].id, context["createdMetricTypeId"]);
+		assert.equal(body.data[0].metricCategoryId, context["createdMetricCategoryId"]);
+		assert.isString(body.data[0].createdAt);
+		assert.isString(body.data[0].updatedAt);
+		assert.equal(body.data[0].code, code);
+		assert.equal(body.data[0].accountId, accountId);
+		assert.equal(body.data[0].status, "inactive");
+		assert.isString(body.data[0].arn);
+		assert.equal(body.data[0].orgId, orgId);
+		assert.equal(body.data[0].title, code);
+		assert.equal(body.data[0].code, code);
+		assert.equal(body.data[0].unit, code);
+		assert.equal(body.data[0].factor, factor);
+		assert.equal(body.data[0].relatedTo, code);
+		assert.equal(body.data[0].version, version);
+		assert.equal(body.page, 1);
+		assert.equal(body.limit, 20);
+		assert.equal(body.total, 1);
+	});
+
+	it("Should return created metric type by created Metric Category Id", async () => {
+		const { statusCode, body } = await server.get("/v1/metric-type").query({
+			"metricCategoryId": context.createdMetricCategoryId,
+		});
+		assert.equal(statusCode, 200);
+		assert.equal(body.data[0].id, context["createdMetricTypeId"]);
+		assert.equal(body.data[0].metricCategoryId, context["createdMetricCategoryId"]);
+		assert.isString(body.data[0].createdAt);
+		assert.isString(body.data[0].updatedAt);
+		assert.equal(body.data[0].code, code);
+		assert.equal(body.data[0].accountId, accountId);
+		assert.equal(body.data[0].status, "inactive");
+		assert.isString(body.data[0].arn);
+		assert.equal(body.data[0].orgId, orgId);
+		assert.equal(body.data[0].title, code);
+		assert.equal(body.data[0].code, code);
+		assert.equal(body.data[0].unit, code);
+		assert.equal(body.data[0].factor, factor);
+		assert.equal(body.data[0].relatedTo, code);
+		assert.equal(body.data[0].version, version);
+		assert.equal(body.page, 1);
+		assert.equal(body.limit, 20);
+		assert.equal(body.total, 1);
 	});
 });

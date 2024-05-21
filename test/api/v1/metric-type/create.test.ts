@@ -64,6 +64,28 @@ describe("POST /api/v1/metric-type", () => {
 		assert.isString(body.arn);
 	});
 
+	it("Should error because this code exists", async () => {
+		const { statusCode, body } = await server.post("/v1/metric-type").send({
+			orgId: orgId,
+			region: RegionEnum.US,
+			metricCategoryId: context["createdMetricCategoryId"],
+			title: code,
+			code: code,
+			unit: code,
+			factor: factor,
+			relatedTo: code,
+			version: version,
+			status: "inactive",
+			metadata: {
+				specUrl: "https://",
+				countryCode: "test",
+			},
+		});
+		assert.equal(statusCode, 422);
+		assert.isDefined(body.validation);
+		assert.isString(body.message);
+	});
+
 	it("Should return validation error", async () => {
 		const { statusCode, body } = await server.post("/v1/metric-type").send({
 			orgId: "main",
