@@ -262,7 +262,7 @@ export class MetricRepository {
 			"batchId",
 			"deviceId",
 			"userId",
-			"null",
+			"version",
 			"orgId",
 			"takenAtOffset",
 			"accountId",
