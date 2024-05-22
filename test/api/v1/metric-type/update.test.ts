@@ -56,6 +56,31 @@ describe("PUT /api/v1/metric-type/:metricTypeId", () => {
 		metric = body;
 		context.createdMetricTypeId = body.id;
 	});
+
+	it("Should create metric type", async () => {
+		const { statusCode, body } = await server.post("/v1/metric-type").send({
+			orgId: orgId,
+			region: RegionEnum.US,
+			metricCategoryId: context["createdMetricCategoryId"],
+			title: code,
+			code: code + '2',
+			unit: code,
+			factor: factor,
+			relatedTo: code,
+			version: version,
+			status: "inactive",
+			metadata: {
+				specUrl: "https://",
+				countryCode: "test",
+			},
+		});
+		assert.equal(statusCode, 201);
+		assert.isNumber(body.id);
+		assert.equal(body.status, "inactive");
+		metric = body;
+		context.createdMetricType2Id = body.id;
+	});
+
 	it("Should return validation error", async () => {
 		const { statusCode, body } = await server.put(`/v1/metric-type/${context.createdMetricTypeId}`).send({
 			title: code + "-updated",
@@ -75,6 +100,7 @@ describe("PUT /api/v1/metric-type/:metricTypeId", () => {
 	it("Should update metric type", async () => {
 		const { statusCode, body } = await server.put(`/v1/metric-type/${context.createdMetricTypeId}`).send({
 			title: code + "-updated",
+			code: code + "-updated",
 			status: "active",
 			metadata: {
 				specUrl: "https://updated",
@@ -85,6 +111,21 @@ describe("PUT /api/v1/metric-type/:metricTypeId", () => {
 		assert.equal(body.status, "active");
 		assert.isString(body.title, code + "-updated");
 		metric = body;
+	});
+
+	it("Should return error because code is already exists", async () => {
+		const { statusCode, body } = await server.put(`/v1/metric-type/${context.createdMetricType2Id}`).send({
+			title: code,
+			code: code + '2',
+			status: "active",
+			metadata: {
+				specUrl: "https://updated",
+				countryCode: "test+updated",
+			},
+		});
+		assert.equal(statusCode, 422);
+		assert.isDefined(body.validation);
+		assert.isString(body.message);
 	});
 
 });

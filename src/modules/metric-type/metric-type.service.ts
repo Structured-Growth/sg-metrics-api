@@ -4,13 +4,15 @@ import { MetricTypeCreateBodyInterface } from "../../interfaces/metric-type-crea
 import { MetricTypeUpdateBodyInterface } from "../../interfaces/metric-type-update-body.interface";
 import { MetricTypeRepository } from "./metric-type.repository";
 import { MetricCategoryRepository } from "../metric-category/metric-category.repository";
+import { MetricRepository } from "../metric/metric.repository";
 import { isUndefined, omitBy } from "lodash";
 
 @autoInjectable()
 export class MetricTypeService {
 	constructor(
 		@inject("MetricTypeRepository") private metricTypeRepository: MetricTypeRepository,
-		@inject("MetricCategoryRepository") private metricCategoryRepository: MetricCategoryRepository
+		@inject("MetricCategoryRepository") private metricCategoryRepository: MetricCategoryRepository,
+		@inject("MetricRepository") private metricRepository: MetricRepository
 	) {}
 
 	public async create(params: MetricTypeCreateBodyInterface): Promise<MetricType> {
@@ -49,6 +51,13 @@ export class MetricTypeService {
 		if (!checkMetricTypeId) {
 			throw new NotFoundError(`Metric Type ${metricTypeId} not found`);
 		}
+		const existingMetricType = await this.metricTypeRepository.findByCode(params.code);
+		if (existingMetricType) {
+			throw new ValidationError(
+				{ code: `Metric Type with code ${params.code} already exists` },
+				`Metric Type with code ${params.code} already exists`
+			);
+		}
 		return this.metricTypeRepository.update(
 			metricTypeId,
 			omitBy(
@@ -67,5 +76,22 @@ export class MetricTypeService {
 				isUndefined
 			) as MetricTypeUpdateAttributes
 		);
+	}
+	public async delete(metricTypeId: number): Promise<void> {
+		const metricType = await this.metricTypeRepository.read(metricTypeId);
+
+		if (!metricType) {
+			throw new NotFoundError(`Metric Type ${metricTypeId} not found`);
+		}
+		const orgId = metricType.orgId;
+		const associatedMetric = await this.metricRepository.search({ orgId, metricTypeId });
+		if (associatedMetric.data.length > 0) {
+			throw new ValidationError(
+				{ code: `Metric Type ${metricTypeId} cannot be deleted as it has associated Metric` },
+				`Metric Type ${metricTypeId} cannot be deleted as it has associated Metric`
+			);
+		}
+
+		await this.metricCategoryRepository.delete(metricTypeId);
 	}
 }
