@@ -163,7 +163,7 @@ export class MetricTypeController extends BaseController {
 		if (!metricType) {
 			throw new NotFoundError(`Metric Type ${metricTypeId} not found`);
 		}
-		await this.metricTypeRepository.delete(metricTypeId);
+		await this.metricTypeService.delete(metricTypeId);
 		this.response.status(204);
 	}
 }

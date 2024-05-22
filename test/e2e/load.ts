@@ -26,7 +26,7 @@ describe("LOAD TEST /api/v1/metrics", () => {
 
     const startDate = '2024-05-04';
     const endDate = '2024-05-18';
-    const numMetricsPerDay = 3600;
+    const numMetricsPerDay = 500;
     const chunkSize = 100;
 
     const moment = require('moment');

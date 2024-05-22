@@ -32,10 +32,10 @@ export class MetricTypeRepository
 		params.accountId && (where["accountId"] = params.accountId);
 		params.status && (where["status"] = { [Op.in]: params.status });
 		params.id && (where["id"] = { [Op.in]: params.id });
-		params.unit && (where["unit"] = { [Op.in]: params.unit });
-		params.factor && (where["factor"] = { [Op.in]: params.factor });
-		params.relatedTo && (where["relatedTo"] = { [Op.in]: params.relatedTo });
-		params.version && (where["version"] = { [Op.in]: params.version });
+		params.unit && (where["unit"] = params.unit);
+		params.factor && (where["factor"] = params.factor);
+		params.relatedTo && (where["relatedTo"] = params.relatedTo);
+		params.version && (where["version"] = params.version);
 
 		if (params.title?.length > 0) {
 			where["title"] = {
@@ -228,11 +228,6 @@ export class MetricTypeRepository
 	}
 
 	public async delete(id: number): Promise<void> {
-		const metricType = await MetricType.findByPk(id);
-		if (!metricType) {
-			throw new NotFoundError(`Metric Type ${id} not found`);
-		}
-
 		await MetricTypeMetadata.destroy({
 			where: {
 				metricTypeId: id,
