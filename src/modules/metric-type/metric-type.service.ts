@@ -23,7 +23,7 @@ export class MetricTypeService {
 		const existingMetricType = await this.metricTypeRepository.findByCode(params.code);
 		if (existingMetricType) {
 			throw new ValidationError(
-				{ code: 422, message: `Metric Type with code ${params.code} already exists` },
+				{ code: `Metric Type with code ${params.code} already exists` },
 				`Metric Type with code ${params.code} already exists`
 			);
 		}
