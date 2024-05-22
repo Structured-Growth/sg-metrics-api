@@ -51,12 +51,14 @@ export class MetricTypeService {
 		if (!checkMetricTypeId) {
 			throw new NotFoundError(`Metric Type ${metricTypeId} not found`);
 		}
-		const existingMetricType = await this.metricTypeRepository.findByCode(params.code);
-		if (existingMetricType) {
-			throw new ValidationError(
-				{ code: `Metric Type with code ${params.code} already exists` },
-				`Metric Type with code ${params.code} already exists`
-			);
+		if (params.code && params.code !== checkMetricTypeId.code) {
+			const metricCategoryWithSameCode = await this.metricTypeRepository.findByCode(params.code);
+			if (metricCategoryWithSameCode) {
+				throw new ValidationError(
+					{ code: `Metric Type with code ${params.code} already exists` },
+					`Metric Category with code ${params.code} already exists`
+				);
+			}
 		}
 		return this.metricTypeRepository.update(
 			metricTypeId,
