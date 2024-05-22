@@ -17,6 +17,8 @@ import { MetricAggregateParamsInterface } from "../../interfaces/metric-aggregat
 import { SearchResultInterface } from "@structured-growth/microservice-sdk";
 import { v4 as uuidv4 } from "uuid";
 import { parseInt } from "lodash";
+import { WriteRecordsRequest } from "aws-sdk/clients/timestreamwrite";
+import { ColumnInfo, Row } from "aws-sdk/clients/timestreamquery";
 
 @autoInjectable()
 export class MetricRepository {
@@ -58,7 +60,7 @@ export class MetricRepository {
 		return this.writeRecord(metrics);
 	}
 
-	public async read(id: number): Promise<Metric | null> {
+	public async read(id: string): Promise<Metric | null> {
 		const query = `SELECT *
                    FROM "${this.configuration.DatabaseName}"."${this.configuration.TableName}"
                    WHERE id = '${id}'
@@ -66,13 +68,20 @@ export class MetricRepository {
 		const result = await this.executeQuery(query);
 
 		if (result.Rows && result.Rows.length > 0) {
-			return this.parseMetric(result.Rows[0]);
+			return this.parseMetric(result.ColumnInfo, result.Rows[0]);
 		} else {
 			throw new NotFoundError(`Metric ${id} not found`);
 		}
 	}
 
-	public async update(id: number, params: Partial<MetricAttributes>): Promise<void> {
+	public async update(id: string, params: Partial<MetricAttributes>): Promise<Metric> {
+		const metric = await this.read(id);
+
+		Object.assign(metric, params);
+
+		await this.writeRecord([metric], metric.recordedAt);
+
+		return metric;
 		// // 1. Get the original metric
 		// const originalMetric = await this.read(id);
 		// if (!originalMetric) {
@@ -132,7 +141,7 @@ export class MetricRepository {
 		const query = this.buildQuery(params, offset, limit, order);
 		const result = await this.executeQuery(query);
 		return {
-			data: this.parseResult(result),
+			data: this.parseResult(result.ColumnInfo, result.Rows),
 			page: page,
 			limit: limit,
 		};
@@ -156,18 +165,16 @@ export class MetricRepository {
 			throw new Error(`Invalid time range: ${params.aggregationInterval}`);
 		}
 
-		let query = `SELECT 
-    
-							ROUND(AVG(CASE WHEN measure_name = 'value' THEN measure_value::bigint ELSE NULL END), 2) AS avg,
-							MIN(CASE WHEN measure_name = 'value' THEN measure_value::bigint ELSE NULL END) AS min,
-							MAX(CASE WHEN measure_name = 'value' THEN measure_value::bigint ELSE NULL END) AS max,
-							SUM(CASE WHEN measure_name = 'value' THEN measure_value::bigint ELSE NULL END) AS sum,
-							COUNT(*) AS count,                  
-							MIN(takenAt) AS takenAt,
-							MIN(takenAtOffset) AS takenAtOffset,
-							bin(time, ${params.aggregationInterval}) as recordedAt
+		let query = `SELECT ROUND(AVG(CASE WHEN measure_name = 'value' THEN measure_value::bigint ELSE NULL END), 2) AS avg,
+                        MIN(CASE WHEN measure_name = 'value' THEN measure_value::bigint ELSE NULL END)           AS min,
+                        MAX(CASE WHEN measure_name = 'value' THEN measure_value::bigint ELSE NULL END)           AS max,
+                        SUM(CASE WHEN measure_name = 'value' THEN measure_value::bigint ELSE NULL END)           AS sum,
+                        COUNT(*)                                                                                 AS count,
+                        MIN(takenAt)                                                                             AS takenAt,
+                        MIN(takenAtOffset)                                                                       AS takenAtOffset,
+                        bin(time, ${params.aggregationInterval})                                                 as recordedAt
                  FROM "${this.configuration.DatabaseName}"."${this.configuration.TableName}" m
-				 WHERE time >= '${formattedTimeRangeFilter}'
+                 WHERE time >= '${formattedTimeRangeFilter}'
                  GROUP BY bin(time, ${params.aggregationInterval})`;
 
 		query += ` ORDER BY bin(time, ${params.aggregationInterval}) ASC`;
@@ -193,12 +200,15 @@ export class MetricRepository {
 		};
 	}
 
-	private async writeRecord(metrics: Metric[]): Promise<Metric[]> {
-		const recordedAt = new Date();
+	private async writeRecord(metrics: Metric[], recordedAt?: Date): Promise<Metric[]> {
+		recordedAt = recordedAt || new Date();
 
-		const command = {
+		const command: WriteRecordsRequest = {
 			DatabaseName: this.configuration.DatabaseName,
 			TableName: this.configuration.TableName,
+			CommonAttributes: {
+				Version: Date.now(),
+			},
 			Records: metrics.map((metric) => ({
 				Dimensions: [
 					{ Name: "id", Value: metric.id },
@@ -213,7 +223,6 @@ export class MetricRepository {
 					{ Name: "batchId", Value: metric.batchId.toString() },
 					{ Name: "takenAt", Value: metric.takenAt.toString() },
 					{ Name: "takenAtOffset", Value: metric.takenAtOffset.toString() },
-					// { Name: "isActive", Value: "true".toString() },
 				],
 				MeasureName: "value",
 				MeasureValue: metric.value.toString(),
@@ -223,11 +232,13 @@ export class MetricRepository {
 			})),
 		};
 
-		await this.writeClient.writeRecords(command).promise();
+		const res = await this.writeClient.writeRecords(command).promise();
+		console.log(res);
 		metrics.forEach((metric) => (metric.recordedAt = recordedAt));
 
 		return metrics;
 	}
+
 	private parseTimeInterval(timeRangeFilter: string): number {
 		const match = timeRangeFilter.match(/([0-9]+)([a-zA-Z]+)/);
 		if (!match) throw new Error("Invalid time range format");
@@ -244,6 +255,7 @@ export class MetricRepository {
 				throw new Error(`Invalid time range unit: ${unit}`);
 		}
 	}
+
 	private formatDate(date: Date): string {
 		const year = date.getFullYear();
 		const month = this.padZero(date.getMonth() + 1);
@@ -255,51 +267,27 @@ export class MetricRepository {
 		return num < 10 ? `0${num}` : `${num}`;
 	}
 
-	private parseMetric(row: any): Metric {
-		const metricData: { [key: string]: any } = {};
-		const fieldNames = [
-			"metricCategoryId",
-			"batchId",
-			"deviceId",
-			"userId",
-			"version",
-			"orgId",
-			"takenAtOffset",
-			"accountId",
-			"metricTypeId",
-			"takenAt",
-			"metricTypeVersion",
-			"id",
-			"region",
-			"declarationValue",
-			"recordedAt",
-			"value",
-		];
+	private parseMetric(columnInfo: ColumnInfo[], row: Row): Metric {
+		const metricData = columnInfo.reduce((acc, item, index) => {
+			if (["measure_name"].includes(item.Name)) {
+				return acc;
+			}
 
-		row.Data.forEach((item: any, index: number) => {
-			const fieldName = fieldNames[index];
-			const value = item.ScalarValue;
-			metricData[fieldName] = value;
-		});
+			let name = item.Name;
+			if (name === "measure_value::bigint") {
+				name = "value";
+			}
 
-		const metric: Metric = new Metric({
-			metricTypeVersion: parseInt(metricData["metricTypeVersion"]),
-			takenAt: new Date(metricData["takenAt"]),
-			takenAtOffset: parseInt(metricData["takenAtOffset"]),
-			id: metricData["id"],
-			orgId: parseInt(metricData["orgId"]),
-			region: metricData["region"],
-			accountId: parseInt(metricData["accountId"]),
-			userId: parseInt(metricData["userId"]),
-			metricCategoryId: parseInt(metricData["metricCategoryId"]),
-			metricTypeId: parseInt(metricData["metricTypeId"]),
-			deviceId: parseInt(metricData["deviceId"]),
-			batchId: metricData["batchId"],
-			value: parseInt(metricData["value"]),
-			recordedAt: new Date(metricData["recordedAt"]),
-		});
+			if (name === "time") {
+				acc["recordedAt"] = new Date(row.Data[index].ScalarValue + "Z");
+			} else {
+				acc[name] = row.Data[index].ScalarValue;
+			}
+			return acc;
+		}, {});
+		console.log(metricData);
 
-		return metric;
+		return new Metric(metricData as any);
 	}
 
 	private buildQuery(params: MetricSearchParamsInterface, offset: number, limit: number, sort: any): string {
@@ -382,10 +370,10 @@ export class MetricRepository {
 		}
 	}
 
-	private parseResult(result: any): Metric[] {
+	private parseResult(columnInfo: ColumnInfo[], result: any): Metric[] {
 		const metrics: Metric[] = [];
 		for (const row of result.Rows || []) {
-			metrics.push(this.parseMetric(row));
+			metrics.push(this.parseMetric(columnInfo, row));
 		}
 		return metrics;
 	}
