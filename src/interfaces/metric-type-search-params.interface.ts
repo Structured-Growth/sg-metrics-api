@@ -17,6 +17,7 @@ export interface MetricTypeSearchParamsInterface extends Omit<DefaultSearchParam
 	 * `name: ["Starts*", "-*ends"]`
 	 */
 	code?: string[];
+	accountId?: number;
 	unit?: string;
 	factor?: number;
 	relatedTo?: string;

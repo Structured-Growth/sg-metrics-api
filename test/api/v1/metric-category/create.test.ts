@@ -9,12 +9,13 @@ import {assert} from "chai";
 describe("POST /api/v1/metric-category", () => {
 	const server = agent(webServer(routes));
 	const code = `code-${Date.now()}`;
+	const orgId = parseInt(Date.now().toString().slice(0, 3));
 
 	before(async () => container.resolve<App>("App").ready);
 
 	it("Should create metric category", async () => {
 		const { statusCode, body } = await server.post("/v1/metric-category").send({
-			orgId: 1,
+			orgId: orgId,
 			region: RegionEnum.US,
 			title: code,
 			code: code,

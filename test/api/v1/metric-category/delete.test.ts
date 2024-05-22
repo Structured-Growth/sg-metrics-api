@@ -6,10 +6,11 @@ import {RegionEnum} from "@structured-growth/microservice-sdk";
 describe("DELETE /api/v1/metric-category/:metricCategoryId", () => {
 	const { server, context } = initTest();
 	const code = `code-${Date.now()}`;
+	const orgId = parseInt(Date.now().toString().slice(0, 3));
 
 	it("Should create metric category", async () => {
 		const { statusCode, body } = await server.post("/v1/metric-category").send({
-			orgId: 5,
+			orgId: orgId,
 			region: RegionEnum.US,
 			title: code,
 			code: code,

@@ -28,6 +28,7 @@ const publicMetricCategoryAttributes = [
 	"accountId",
 	"title",
 	"status",
+	"code",
 	"createdAt",
 	"updatedAt",
 	"arn",
@@ -36,6 +37,7 @@ type MetricCategoryKeys = (typeof publicMetricCategoryAttributes)[number];
 type PublicMetricCategoryAttributes = Pick<MetricCategoryAttributes, MetricCategoryKeys> & {
 	metadata: Record<string, string>;
 };
+type SearchMetricCategoryAttributes = Omit<PublicMetricCategoryAttributes, "accountId">;
 
 @Route("v1/metric-category")
 @Tags("Metric Category")
@@ -67,11 +69,15 @@ export class MetricCategoryController extends BaseController {
 		const { data, ...result } = await this.metricCategoryRepository.search(query);
 		this.response.status(200);
 		return {
-			data: data.map((metricCategory) => ({
-				...(pick(metricCategory.toJSON(), publicMetricCategoryAttributes) as PublicMetricCategoryAttributes),
-				metadata: metricCategory.metadata,
-				arn: metricCategory.arn,
-			})),
+			data: data.map((metricCategory) => {
+				const attributes = pick(metricCategory.toJSON(), publicMetricCategoryAttributes);
+				delete attributes.accountId;
+				return {
+					...(attributes as SearchMetricCategoryAttributes),
+					metadata: metricCategory.metadata,
+					arn: metricCategory.arn,
+				};
+			}),
 			...result,
 		};
 	}

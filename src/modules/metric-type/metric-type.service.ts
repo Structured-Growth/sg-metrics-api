@@ -20,6 +20,13 @@ export class MetricTypeService {
 				throw new NotFoundError(`Metric Category ${params.metricCategoryId} not found`);
 			}
 		}
+		const existingMetricType = await this.metricTypeRepository.findByCode(params.code);
+		if (existingMetricType) {
+			throw new ValidationError(
+				{ code: 422, message: `Metric Type with code ${params.code} already exists` },
+				`Metric Type with code ${params.code} already exists`
+			);
+		}
 
 		return this.metricTypeRepository.create({
 			orgId: params.orgId,

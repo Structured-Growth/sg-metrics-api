@@ -7,7 +7,7 @@ export const MetricTypeUpdateParamsValidator = joi.object({
 		accountId: joi.number().positive().label("Account Id"),
 		metricCategoryId: joi.number().positive().label("Metric category Id"),
 		title: joi.string().min(3).max(50).label("Metric type title"),
-		code: joi.number().positive().label("Metric type code"),
+		code: joi.string().label("Metric type code"),
 		unit: joi.string().max(50).label("Unit"),
 		factor: joi.number().positive().label("Factor"),
 		relatedTo: joi.string().max(50).label("Related To"),

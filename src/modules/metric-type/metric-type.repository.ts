@@ -28,7 +28,8 @@ export class MetricTypeRepository
 		const order = params.sort ? (params.sort.map((item) => item.split(":")) as any) : [["createdAt", "desc"]];
 
 		params.orgId && (where["orgId"] = params.orgId);
-		params.metricCategoryId && (where["accountId"] = params.metricCategoryId);
+		params.metricCategoryId && (where["metricCategoryId"] = params.metricCategoryId);
+		params.accountId && (where["accountId"] = params.accountId);
 		params.status && (where["status"] = { [Op.in]: params.status });
 		params.id && (where["id"] = { [Op.in]: params.id });
 		params.unit && (where["unit"] = { [Op.in]: params.unit });
@@ -239,5 +240,11 @@ export class MetricTypeRepository
 		});
 
 		await MetricType.destroy({ where: { id } });
+	}
+
+	public async findByCode(code: string): Promise<MetricType | null> {
+		return MetricType.findOne({
+			where: { code },
+		});
 	}
 }

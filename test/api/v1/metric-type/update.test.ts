@@ -8,13 +8,16 @@ import {assert} from "chai";
 describe("PUT /api/v1/metric-type/:metricTypeId", () => {
 	const { server, context } = initTest();
 	const code = `code-${Date.now()}`;
+	const orgId = parseInt(Date.now().toString().slice(0, 3));
+	const factor = parseInt(Date.now().toString().slice(0, 2));
+	const version = orgId - factor;
 	let metric;
 
 	before(async () => container.resolve<App>("App").ready);
 
 	it("Should create metric category", async () => {
 		const { statusCode, body } = await server.post("/v1/metric-category").send({
-			orgId: 1,
+			orgId: orgId,
 			region: RegionEnum.US,
 			title: code,
 			code: code,
@@ -26,20 +29,21 @@ describe("PUT /api/v1/metric-type/:metricTypeId", () => {
 		});
 		assert.equal(statusCode, 201);
 		assert.isNumber(body.id);
+		context.createdMetricCategoryId = body.id;
 
 	});
 
 	it("Should create metric type", async () => {
 		const { statusCode, body } = await server.post("/v1/metric-type").send({
-			orgId: 1,
+			orgId: orgId,
 			region: RegionEnum.US,
-			metricCategoryId: 1,
+			metricCategoryId: context["createdMetricCategoryId"],
 			title: code,
 			code: code,
 			unit: code,
-			factor: 1,
+			factor: factor,
 			relatedTo: code,
-			version: 1,
+			version: version,
 			status: "inactive",
 			metadata: {
 				specUrl: "https://",
