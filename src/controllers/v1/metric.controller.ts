@@ -120,7 +120,7 @@ export class MetricController extends BaseController {
 	@SuccessResponse(200, "Returns metric")
 	@DescribeAction("metrics/read")
 	@DescribeResource("Metric", ({ params }) => Number(params.metricId))
-	public async get(@Path() metricId: number): Promise<PublicMetricAttributes> {
+	public async get(@Path() metricId: string): Promise<PublicMetricAttributes> {
 		const metric = await this.metricRepository.read(metricId);
 		this.response.status(200);
 		if (!metric) {
@@ -144,9 +144,15 @@ export class MetricController extends BaseController {
 	@ValidateFuncArgs(MetricUpdateParamsValidator)
 	public async update(
 		@Path() metricId: string,
+		@Queries() query: {},
 		@Body() body: MetricUpdateBodyInterface
 	): Promise<PublicMetricAttributes> {
-		return undefined;
+		const metric = await this.metricRepository.update(metricId, body);
+
+		return {
+			...(pick(metric.toJSON(), publicMetricAttributes) as PublicMetricAttributes),
+			arn: metric.arn,
+		};
 	}
 
 	/**

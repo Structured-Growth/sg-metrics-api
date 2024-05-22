@@ -35,7 +35,7 @@ export class MetricTypeRepository
 		params.unit && (where["unit"] = params.unit);
 		params.factor && (where["factor"] = params.factor);
 		params.relatedTo && (where["relatedTo"] = params.relatedTo);
-		params.version && (where["version"] = { [Op.in]: params.version });
+		params.version && (where["version"] = params.version);
 
 		if (params.title?.length > 0) {
 			where["title"] = {

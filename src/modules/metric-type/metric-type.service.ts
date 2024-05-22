@@ -47,11 +47,11 @@ export class MetricTypeService {
 	}
 
 	public async update(metricTypeId, params: MetricTypeUpdateBodyInterface): Promise<MetricType> {
-		const checkMetricTypeId = await this.metricTypeRepository.read(metricTypeId);
-		if (!checkMetricTypeId) {
+		const metricType = await this.metricTypeRepository.read(metricTypeId);
+		if (!metricType) {
 			throw new NotFoundError(`Metric Type ${metricTypeId} not found`);
 		}
-		if (params.code && params.code !== checkMetricTypeId.code) {
+		if (params.code && params.code !== metricType.code) {
 			const metricCategoryWithSameCode = await this.metricTypeRepository.findByCode(params.code);
 			if (metricCategoryWithSameCode) {
 				throw new ValidationError(
@@ -79,6 +79,7 @@ export class MetricTypeService {
 			) as MetricTypeUpdateAttributes
 		);
 	}
+
 	public async delete(metricTypeId: number): Promise<void> {
 		const metricType = await this.metricTypeRepository.read(metricTypeId);
 
@@ -86,7 +87,7 @@ export class MetricTypeService {
 			throw new NotFoundError(`Metric Type ${metricTypeId} not found`);
 		}
 		const orgId = metricType.orgId;
-		const associatedMetric = await this.metricRepository.search({ orgId, metricTypeId });
+		const associatedMetric = await this.metricRepository.search({ orgId, metricTypeId, limit: 1 });
 		if (associatedMetric.data.length > 0) {
 			throw new ValidationError(
 				{ code: `Metric Type ${metricTypeId} cannot be deleted as it has associated Metric` },

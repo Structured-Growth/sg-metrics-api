@@ -35,11 +35,11 @@ export class MetricCategoryService {
 	}
 
 	public async update(metricCategoryId: any, params: MetricCategoryUpdateBodyInterface): Promise<MetricCategory> {
-		const checkMetricCategoryId = await this.metricCategoryRepository.read(metricCategoryId);
-		if (!checkMetricCategoryId) {
+		const metricCategory = await this.metricCategoryRepository.read(metricCategoryId);
+		if (!metricCategory) {
 			throw new NotFoundError(`Metric Category ${metricCategoryId} not found`);
 		}
-		if (params.code && params.code !== checkMetricCategoryId.code) {
+		if (params.code && params.code !== metricCategory.code) {
 			const metricCategoryWithSameCode = await this.metricCategoryRepository.findByCode(params.code);
 			if (metricCategoryWithSameCode) {
 				throw new ValidationError(

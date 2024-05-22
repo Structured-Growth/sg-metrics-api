@@ -1,7 +1,7 @@
 import { joi } from "@structured-growth/microservice-sdk";
 
 export const MetricUpdateParamsValidator = joi.object({
-	metricId: joi.number().positive().required().label("Metric Id"),
+	metricId: joi.string().required().label("Metric Id"),
 	query: joi.object(),
 	body: joi.object({
 		orgId: joi.number().positive().label("Organization Id"),
