@@ -85,7 +85,7 @@ describe("PUT /api/v1/metric-category/:metricCategoryId", () => {
 		assert.isString(body.title, code + "-updated");
 	});
 
-	it("Should return error because code is already exists", async () => {
+	it("Should update metric category with old code", async () => {
 		const { statusCode, body } = await server.put(`/v1/metric-category/${context.createdMetricCategory2Id}`).send({
 			title: code + "-updated",
 			status: "active",
@@ -95,8 +95,7 @@ describe("PUT /api/v1/metric-category/:metricCategoryId", () => {
 				countryCode: "test+updated",
 			},
 		});
-		assert.equal(statusCode, 422);
-		assert.isDefined(body.validation);
-		assert.isString(body.message);
+		assert.equal(statusCode, 200);
+		assert.equal(body.status, "active");
 	});
 });
