@@ -228,11 +228,6 @@ export class MetricTypeRepository
 	}
 
 	public async delete(id: number): Promise<void> {
-		const metricType = await MetricType.findByPk(id);
-		if (!metricType) {
-			throw new NotFoundError(`Metric Type ${id} not found`);
-		}
-
 		await MetricTypeMetadata.destroy({
 			where: {
 				metricTypeId: id,

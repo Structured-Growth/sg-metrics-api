@@ -34,6 +34,25 @@ describe("PUT /api/v1/metric-category/:metricCategoryId", () => {
 		context.createdMetricCategoryId = body.id;
 	});
 
+	it("Should create second metric category", async () => {
+		const { statusCode, body } = await server.post("/v1/metric-category").send({
+			orgId: orgId,
+			region: RegionEnum.US,
+			title: code,
+			code: code + '2',
+			status: "inactive",
+			metadata: {
+				specUrl: "https://",
+				countryCode: "test",
+			},
+		});
+		assert.equal(statusCode, 201);
+		assert.isNumber(body.id);
+		assert.equal(body.status, "inactive");
+		metric = body;
+		context.createdMetricCategory2Id = body.id;
+	});
+
 
 	it("Should return validation error", async () => {
 		const { statusCode, body } = await server.put(`/v1/metric-category/${context.createdMetricCategoryId}`).send({
@@ -55,6 +74,7 @@ describe("PUT /api/v1/metric-category/:metricCategoryId", () => {
 		const { statusCode, body } = await server.put(`/v1/metric-category/${context.createdMetricCategoryId}`).send({
 			title: code + "-updated",
 			status: "active",
+			code: code + "-updated",
 			metadata: {
 				specUrl: "https://updated",
 				countryCode: "test+updated",
@@ -63,6 +83,20 @@ describe("PUT /api/v1/metric-category/:metricCategoryId", () => {
 		assert.equal(statusCode, 200);
 		assert.equal(body.status, "active");
 		assert.isString(body.title, code + "-updated");
-		metric = body;
+	});
+
+	it("Should return error because code is already exists", async () => {
+		const { statusCode, body } = await server.put(`/v1/metric-category/${context.createdMetricCategory2Id}`).send({
+			title: code + "-updated",
+			status: "active",
+			code: code + '2',
+			metadata: {
+				specUrl: "https://updated",
+				countryCode: "test+updated",
+			},
+		});
+		assert.equal(statusCode, 422);
+		assert.isDefined(body.validation);
+		assert.isString(body.message);
 	});
 });

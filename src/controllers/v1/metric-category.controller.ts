@@ -165,7 +165,7 @@ export class MetricCategoryController extends BaseController {
 		if (!metricCategory) {
 			throw new NotFoundError(`Metric Category ${metricCategoryId} not found`);
 		}
-		await this.metricCategoryRepository.delete(metricCategoryId);
+		await this.metricCategoryService.delete(metricCategoryId);
 		this.response.status(204);
 	}
 }
