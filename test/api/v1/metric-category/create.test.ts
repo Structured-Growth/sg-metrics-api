@@ -35,6 +35,28 @@ describe("POST /api/v1/metric-category", () => {
 		assert.isString(body.arn);
 	});
 
+	it("Should create second metric category", async () => {
+		const { statusCode, body } = await server.post("/v1/metric-category").send({
+			orgId: orgId,
+			region: RegionEnum.US,
+			title: code,
+			code: code + 'second',
+			status: "active",
+			metadata: {
+				specUrl: "https://",
+				countryCode: "test",
+			},
+		});
+		assert.equal(statusCode, 201);
+		assert.isNumber(body.id);
+		assert.isString(body.createdAt);
+		assert.isString(body.updatedAt);
+		assert.equal(body.region, "us");
+		assert.isString(body.title, code);
+		assert.equal(body.status, "active");
+		assert.isString(body.arn);
+	});
+
 	it("Should return validation error", async () => {
 		const { statusCode, body } = await server.post("/v1/metric-category").send({
 			orgId: "main",

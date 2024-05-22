@@ -11,6 +11,7 @@ import MetricCategory, {
 } from "../../../database/models/metric-category.sequelize";
 import { MetricCategorySearchParamsInterface } from "../../interfaces/metric-category-search-params.interface";
 import MetricCategoryMetadata from "../../../database/models/metric-category-metadata.sequelize";
+import MetricType from "../../../database/models/metric-type.sequelize";
 
 @autoInjectable()
 export class MetricCategoryRepository
@@ -222,11 +223,6 @@ export class MetricCategoryRepository
 	}
 
 	public async delete(id: number): Promise<void> {
-		const metricCategory = await MetricCategory.findByPk(id);
-		if (!metricCategory) {
-			throw new NotFoundError(`Metric Category ${id} not found`);
-		}
-
 		await MetricCategoryMetadata.destroy({
 			where: {
 				metricCategoryId: id,
@@ -234,5 +230,11 @@ export class MetricCategoryRepository
 		});
 
 		await MetricCategory.destroy({ where: { id } });
+	}
+
+	public async findByCode(code: string): Promise<MetricCategory | null> {
+		return MetricCategory.findOne({
+			where: { code },
+		});
 	}
 }
