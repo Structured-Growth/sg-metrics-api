@@ -1,4 +1,4 @@
-import { Metric, MetricAttributes, MetricCreationAttributes } from "../../../database/models/metric";
+import { Metric, MetricAttributes } from "../../../database/models/metric";
 import {
 	autoInjectable,
 	inject,
@@ -9,10 +9,7 @@ import {
 import { TimestreamWrite, TimestreamQuery } from "aws-sdk";
 import { MetricCreateBodyInterface } from "../../interfaces/metric-create-body.interface";
 import { MetricSearchParamsInterface } from "../../interfaces/metric-search-params.interface";
-import {
-	MetricAggregationInterface,
-	MetricAggregateResultInterface,
-} from "../../interfaces/metric-aggregate-result.interface";
+import { MetricAggregateResultInterface } from "../../interfaces/metric-aggregate-result.interface";
 import { MetricAggregateParamsInterface } from "../../interfaces/metric-aggregate-params.interface";
 import { SearchResultInterface } from "@structured-growth/microservice-sdk";
 import { v4 as uuidv4 } from "uuid";
@@ -33,18 +30,9 @@ export class MetricRepository {
 	constructor(@inject("region") private region: string, @inject("Logger") private logger: LoggerInterface) {
 		this.writeClient = new TimestreamWrite({
 			region: this.region,
-			// credentials: {
-			// 	accessKeyId: process.env.AWS_ACCESS_KEY_ID,
-			// 	secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY,
-			// 	sessionToken: process.env.AWS_SESSION_TOKEN
-			// }
 		});
 		this.timestreamQuery = new TimestreamQuery({
 			region: this.region,
-			// credentials: {
-			// 	accessKeyId: process.env.AWS_ACCESS_KEY_ID,
-			// 	secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY,
-			// }
 		});
 	}
 
@@ -76,29 +64,10 @@ export class MetricRepository {
 
 	public async update(id: string, params: Partial<MetricAttributes>): Promise<Metric> {
 		const metric = await this.read(id);
-
 		Object.assign(metric, params);
-
 		await this.writeRecord([metric], metric.recordedAt);
 
 		return metric;
-		// // 1. Get the original metric
-		// const originalMetric = await this.read(id);
-		// if (!originalMetric) {
-		//     throw new NotFoundError(`Metric ${id} not found`);
-		// }
-		//
-		// // 2. Create a new metric with updated values
-		// const updatedMetric: Metric = {
-		//     ...originalMetric,
-		//     ...params,
-		// };
-		//
-		// // 3. Write the updated metric as a new record
-		// await this.writeRecord(updatedMetric);
-		//
-		// // 4. Mark the original metric as inactive
-		// await this.markMetricAsInactive(originalMetric.id);
 	}
 
 	public async delete(id: number): Promise<void> {
@@ -110,32 +79,10 @@ export class MetricRepository {
 		//
 	}
 
-	private async markMetricAsInactive(id: number): Promise<void> {
-		// 3. Update the metric's isActive attribute to false
-		// const command = new WriteRecordsCommand({
-		//     DatabaseName: this.databaseName,
-		//     TableName: this.tableName,
-		//     Records: [
-		//         {
-		//             Dimensions: [
-		//                 { Name: 'id', Value: id.toString() },
-		//             ],
-		//             MeasureName: 'isActive',
-		//             MeasureValue: 'false',
-		//             MeasureValueType: 'BOOLEAN',
-		//             Time: new Date().getTime().toString(),
-		//             TimeUnit: 'MILLISECONDS',
-		//         }
-		//     ],
-		// });
-		// await this.timestreamWrite.send(command).promise();
-	}
-
 	public async search(params: MetricSearchParamsInterface & {}): Promise<SearchResultInterface<Metric>> {
 		const page = params.page || 1;
 		const limit = params.limit || 20;
 		const offset = (page - 1) * limit;
-		const where = {};
 		const order = params.sort ? (params.sort.map((item) => item.split(":")) as any) : [["time", "desc"]];
 
 		const query = this.buildQuery(params, offset, limit, order);
@@ -281,11 +228,12 @@ export class MetricRepository {
 			if (name === "time") {
 				acc["recordedAt"] = new Date(row.Data[index].ScalarValue + "Z");
 			} else {
-				acc[name] = row.Data[index].ScalarValue;
+				const scalarValue = row.Data[index].ScalarValue;
+				const isNumeric = !isNaN(Number(scalarValue)) && !isNaN(parseFloat(scalarValue));
+				acc[name] = isNumeric ? parseInt(scalarValue) : scalarValue;
 			}
 			return acc;
 		}, {});
-		console.log(metricData);
 
 		return new Metric(metricData as any);
 	}
