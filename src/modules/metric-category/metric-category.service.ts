@@ -35,19 +35,19 @@ export class MetricCategoryService {
 	}
 
 	public async update(metricCategoryId: any, params: MetricCategoryUpdateBodyInterface): Promise<MetricCategory> {
-		// Check if the metric category exists
 		const checkMetricCategoryId = await this.metricCategoryRepository.read(metricCategoryId);
 		if (!checkMetricCategoryId) {
 			throw new NotFoundError(`Metric Category ${metricCategoryId} not found`);
 		}
-		const existingMetricCategory = await this.metricCategoryRepository.findByCode(params.code);
-		if (existingMetricCategory) {
-			throw new ValidationError(
-				{ code: `Metric Category with code ${params.code} already exists` },
-				`Metric Category with code ${params.code} already exists`
-			);
+		if (params.code && params.code !== checkMetricCategoryId.code) {
+			const metricCategoryWithSameCode = await this.metricCategoryRepository.findByCode(params.code);
+			if (metricCategoryWithSameCode) {
+				throw new ValidationError(
+					{ code: `Metric Category with code ${params.code} already exists` },
+					`Metric Category with code ${params.code} already exists`
+				);
+			}
 		}
-		// Update the metric category
 		return this.metricCategoryRepository.update(
 			metricCategoryId,
 			omitBy(
