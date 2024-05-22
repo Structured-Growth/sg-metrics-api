@@ -113,19 +113,18 @@ describe("PUT /api/v1/metric-type/:metricTypeId", () => {
 		metric = body;
 	});
 
-	it("Should return error because code is already exists", async () => {
+	it("Should update metric type with old code", async () => {
 		const { statusCode, body } = await server.put(`/v1/metric-type/${context.createdMetricType2Id}`).send({
-			title: code,
-			code: code + '2',
+			title: code + "-updated",
 			status: "active",
+			code: code + '2',
 			metadata: {
 				specUrl: "https://updated",
 				countryCode: "test+updated",
 			},
 		});
-		assert.equal(statusCode, 422);
-		assert.isDefined(body.validation);
-		assert.isString(body.message);
+		assert.equal(statusCode, 200);
+		assert.equal(body.status, "active");
 	});
 
 });

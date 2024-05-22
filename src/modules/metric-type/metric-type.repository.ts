@@ -32,9 +32,9 @@ export class MetricTypeRepository
 		params.accountId && (where["accountId"] = params.accountId);
 		params.status && (where["status"] = { [Op.in]: params.status });
 		params.id && (where["id"] = { [Op.in]: params.id });
-		params.unit && (where["unit"] = { [Op.in]: params.unit });
-		params.factor && (where["factor"] = { [Op.in]: params.factor });
-		params.relatedTo && (where["relatedTo"] = { [Op.in]: params.relatedTo });
+		params.unit && (where["unit"] = params.unit);
+		params.factor && (where["factor"] = params.factor);
+		params.relatedTo && (where["relatedTo"] = params.relatedTo);
 		params.version && (where["version"] = { [Op.in]: params.version });
 
 		if (params.title?.length > 0) {
