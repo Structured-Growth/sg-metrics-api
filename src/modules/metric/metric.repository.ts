@@ -85,7 +85,7 @@ export class MetricRepository {
 		const page = params.page || 1;
 		const limit = params.limit || 20;
 		const offset = (page - 1) * limit;
-		const order = params.sort ? (params.sort.map((item) => item.split(":")) as any) : [["time", "desc"]];
+		const order = params.sort;
 
 		const query = this.buildQuery(params, offset, limit, order);
 		const result = await this.executeQuery(query);
@@ -292,7 +292,12 @@ export class MetricRepository {
 			query += ` WHERE ${filters.join(" AND ")}`;
 		}
 
-		query += ` ORDER BY ${sort.map((item: any) => `${item[0]} ${item[1]}`).join(", ")}`;
+		if (sort && sort.length > 0) {
+			const orderClause = `${sort[0]} ${sort[1]}`;
+			query += ` ORDER BY ${orderClause}`;
+		} else {
+			query += ` ORDER BY time DESC`;
+		}
 		//query += ` LIMIT ${limit} OFFSET ${offset}`;
 		query += ` LIMIT ${limit} `;
 
