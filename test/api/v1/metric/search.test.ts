@@ -170,7 +170,7 @@ describe("GET /api/v1/metrics", () => {
 	}).timeout(1800000);
 
 	it("Should search by value and sort by time", async () => {
-		const sortField = "measure_value::bigint";
+		const sortField = "value";
 		const sortOrder = "DESC";
 
 		const { statusCode, body } = await server.get("/v1/metrics").query({

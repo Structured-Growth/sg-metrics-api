@@ -71,24 +71,33 @@ export class MetricRepository {
 		return metric;
 	}
 
-	public async delete(id: number): Promise<void> {
-		const metric = await this.read(id.toString());
+	public async delete(id: string): Promise<void> {
+		const metric = await this.read(id);
 		if (!metric) {
 			throw new NotFoundError(`Metric ${id} not found`);
 		}
 
 		metric.deletedAt = new Date(Date.now());
-		await this.writeRecord([metric], metric.recordedAt);
+		await this.update(id, metric);
 	}
 
 	public async search(params: MetricSearchParamsInterface & {}): Promise<SearchResultInterface<Metric>> {
 		const page = params.page || 1;
 		const limit = params.limit || 20;
 		const offset = (page - 1) * limit;
-		const order = params.sort;
+
+		let order;
+		if (params.sort && params.sort[0] === 'value') {
+			order = ["measure_value::bigint", params.sort[1 ]];
+		} else if (params.sort && params.sort[0] === 'recordedAt') {
+			order = ["time", params.sort[1 ]];
+		} else {
+			order = params.sort;
+		}
 
 		const query = this.buildQuery(params, offset, limit, order);
 		const result = await this.executeQuery(query);
+
 		return {
 			data: this.parseResult(result.ColumnInfo, result.Rows),
 			page: page,

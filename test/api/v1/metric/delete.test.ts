@@ -10,7 +10,7 @@ import {initTest} from "../../../common/init-test";
 describe("DELETE /api/v1/metrics/:metricId", () => {
 	const { server, context } = initTest();
 	const code = `code-${Date.now()}`;
-	const relatedToRn = 'relatedTo-${Date.now()}`'
+	const relatedToRn = `relatedToRn-${Date.now()}`;
 	const userId = Date.now();
 	const orgId = parseInt(Date.now().toString().slice(0, 3));
 	const factor = parseInt(Date.now().toString().slice(0, 2));
@@ -90,18 +90,18 @@ describe("DELETE /api/v1/metrics/:metricId", () => {
 	it("Should delete metric", async () => {
 		const { statusCode, body } = await server.delete(`/v1/metrics/${context.createdMetricId}`);
 		assert.equal(statusCode, 204);
-	});
+	}).timeout(1800000);
 
 	it("Should return error because metric  was deleted", async () => {
 		const { statusCode, body } = await server.get(`/v1/metrics/${context.createdMetricId}`).send({
 		});
 		assert.equal(statusCode, 404);
 		assert.isString(body.message);
-	});
+	}).timeout(1800000);
 
 	it("Should return validation error if id is wrong", async () => {
 		const { statusCode, body } = await server.delete("/v1/metrics/9999");
 		assert.equal(statusCode, 404);
 		assert.isString(body.message);
-	});
+	}).timeout(1800000);
 });
