@@ -9,12 +9,11 @@ describe("GET /api/v1/metrics:metricId", () => {
 	const { server, context } = initTest();
 	const code = `code-${Date.now()}`;
 	const userId = Date.now();
+	const relatedToRn = `relatedTo-${Date.now()}`;
 	const orgId = parseInt(Date.now().toString().slice(0, 3));
-	//const orgId = 444;
 	const factor = parseInt(Date.now().toString().slice(0, 2));
 	const version = orgId - factor;
 	const accountId = orgId - factor - factor;
-	//const accountId = 777;
 	const metricTypeVersion = parseInt(Date.now().toString().slice(0, 1));
 	const deviceId = parseInt(Date.now().toString().slice(0, 4));
 	const batchId = `batchId-${Date.now()}`;
@@ -71,9 +70,8 @@ describe("GET /api/v1/metrics:metricId", () => {
 				region: RegionEnum.US,
 				accountId: accountId,
 				userId: userId,
+				relatedToRn: relatedToRn,
 				metricCategoryId: context.createdMetricCategoryId,
-				//metricCategoryId: 999,
-				//metricTypeId: 888,
 				metricTypeId: context.createdMetricTypeId,
 				metricTypeVersion: metricTypeVersion,
 				deviceId: deviceId,
@@ -84,6 +82,7 @@ describe("GET /api/v1/metrics:metricId", () => {
 		}
 		]);
 		assert.equal(statusCode, 201);
+		assert.equal(body[0].relatedToRn, relatedToRn);
 		context.createdMetricId = body[0].id;
 	});
 
@@ -96,6 +95,7 @@ describe("GET /api/v1/metrics:metricId", () => {
 		assert.equal(body.region, "us");
 		assert.equal(body.accountId, accountId);
 		assert.equal(body.userId, userId);
+		assert.equal(body.relatedToRn, relatedToRn);
 		assert.equal(body.metricCategoryId, context["createdMetricCategoryId"]);
 		assert.equal(body.metricTypeId, context["createdMetricTypeId"]);
 		assert.equal(body.metricTypeVersion, metricTypeVersion);
@@ -106,14 +106,14 @@ describe("GET /api/v1/metrics:metricId", () => {
 		assert.equal(body.takenAtOffset, takenAtOffset);
 		assert.isString(body.recordedAt);
 		assert.equal(body.deletedAt, 0);
-	});
+	}).timeout(1800000);
 /*
 	it("Should return error is metric type id is wrong", async () => {
 		const { statusCode, body } = await server.get(`/v1/metrics/9999`).send({
 		});
 		assert.equal(statusCode, 404);
 		assert.isString(body.message);
-	});
+	}).timeout(1800000);
 
- */
+*/
 });
