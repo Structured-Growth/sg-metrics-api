@@ -169,10 +169,14 @@ describe("GET /api/v1/metrics", () => {
 		assert.equal(body.limit, 20);
 	}).timeout(1800000);
 
-	it("Should search by value", async () => {
+	it("Should search by value and sort by time", async () => {
+		const sortField = "measure_value::bigint";
+		const sortOrder = "DESC";
+
 		const { statusCode, body } = await server.get("/v1/metrics").query({
 			userId,
 			value: value,
+			sort: [[sortField, sortOrder]],
 		});
 		assert.equal(statusCode, 200);
 		assert.equal(body.data[0].value, value);
