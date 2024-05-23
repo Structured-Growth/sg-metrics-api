@@ -8,6 +8,7 @@ export const MetricSearchParamsValidator = joi.object({
 		metricTypeId: joi.number().positive().label("Metric Type Id"),
 		accountId: joi.number().positive().label("Account Id"),
 		userId: joi.number().positive().label("User Id"),
+		relatedToRn: joi.string().max(50).label("Related To"),
 		metricTypeVersion: joi.number().positive().label("Metric Type Version"),
 		deviceId: joi.number().positive().label("Device ID"),
 		batchId: joi.string().max(50).label("Batch id"),

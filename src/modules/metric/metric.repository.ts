@@ -72,12 +72,13 @@ export class MetricRepository {
 	}
 
 	public async delete(id: number): Promise<void> {
-		// // 1. Get the metric to delete
-		// const metricToDelete = await this.read(id);
-		// if (!metricToDelete) {
-		//     throw new NotFoundError(`Metric ${id} not found`);
-		// }
-		//
+		const metric = await this.read(id.toString());
+		if (!metric) {
+			throw new NotFoundError(`Metric ${id} not found`);
+		}
+
+		metric.deletedAt = new Date(Date.now());
+		await this.writeRecord([metric], metric.recordedAt);
 	}
 
 	public async search(params: MetricSearchParamsInterface & {}): Promise<SearchResultInterface<Metric>> {
@@ -164,6 +165,7 @@ export class MetricRepository {
 					{ Name: "region", Value: metric.region?.toString() || RegionEnum.US },
 					{ Name: "accountId", Value: metric.accountId.toString() },
 					{ Name: "userId", Value: metric.userId.toString() },
+					{ Name: "relatedToRn", Value: metric.relatedToRn.toString() },
 					{ Name: "metricCategoryId", Value: metric.metricCategoryId.toString() },
 					{ Name: "metricTypeId", Value: metric.metricTypeId.toString() },
 					{ Name: "metricTypeVersion", Value: metric.metricTypeVersion.toString() },
@@ -243,7 +245,7 @@ export class MetricRepository {
 	private buildQuery(params: MetricSearchParamsInterface, offset: number, limit: number, sort: any): string {
 		let query = `SELECT *
                  FROM "${this.configuration.DatabaseName}"."${this.configuration.TableName}"`;
-		const filters: string[] = ["AND deletedAt = '0'"];
+		const filters: string[] = ["deletedAt = '0'"];
 
 		if (params.id) filters.push(`id = '${params.id}'`);
 		if (params.orgId) filters.push(`orgId = '${params.orgId}'`);
@@ -268,15 +270,7 @@ export class MetricRepository {
 			const takenAtMaxISO = takenAtMaxDate.toISOString();
 			filters.push(`takenAt <= '${takenAtMaxISO}'`);
 		}
-		/*
-		if (params.recordedAtMin && params.recordedAtMax) {
-			const recordedAtMinDate = new Date(params.recordedAtMin);
-			const recordedAtMinISO = recordedAtMinDate.toISOString().replace("T", " ").replace(/\.\d{3}Z$/, "");
-			const recordedAtMaxDate = new Date(params.recordedAtMax);
-			const recordedAtMaxISO = recordedAtMaxDate.toISOString().replace("T", " ").replace(/\.\d{3}Z$/, "");
-			filters.push(`time BETWEEN TIMESTAMP '${recordedAtMinISO}' AND TIMESTAMP '${recordedAtMaxISO}'`);
-		}
-*/
+
 		if (params.recordedAtMin) {
 			const recordedAtMinDate = new Date(params.recordedAtMin);
 			const recordedAtMinISO = recordedAtMinDate
@@ -322,7 +316,7 @@ export class MetricRepository {
 
 	private parseResult(columnInfo: ColumnInfo[], result: any): Metric[] {
 		const metrics: Metric[] = [];
-		for (const row of result.Rows || []) {
+		for (const row of result || []) {
 			metrics.push(this.parseMetric(columnInfo, row));
 		}
 		return metrics;

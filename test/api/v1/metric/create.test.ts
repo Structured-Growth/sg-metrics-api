@@ -10,6 +10,7 @@ import {initTest} from "../../../common/init-test";
 describe("POST /api/v1/metrics", () => {
 	const { server, context } = initTest();
 	const code = `code-${Date.now()}`;
+	const relatedToRn = 'relatedTo-${Date.now()}`'
 	const userId = Date.now();
 	const orgId = parseInt(Date.now().toString().slice(0, 3));
 	const factor = parseInt(Date.now().toString().slice(0, 2));
@@ -70,6 +71,7 @@ describe("POST /api/v1/metrics", () => {
 			region: RegionEnum.US,
 			accountId: accountId,
 			userId: userId,
+			relatedToRn: relatedToRn,
 			metricCategoryId: context.createdMetricCategoryId,
 			metricTypeId: context.createdMetricTypeId,
 			metricTypeVersion: metricTypeVersion,
@@ -85,6 +87,7 @@ describe("POST /api/v1/metrics", () => {
 		assert.equal(body[0].region, "us");
 		assert.equal(body[0].accountId, accountId);
 		assert.equal(body[0].userId, userId);
+		assert.equal(body[0].relatedToRn, relatedToRn);
 		assert.equal(body[0].metricCategoryId, context["createdMetricCategoryId"]);
 		assert.equal(body[0].metricTypeId, context["createdMetricTypeId"]);
 		assert.equal(body[0].metricTypeVersion, metricTypeVersion);

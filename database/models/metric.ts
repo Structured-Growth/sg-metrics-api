@@ -6,12 +6,12 @@ export interface MetricAttributes {
 	region: RegionEnum;
 	accountId?: number;
 	userId?: number;
+	relatedToRn?: string,
 	metricCategoryId: number;
 	metricTypeId: number;
 	metricTypeVersion: number;
 	deviceId: number;
 	batchId: string;
-	relatedToRn?: string;
 	value: number;
 	takenAt: Date;
 	takenAtOffset: number;
@@ -95,6 +95,7 @@ export class Metric implements MetricAttributes {
 			region: this.region,
 			accountId: this.accountId,
 			userId: this.userId,
+			relatedToRn: this.relatedToRn,
 			metricCategoryId: this.metricCategoryId,
 			metricTypeId: this.metricTypeId,
 			metricTypeVersion: this.metricTypeVersion,

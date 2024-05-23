@@ -28,6 +28,7 @@ const publicMetricAttributes = [
 	"region",
 	"accountId",
 	"userId",
+	"relatedToRn",
 	"metricCategoryId",
 	"metricTypeId",
 	"metricTypeVersion",
