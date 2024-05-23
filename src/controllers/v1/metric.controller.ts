@@ -37,7 +37,7 @@ const publicMetricAttributes = [
 	"takenAt",
 	"takenAtOffset",
 	"recordedAt",
-	//"isActive",
+	"deletedAt",
 	"arn",
 ] as const;
 type MetricKeys = (typeof publicMetricAttributes)[number];

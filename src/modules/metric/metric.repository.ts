@@ -42,6 +42,7 @@ export class MetricRepository {
 				new Metric({
 					id: uuidv4(),
 					...item,
+					deletedAt: null,
 				})
 		);
 
@@ -51,7 +52,7 @@ export class MetricRepository {
 	public async read(id: string): Promise<Metric | null> {
 		const query = `SELECT *
                    FROM "${this.configuration.DatabaseName}"."${this.configuration.TableName}"
-                   WHERE id = '${id}'
+                   WHERE id = '${id}' AND deletedAt = '0'
                    LIMIT 1`;
 		const result = await this.executeQuery(query);
 
@@ -121,7 +122,7 @@ export class MetricRepository {
                         MIN(takenAtOffset)                                                                       AS takenAtOffset,
                         bin(time, ${params.aggregationInterval})                                                 as recordedAt
                  FROM "${this.configuration.DatabaseName}"."${this.configuration.TableName}" m
-                 WHERE time >= '${formattedTimeRangeFilter}'
+                 WHERE time >= '${formattedTimeRangeFilter}' AND deletedAt = '0'
                  GROUP BY bin(time, ${params.aggregationInterval})`;
 
 		query += ` ORDER BY bin(time, ${params.aggregationInterval}) ASC`;
@@ -170,6 +171,7 @@ export class MetricRepository {
 					{ Name: "batchId", Value: metric.batchId.toString() },
 					{ Name: "takenAt", Value: metric.takenAt.toString() },
 					{ Name: "takenAtOffset", Value: metric.takenAtOffset.toString() },
+					{ Name: "deletedAt", Value: metric.deletedAt === null ? "0" : metric.deletedAt.toString() },
 				],
 				MeasureName: "value",
 				MeasureValue: metric.value.toString(),
@@ -241,7 +243,7 @@ export class MetricRepository {
 	private buildQuery(params: MetricSearchParamsInterface, offset: number, limit: number, sort: any): string {
 		let query = `SELECT *
                  FROM "${this.configuration.DatabaseName}"."${this.configuration.TableName}"`;
-		const filters: string[] = [];
+		const filters: string[] = ["AND deletedAt = '0'"];
 
 		if (params.id) filters.push(`id = '${params.id}'`);
 		if (params.orgId) filters.push(`orgId = '${params.orgId}'`);

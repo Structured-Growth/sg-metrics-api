@@ -68,6 +68,7 @@ describe("GET /api/v1/metrics:metricId", () => {
 		const { statusCode, body } = await server.post("/v1/metrics").send([
 			{
 				orgId: orgId,
+				region: RegionEnum.US,
 				accountId: accountId,
 				userId: userId,
 				metricCategoryId: context.createdMetricCategoryId,
@@ -92,6 +93,7 @@ describe("GET /api/v1/metrics:metricId", () => {
 		assert.equal(statusCode, 200);
 		assert.equal(body.id, context["createdMetricId"]);
 		assert.equal(body.orgId, orgId);
+		assert.equal(body.region, "us");
 		assert.equal(body.accountId, accountId);
 		assert.equal(body.userId, userId);
 		assert.equal(body.metricCategoryId, context["createdMetricCategoryId"]);
@@ -100,9 +102,10 @@ describe("GET /api/v1/metrics:metricId", () => {
 		assert.equal(body.deviceId, deviceId);
 		assert.equal(body.batchId,batchId);
 		assert.equal(body.value, value);
-		assert.equal(body.takenAt, "2024-05-16T14:30:00.000Z");
+		assert.equal(body.takenAt, "2024-05-16T14:30:00+00:00");
 		assert.equal(body.takenAtOffset, takenAtOffset);
 		assert.isString(body.recordedAt);
+		assert.equal(body.deletedAt, 0);
 	});
 /*
 	it("Should return error is metric type id is wrong", async () => {

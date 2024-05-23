@@ -87,7 +87,7 @@ export class MetricTypeService {
 			throw new NotFoundError(`Metric Type ${metricTypeId} not found`);
 		}
 		const orgId = metricType.orgId;
-		const associatedMetric = await this.metricRepository.search({ orgId, metricTypeId, limit: 1 });
+		const associatedMetric = await this.metricRepository.search({ orgId, metricTypeId });
 		if (associatedMetric.data.length > 0) {
 			throw new ValidationError(
 				{ code: `Metric Type ${metricTypeId} cannot be deleted as it has associated Metric` },
@@ -95,6 +95,6 @@ export class MetricTypeService {
 			);
 		}
 
-		await this.metricCategoryRepository.delete(metricTypeId);
+		await this.metricTypeRepository.delete(metricTypeId);
 	}
 }
