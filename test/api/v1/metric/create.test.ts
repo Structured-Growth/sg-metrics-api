@@ -18,7 +18,7 @@ describe("POST /api/v1/metrics", () => {
 	const metricTypeVersion = parseInt(Date.now().toString().slice(0, 1));
 	const deviceId = version - accountId;
 	const batchId = `batchId-${Date.now()}`;
-	const value = metricTypeVersion - factor;
+	const value = factor - metricTypeVersion;
 	const takenAtOffset = metricTypeVersion + factor;
 
 	before(async () => container.resolve<App>("App").ready);
@@ -67,6 +67,7 @@ describe("POST /api/v1/metrics", () => {
 		const { statusCode, body } = await server.post("/v1/metrics").send([
 			{
 			orgId: orgId,
+			region: RegionEnum.US,
 			accountId: accountId,
 			userId: userId,
 			metricCategoryId: context.createdMetricCategoryId,
@@ -81,6 +82,7 @@ describe("POST /api/v1/metrics", () => {
 		]);
 		assert.equal(statusCode, 201);
 		assert.equal(body[0].orgId, orgId);
+		assert.equal(body[0].region, "us");
 		assert.equal(body[0].accountId, accountId);
 		assert.equal(body[0].userId, userId);
 		assert.equal(body[0].metricCategoryId, context["createdMetricCategoryId"]);
@@ -91,6 +93,7 @@ describe("POST /api/v1/metrics", () => {
 		assert.equal(body[0].value, value);
 		assert.isString(body[0].takenAt);
 		assert.equal(body[0].takenAtOffset, takenAtOffset);
+		assert.equal(body[0].deletedAt, null);
 		assert.isString(body[0].arn);
 		context.createdMetricId = body[0].id;
 	});
