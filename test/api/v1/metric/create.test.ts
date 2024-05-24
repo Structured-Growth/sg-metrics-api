@@ -10,7 +10,7 @@ import {initTest} from "../../../common/init-test";
 describe("POST /api/v1/metrics", () => {
 	const { server, context } = initTest();
 	const code = `code-${Date.now()}`;
-	const relatedToRn = 'relatedTo-${Date.now()}`'
+	const relatedToRn = `relatedToRn-${Date.now()}`;
 	const userId = Date.now();
 	const orgId = parseInt(Date.now().toString().slice(0, 3));
 	const factor = parseInt(Date.now().toString().slice(0, 2));

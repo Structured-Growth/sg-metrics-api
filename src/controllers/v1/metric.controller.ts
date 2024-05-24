@@ -166,6 +166,7 @@ export class MetricController extends BaseController {
 	@DescribeAction("metrics/delete")
 	@DescribeResource("Metric", ({ params }) => Number(params.metricId))
 	public async delete(@Path() metricId: string): Promise<void> {
-		return undefined;
+		await this.metricRepository.delete(metricId);
+		this.response.status(204);
 	}
 }

@@ -7,7 +7,7 @@ export interface MetricCreateBodyInterface {
 	 * User that submitted a metric
 	 */
 	userId?: number;
-	relatedTo?: string;
+	relatedToRn?: string;
 	metricCategoryId: number;
 	metricTypeId: number;
 	metricTypeVersion: number;
