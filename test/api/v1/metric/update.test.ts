@@ -14,6 +14,7 @@ describe("PUT /api/v1/metrics/:metricId", () => {
 		const { statusCode, body } = await server.post("/v1/metrics").send([
 			{
 				orgId: 1,
+				region: RegionEnum.US,
 				accountId: 1,
 				userId: 1,
 				metricCategoryId: 1,
@@ -49,5 +50,20 @@ describe("PUT /api/v1/metrics/:metricId", () => {
 		assert.equal(statusCode, 200);
 		console.log(body);
 	});
+
+	it("Should update metric", async () => {
+		const { statusCode, body } = await server.put(`/v1/metrics/${context.createdMetricId}`).send({
+			takenAt: new Date().toISOString(),
+		});
+		assert.equal(statusCode, 200);
+		console.log(body);
+	});
+
+	it("Should return metric", async () => {
+		const { statusCode, body } = await server.get(`/v1/metrics/${context.createdMetricId}`);
+		assert.equal(statusCode, 200);
+		console.log(body);
+	});
+
 
 });

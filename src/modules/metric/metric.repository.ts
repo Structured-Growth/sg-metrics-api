@@ -13,7 +13,7 @@ import { MetricAggregateResultInterface } from "../../interfaces/metric-aggregat
 import { MetricAggregateParamsInterface } from "../../interfaces/metric-aggregate-params.interface";
 import { SearchResultInterface } from "@structured-growth/microservice-sdk";
 import { v4 as uuidv4 } from "uuid";
-import { parseInt } from "lodash";
+import { isDate, parseInt } from "lodash";
 import { WriteRecordsRequest } from "aws-sdk/clients/timestreamwrite";
 import { ColumnInfo, Row } from "aws-sdk/clients/timestreamquery";
 
@@ -52,7 +52,8 @@ export class MetricRepository {
 	public async read(id: string): Promise<Metric | null> {
 		const query = `SELECT *
                    FROM "${this.configuration.DatabaseName}"."${this.configuration.TableName}"
-                   WHERE id = '${id}' AND deletedAt = '0'
+                   WHERE id = '${id}'
+                     AND deletedAt = '0'
                    LIMIT 1`;
 		const result = await this.executeQuery(query);
 
@@ -63,8 +64,15 @@ export class MetricRepository {
 		}
 	}
 
-	public async update(id: string, params: Partial<MetricAttributes>): Promise<Metric> {
+	public async update(
+		id: string,
+		params: Partial<Pick<MetricAttributes, "value" | "takenAt" | "takenAtOffset" | "deletedAt">>
+	): Promise<Metric> {
 		const metric = await this.read(id);
+		if (!metric) {
+			throw new NotFoundError(`Metric ${id} not found`);
+		}
+
 		Object.assign(metric, params);
 		await this.writeRecord([metric], metric.recordedAt);
 
@@ -72,13 +80,9 @@ export class MetricRepository {
 	}
 
 	public async delete(id: string): Promise<void> {
-		const metric = await this.read(id);
-		if (!metric) {
-			throw new NotFoundError(`Metric ${id} not found`);
-		}
-
-		metric.deletedAt = new Date(Date.now());
-		await this.update(id, metric);
+		await this.update(id, {
+			deletedAt: new Date(),
+		});
 	}
 
 	public async search(params: MetricSearchParamsInterface & {}): Promise<SearchResultInterface<Metric>> {
@@ -87,10 +91,10 @@ export class MetricRepository {
 		const offset = (page - 1) * limit;
 
 		let order;
-		if (params.sort && params.sort[0] === 'value') {
-			order = ["measure_value::bigint", params.sort[1 ]];
-		} else if (params.sort && params.sort[0] === 'recordedAt') {
-			order = ["time", params.sort[1 ]];
+		if (params.sort && params.sort[0] === "value") {
+			order = ["measure_value::bigint", params.sort[1]];
+		} else if (params.sort && params.sort[0] === "recordedAt") {
+			order = ["time", params.sort[1]];
 		} else {
 			order = params.sort;
 		}
@@ -132,7 +136,8 @@ export class MetricRepository {
                         MIN(takenAtOffset)                                                                       AS takenAtOffset,
                         bin(time, ${params.aggregationInterval})                                                 as recordedAt
                  FROM "${this.configuration.DatabaseName}"."${this.configuration.TableName}" m
-                 WHERE time >= '${formattedTimeRangeFilter}' AND deletedAt = '0'
+                 WHERE time >= '${formattedTimeRangeFilter}'
+                   AND deletedAt = '0'
                  GROUP BY bin(time, ${params.aggregationInterval})`;
 
 		query += ` ORDER BY bin(time, ${params.aggregationInterval}) ASC`;
@@ -174,7 +179,7 @@ export class MetricRepository {
 					{ Name: "region", Value: metric.region?.toString() || RegionEnum.US },
 					{ Name: "accountId", Value: metric.accountId.toString() },
 					{ Name: "userId", Value: metric.userId.toString() },
-					{ Name: "relatedToRn", Value: metric.relatedToRn.toString() },
+					{ Name: "relatedToRn", Value: metric.relatedToRn?.toString() || "0" },
 					{ Name: "metricCategoryId", Value: metric.metricCategoryId.toString() },
 					{ Name: "metricTypeId", Value: metric.metricTypeId.toString() },
 					{ Name: "metricTypeVersion", Value: metric.metricTypeVersion.toString() },
@@ -182,7 +187,10 @@ export class MetricRepository {
 					{ Name: "batchId", Value: metric.batchId.toString() },
 					{ Name: "takenAt", Value: metric.takenAt.toString() },
 					{ Name: "takenAtOffset", Value: metric.takenAtOffset.toString() },
-					{ Name: "deletedAt", Value: metric.deletedAt === null ? "0" : metric.deletedAt.toString() },
+					{
+						Name: "deletedAt",
+						Value: isDate(metric.deletedAt) ? metric.deletedAt.toISOString() : metric.deletedAt || "0",
+					},
 				],
 				MeasureName: "value",
 				MeasureValue: metric.value.toString(),
