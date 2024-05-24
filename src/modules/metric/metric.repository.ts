@@ -101,11 +101,13 @@ export class MetricRepository {
 
 		const query = this.buildQuery(params, offset, limit, order);
 		const result = await this.executeQuery(query);
+		const totalCount = result.Rows.length > 0 ? parseInt(result.Rows[0].Data[result.ColumnInfo.length]) : 0;
 
 		return {
 			data: this.parseResult(result.ColumnInfo, result.Rows),
 			page: page,
 			limit: limit,
+			total: totalCount,
 		};
 	}
 
@@ -185,16 +187,31 @@ export class MetricRepository {
 					{ Name: "metricTypeVersion", Value: metric.metricTypeVersion.toString() },
 					{ Name: "deviceId", Value: metric.deviceId.toString() },
 					{ Name: "batchId", Value: metric.batchId.toString() },
-					{ Name: "takenAt", Value: metric.takenAt.toString() },
-					{ Name: "takenAtOffset", Value: metric.takenAtOffset.toString() },
+				],
+				MeasureValues : [
+					{
+						Name: "value",
+						Value: metric.value.toString(),
+						Type: "BIGINT",
+					},
 					{
 						Name: "deletedAt",
 						Value: isDate(metric.deletedAt) ? metric.deletedAt.toISOString() : metric.deletedAt || "0",
+						Type: "VARCHAR",
+					},
+					{
+						Name: "takenAt",
+						Value: metric.takenAt.toString(),
+						Type: "VARCHAR",
+					},
+					{
+						Name: "takenAtOffset",
+						Value: metric.takenAtOffset.toString(),
+						Type: "VARCHAR",
 					},
 				],
-				MeasureName: "value",
-				MeasureValue: metric.value.toString(),
-				MeasureValueType: "BIGINT",
+				MeasureName: "metric",
+				MeasureValueType: 'MULTI',
 				Time: recordedAt.getTime().toString(),
 				TimeUnit: "MILLISECONDS",
 			})),
@@ -264,7 +281,6 @@ export class MetricRepository {
                  FROM "${this.configuration.DatabaseName}"."${this.configuration.TableName}"`;
 		const filters: string[] = ["deletedAt = '0'"];
 
-		if (params.id) filters.push(`id = '${params.id}'`);
 		if (params.orgId) filters.push(`orgId = '${params.orgId}'`);
 		if (params.accountId) filters.push(`accountId = '${params.accountId}'`);
 		if (params.userId) filters.push(`userId = '${params.userId}'`);
@@ -273,6 +289,11 @@ export class MetricRepository {
 		if (params.deviceId) filters.push(`deviceId = '${params.deviceId}'`);
 		if (params.batchId) filters.push(`batchId = '${params.batchId}'`);
 		if (params.value) filters.push(`measure_value::bigint = ${params.value}`);
+
+		if (params.id && params.id.length > 0) {
+			const idConditions = params.id.map(id => `id = '${id}'`);
+			filters.push(`(${idConditions.join(' OR ')})`);
+		}
 
 		if (params.valueMin !== undefined) filters.push(`measure_value::bigint >= ${params.valueMin}`);
 		if (params.valueMax !== undefined) filters.push(`measure_value::bigint <= ${params.valueMax}`);
@@ -338,7 +359,7 @@ export class MetricRepository {
 
 	private parseResult(columnInfo: ColumnInfo[], result: any): Metric[] {
 		const metrics: Metric[] = [];
-		for (const row of result || []) {
+		for (const row of result  || []) {
 			metrics.push(this.parseMetric(columnInfo, row));
 		}
 		return metrics;

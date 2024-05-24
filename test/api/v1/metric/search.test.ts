@@ -143,10 +143,10 @@ describe("GET /api/v1/metrics", () => {
 		assert.isString(body.validation.query.takenAtOffset[0]);
 	});
 
-	it("Should return created metric category by id", async () => {
+	it("Should return created metric by id", async () => {
 		const { statusCode, body } = await server.get("/v1/metrics").query({
 			userId,
-			id: context["createdMetricId"],
+			"id[0]": context["createdMetricId"],
 		});
 		assert.equal(statusCode, 200);
 		assert.equal(body.data[0].id, context["createdMetricId"]);
@@ -167,6 +167,20 @@ describe("GET /api/v1/metrics", () => {
 		assert.equal(body.data[0].deletedAt, 0);
 		assert.equal(body.page, 1);
 		assert.equal(body.limit, 20);
+		assert.equal(body.total, 1);
+	}).timeout(1800000);
+
+	it("Should return created metrics by ids", async () => {
+		const { statusCode, body } = await server.get("/v1/metrics").query({
+			userId,
+			"id[0]": context["createdMetricId"],
+			"id[1]": context["createdMetricId2"],
+		});
+		assert.equal(statusCode, 200);
+		assert.equal(body.data[0].id, context["createdMetricId"]);
+		assert.equal(body.page, 1);
+		assert.equal(body.limit, 20);
+		assert.equal(body.total, 2);
 	}).timeout(1800000);
 
 	it("Should search by value and sort by time", async () => {

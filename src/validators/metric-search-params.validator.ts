@@ -3,7 +3,7 @@ import { CommonSearchParamsValidator } from "./common-search-params.validator";
 
 export const MetricSearchParamsValidator = joi.object({
 	query: joi.object({
-		id: joi.string().label("Metric Id"),
+		id: joi.array().items(joi.string().required()).label("Metric Id"),
 		orgId: joi.number().positive().label("Organization Id"),
 		metricTypeId: joi.number().positive().label("Metric Type Id"),
 		accountId: joi.number().positive().label("Account Id"),
