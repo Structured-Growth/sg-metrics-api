@@ -91,9 +91,7 @@ export class MetricRepository {
 		const offset = (page - 1) * limit;
 
 		let order;
-		if (params.sort && params.sort[0] === "value") {
-			order = ["measure_value::bigint", params.sort[1]];
-		} else if (params.sort && params.sort[0] === "recordedAt") {
+		if (params.sort && params.sort[0] === "recordedAt") {
 			order = ["time", params.sort[1]];
 		} else {
 			order = params.sort;
@@ -101,7 +99,7 @@ export class MetricRepository {
 
 		const query = this.buildQuery(params, offset, limit, order);
 		const result = await this.executeQuery(query);
-		const totalCount = result.Rows.length > 0 ? parseInt(result.Rows[0].Data[result.ColumnInfo.length]) : 0;
+		const totalCount = result.Rows.length;
 
 		return {
 			data: this.parseResult(result.ColumnInfo, result.Rows),
@@ -188,7 +186,7 @@ export class MetricRepository {
 					{ Name: "deviceId", Value: metric.deviceId.toString() },
 					{ Name: "batchId", Value: metric.batchId.toString() },
 				],
-				MeasureValues : [
+				MeasureValues: [
 					{
 						Name: "value",
 						Value: metric.value.toString(),
@@ -211,7 +209,7 @@ export class MetricRepository {
 					},
 				],
 				MeasureName: "metric",
-				MeasureValueType: 'MULTI',
+				MeasureValueType: "MULTI",
 				Time: recordedAt.getTime().toString(),
 				TimeUnit: "MILLISECONDS",
 			})),
@@ -288,15 +286,15 @@ export class MetricRepository {
 		if (params.metricTypeVersion) filters.push(`metricTypeVersion = '${params.metricTypeVersion}'`);
 		if (params.deviceId) filters.push(`deviceId = '${params.deviceId}'`);
 		if (params.batchId) filters.push(`batchId = '${params.batchId}'`);
-		if (params.value) filters.push(`measure_value::bigint = ${params.value}`);
+		if (params.value) filters.push(`value = ${params.value}`);
 
 		if (params.id && params.id.length > 0) {
-			const idConditions = params.id.map(id => `id = '${id}'`);
-			filters.push(`(${idConditions.join(' OR ')})`);
+			const idConditions = params.id.map((id) => `id = '${id}'`);
+			filters.push(`(${idConditions.join(" OR ")})`);
 		}
 
-		if (params.valueMin !== undefined) filters.push(`measure_value::bigint >= ${params.valueMin}`);
-		if (params.valueMax !== undefined) filters.push(`measure_value::bigint <= ${params.valueMax}`);
+		if (params.valueMin !== undefined) filters.push(`value >= ${params.valueMin}`);
+		if (params.valueMax !== undefined) filters.push(`value <= ${params.valueMax}`);
 
 		if (params.takenAtMin) {
 			const takenAtMinDate = new Date(params.takenAtMin);
@@ -359,7 +357,7 @@ export class MetricRepository {
 
 	private parseResult(columnInfo: ColumnInfo[], result: any): Metric[] {
 		const metrics: Metric[] = [];
-		for (const row of result  || []) {
+		for (const row of result || []) {
 			metrics.push(this.parseMetric(columnInfo, row));
 		}
 		return metrics;
