@@ -12,6 +12,6 @@ export const MetricUpdateParamsValidator = joi.object({
 		batchId: joi.string().max(50).label("Batch id"),
 		value: joi.number().positive().label("Value"),
 		takenAt: joi.date().iso().label("Taken at"),
-		takenAtOffset: joi.number().positive().label("Taken at Offset"),
+		takenAtOffset: joi.number().label("Taken at Offset"),
 	}),
 });
