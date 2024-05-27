@@ -127,20 +127,22 @@ export class MetricRepository {
 			throw new Error(`Invalid time range: ${params.aggregationInterval}`);
 		}
 
-		let query = `SELECT ROUND(AVG(CASE WHEN measure_name = 'value' THEN measure_value::bigint ELSE NULL END), 2) AS avg,
-                        MIN(CASE WHEN measure_name = 'value' THEN measure_value::bigint ELSE NULL END)           AS min,
-                        MAX(CASE WHEN measure_name = 'value' THEN measure_value::bigint ELSE NULL END)           AS max,
-                        SUM(CASE WHEN measure_name = 'value' THEN measure_value::bigint ELSE NULL END)           AS sum,
-                        COUNT(*)                                                                                 AS count,
-                        MIN(takenAt)                                                                             AS takenAt,
-                        MIN(takenAtOffset)                                                                       AS takenAtOffset,
-                        bin(time, ${params.aggregationInterval})                                                 as recordedAt
-                 FROM "${this.configuration.DatabaseName}"."${this.configuration.TableName}" m
-                 WHERE time >= '${formattedTimeRangeFilter}'
-                   AND deletedAt = '0'
-                 GROUP BY bin(time, ${params.aggregationInterval})`;
+		let query = `SELECT
+						 ROUND(AVG(value), 2) AS avg,
+                    MIN(value) AS min,
+                    MAX(value) AS max,
+                    SUM(value) AS sum,
+                    COUNT(*) AS count,
+                    MIN(takenAt) AS takenAt,
+                    MIN(takenAtOffset) AS takenAtOffset,
+                    BIN(time, ${params.aggregationInterval}) AS recordedAt
+					 FROM "${this.configuration.DatabaseName}"."${this.configuration.TableName}"
+					 WHERE time >= '${formattedTimeRangeFilter}'
+					   AND deletedAt = '0'
+					   AND measure_name = 'metric'
+					 GROUP BY BIN(time, ${params.aggregationInterval})`;
 
-		query += ` ORDER BY bin(time, ${params.aggregationInterval}) ASC`;
+		query += ` ORDER BY BIN(time, ${params.aggregationInterval}) ASC`;
 		query += ` LIMIT ${limit}`;
 
 		const result = await this.executeQuery(query);
