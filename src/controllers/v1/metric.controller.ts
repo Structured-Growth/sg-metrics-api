@@ -38,11 +38,10 @@ const publicMetricAttributes = [
 	"takenAt",
 	"takenAtOffset",
 	"recordedAt",
-	"deletedAt",
 	"arn",
 ] as const;
 type MetricKeys = (typeof publicMetricAttributes)[number];
-type PublicMetricAttributes = Pick<MetricAttributes, MetricKeys> & {};
+type PublicMetricAttributes = Pick<Omit<MetricAttributes, "deletedAt">, MetricKeys> & {};
 
 @Route("v1/metrics")
 @Tags("Metric")
@@ -104,7 +103,12 @@ export class MetricController extends BaseController {
 	@DescribeResource("Device", ({ body }) => Number(body.deviceId))
 	@ValidateFuncArgs(MetricCreateParamsValidator)
 	async create(@Queries() query: {}, @Body() body: MetricCreateBodyInterface[]): Promise<PublicMetricAttributes[]> {
-		const metrics = await this.metricRepository.create(body);
+		const metrics = await this.metricRepository.create(
+			body.map((item) => ({
+				...item,
+				takenAt: new Date(item.takenAt),
+			}))
+		);
 		this.response.status(201);
 
 		return metrics.map((metric) => ({
