@@ -195,7 +195,7 @@ export class MetricRepository {
 					},
 					{
 						Name: "deletedAt",
-						Value: isDate(metric.deletedAt) ? "1" : (metric.deletedAt || "0"),
+						Value: isDate(metric.deletedAt) ? "1" : metric.deletedAt || "0",
 						Type: "BOOLEAN",
 					},
 					{
@@ -298,13 +298,13 @@ export class MetricRepository {
 
 		if (params.takenAtMin) {
 			const takenAtMinDate = new Date(params.takenAtMin);
-			const takenAtMinISO = takenAtMinDate.toISOString();
-			filters.push(`takenAt >= '${takenAtMinISO}'`);
+			const takenAtMinFormatted = this.formatDateToTimestamp(takenAtMinDate);
+			filters.push(`takenAt >= '${takenAtMinFormatted}'`);
 		}
 		if (params.takenAtMax) {
 			const takenAtMaxDate = new Date(params.takenAtMax);
-			const takenAtMaxISO = takenAtMaxDate.toISOString();
-			filters.push(`takenAt <= '${takenAtMaxISO}'`);
+			const takenAtMaxFormatted = this.formatDateToTimestamp(takenAtMaxDate);
+			filters.push(`takenAt <= '${takenAtMaxFormatted}'`);
 		}
 
 		if (params.recordedAtMin) {
@@ -329,10 +329,12 @@ export class MetricRepository {
 		}
 
 		if (sort && sort.length > 0) {
-			let sqlOrder = sort.map((item) => {
-				const [field, order] = item.split(':');
-				return `${field} ${order.toUpperCase()}`
-			}).join(', ');
+			let sqlOrder = sort
+				.map((item) => {
+					const [field, order] = item.split(":");
+					return `${field} ${order.toUpperCase()}`;
+				})
+				.join(", ");
 			query += ` ORDER BY ${sqlOrder}`;
 		} else {
 			query += ` ORDER BY time DESC`;
@@ -343,7 +345,19 @@ export class MetricRepository {
 
 		return query;
 	}
+	private formatDateToTimestamp(date) {
+		const pad = (num, size) => ("000" + num).slice(size * -1);
+		const year = date.getUTCFullYear();
+		const month = pad(date.getUTCMonth() + 1, 2);
+		const day = pad(date.getUTCDate(), 2);
+		const hours = pad(date.getUTCHours(), 2);
+		const minutes = pad(date.getUTCMinutes(), 2);
+		const seconds = pad(date.getUTCSeconds(), 2);
+		const milliseconds = pad(date.getUTCMilliseconds(), 3);
+		const nanoseconds = "000000"; // Nanoseconds part will be fixed to '000000' as we don't have precision beyond milliseconds
 
+		return `${year}-${month}-${day} ${hours}:${minutes}:${seconds}.${milliseconds}${nanoseconds}`;
+	}
 	private async executeQuery(query: string): Promise<any> {
 		try {
 			const params = {
