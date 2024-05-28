@@ -6,20 +6,19 @@ export interface MetricAttributes {
 	region: RegionEnum;
 	accountId?: number;
 	userId?: number;
+	relatedToRn?: string,
 	metricCategoryId: number;
 	metricTypeId: number;
 	metricTypeVersion: number;
 	deviceId: number;
 	batchId: string;
-	relatedToRn?: string;
 	value: number;
 	takenAt: Date;
 	takenAtOffset: number;
 	recordedAt: Date;
-	// isActive: boolean;
+	deletedAt: Date | null;
 	arn: string;
 }
-
 export interface MetricCreationAttributes extends Omit<MetricAttributes, "arn" | "recordedAt"> {}
 
 //export interface MetricUpdateAttributes extends Pick<MetricAttributes, "isActive"> {}
@@ -40,7 +39,7 @@ export class Metric implements MetricAttributes {
 	takenAt: Date;
 	takenAtOffset: number;
 	recordedAt: Date;
-	// isActive: boolean;
+	deletedAt: Date | null;
 
 	constructor(
 		data: Omit<MetricAttributes, "recordedAt" | "arn"> & {
@@ -62,7 +61,7 @@ export class Metric implements MetricAttributes {
 		this.takenAt = data.takenAt;
 		this.takenAtOffset = data.takenAtOffset;
 		this.recordedAt = data.recordedAt;
-		// this.isActive = data.isActive;
+		this.deletedAt = data.deletedAt;
 	}
 
 	static get arnPattern(): string {
@@ -96,6 +95,7 @@ export class Metric implements MetricAttributes {
 			region: this.region,
 			accountId: this.accountId,
 			userId: this.userId,
+			relatedToRn: this.relatedToRn,
 			metricCategoryId: this.metricCategoryId,
 			metricTypeId: this.metricTypeId,
 			metricTypeVersion: this.metricTypeVersion,
@@ -105,7 +105,7 @@ export class Metric implements MetricAttributes {
 			takenAt: this.takenAt,
 			takenAtOffset: this.takenAtOffset,
 			recordedAt: this.recordedAt,
-			// isActive: this.isActive,
+			deletedAt: this.deletedAt,
 			arn: this.arn,
 		};
 	}

@@ -7,26 +7,82 @@ import {initTest} from "../../../common/init-test";
 
 describe("PUT /api/v1/metrics/:metricId", () => {
 	const { server, context } = initTest();
+	const code = `code-${Date.now()}`;
+	const userId = Date.now();
+	const relatedToRn = `relatedTo-${Date.now()}`;
+	const orgId = parseInt(Date.now().toString().slice(0, 3));
+	const factor = parseInt(Date.now().toString().slice(0, 2));
+	const version = orgId - factor;
+	const accountId = orgId - factor - factor;
+	const metricTypeVersion = parseInt(Date.now().toString().slice(0, 1));
+	const deviceId = parseInt(Date.now().toString().slice(0, 4));
+	const batchId = `batchId-${Date.now()}`;
+	const value = parseInt(Date.now().toString().slice(0, 5));
+	const takenAtOffset = 90;
+	const valueMin = value - factor;
+	const valueMax = value + factor;
 
 	before(async () => container.resolve<App>("App").ready);
+
+	it("Should create metric category", async () => {
+		const { statusCode, body } = await server.post("/v1/metric-category").send({
+			orgId: orgId,
+			region: RegionEnum.US,
+			title: code,
+			code: code,
+			status: "active",
+			metadata: {
+				specUrl: "https://",
+				countryCode: "test",
+			},
+		});
+		assert.equal(statusCode, 201);
+		assert.isNumber(body.id);
+		context.createdMetricCategoryId = body.id;
+	});
+
+	it("Should create metric type", async () => {
+		const { statusCode, body } = await server.post("/v1/metric-type").send({
+			orgId: orgId,
+			region: RegionEnum.US,
+			metricCategoryId: context["createdMetricCategoryId"],
+			title: code,
+			code: code,
+			unit: code,
+			factor: factor,
+			relatedTo: code,
+			version: version,
+			status: "inactive",
+			metadata: {
+				specUrl: "https://",
+				countryCode: "test",
+			},
+		});
+		assert.equal(statusCode, 201);
+		assert.isNumber(body.id);
+		context.createdMetricTypeId = body.id;
+	});
 
 	it("Should create metric", async () => {
 		const { statusCode, body } = await server.post("/v1/metrics").send([
 			{
-				orgId: 1,
-				accountId: 1,
-				userId: 1,
-				metricCategoryId: 1,
-				metricTypeId: 1,
-				metricTypeVersion: 1,
-				deviceId: 1,
-				batchId: "1",
-				value: 3600,
+				orgId: orgId,
+				region: RegionEnum.US,
+				accountId: accountId,
+				userId: userId,
+				relatedToRn: relatedToRn,
+				metricCategoryId: context.createdMetricCategoryId,
+				metricTypeId: context.createdMetricTypeId,
+				metricTypeVersion: metricTypeVersion,
+				deviceId: deviceId,
+				batchId: batchId,
+				value: value,
 				takenAt: "2024-05-16T14:30:00+00:00",
-				takenAtOffset: 0,
-		}
+				takenAtOffset: takenAtOffset,
+			}
 		]);
 		assert.equal(statusCode, 201);
+		assert.equal(body[0].relatedToRn, relatedToRn);
 		context.createdMetricId = body[0].id;
 	});
 
@@ -36,18 +92,34 @@ describe("PUT /api/v1/metrics/:metricId", () => {
 		console.log(body);
 	});
 
-	it("Should update metric", async () => {
+	it("Should update metric value", async () => {
 		const { statusCode, body } = await server.put(`/v1/metrics/${context.createdMetricId}`).send({
-			value: 3601
+			value: value + 100,
 		});
 		assert.equal(statusCode, 200);
 		console.log(body);
 	});
 
-	it("Should return metric", async () => {
+	it("Should return updated metric with new value", async () => {
 		const { statusCode, body } = await server.get(`/v1/metrics/${context.createdMetricId}`);
 		assert.equal(statusCode, 200);
 		console.log(body);
-	});
+	}).timeout(1800000);
+
+	it("Should update metric time", async () => {
+		const { statusCode, body } = await server.put(`/v1/metrics/${context.createdMetricId}`).send({
+			takenAt: new Date().toISOString(),
+			takenAtOffset: 0,
+		});
+		assert.equal(statusCode, 200);
+		console.log(body);
+	}).timeout(1800000);
+
+	it("Should return updated metric with new time", async () => {
+		const { statusCode, body } = await server.get(`/v1/metrics/${context.createdMetricId}`);
+		assert.equal(statusCode, 200);
+		console.log(body);
+	}).timeout(1800000);
+
 
 });

@@ -7,6 +7,7 @@ export interface MetricCreateBodyInterface {
 	 * User that submitted a metric
 	 */
 	userId?: number;
+	relatedToRn?: string;
 	metricCategoryId: number;
 	metricTypeId: number;
 	metricTypeVersion: number;
@@ -18,7 +19,6 @@ export interface MetricCreateBodyInterface {
 	/**
 	 * An entity resource number that metric is related to.
 	 */
-	relatedToRn?: string;
 	value: number;
 	/**
 	 * Taken at datetime in ISO format.
