@@ -53,7 +53,7 @@ export class MetricRepository {
 		const query = `SELECT *
                    FROM "${this.configuration.DatabaseName}"."${this.configuration.TableName}"
                    WHERE id = '${id}'
-                     AND deletedAt = '0'
+                   AND deletedAt = false
                    LIMIT 1`;
 		const result = await this.executeQuery(query);
 
@@ -127,22 +127,21 @@ export class MetricRepository {
 			throw new Error(`Invalid time range: ${params.aggregationInterval}`);
 		}
 
-		let query = `SELECT
-						 ROUND(AVG(value), 2) AS avg,
-                    MIN(value) AS min,
-                    MAX(value) AS max,
-                    SUM(value) AS sum,
-                    COUNT(*) AS count,
-                    MIN(takenAt) AS takenAt,
-                    MIN(takenAtOffset) AS takenAtOffset,
-                    BIN(time, ${params.aggregationInterval}) AS recordedAt
-					 FROM "${this.configuration.DatabaseName}"."${this.configuration.TableName}"
-					 WHERE time >= '${formattedTimeRangeFilter}'
-					   AND deletedAt = '0'
-					   AND measure_name = 'metric'
-					 GROUP BY BIN(time, ${params.aggregationInterval})`;
+		let query = `SELECT ROUND(AVG(value), 2)                        AS avg,
+                        MIN(value)                                  AS min,
+                        MAX(value)                                  AS max,
+                        SUM(value)                                  AS sum,
+                        COUNT(*)                                    AS count,
+                        MIN(takenAt)                                AS takenAt,
+                        MIN(takenAtOffset)                          AS takenAtOffset,
+                        BIN(takenAt, ${params.aggregationInterval}) AS recordedAt
+                 FROM "${this.configuration.DatabaseName}"."${this.configuration.TableName}"
+                 WHERE time >= '${formattedTimeRangeFilter}'
+                   AND deletedAt = false
+                   AND measure_name = 'metric'
+                 GROUP BY BIN(takenAt, ${params.aggregationInterval})`;
 
-		query += ` ORDER BY BIN(time, ${params.aggregationInterval}) ASC`;
+		query += ` ORDER BY BIN(takenAt, ${params.aggregationInterval}) ASC`;
 		query += ` LIMIT ${limit}`;
 
 		const result = await this.executeQuery(query);
@@ -196,18 +195,18 @@ export class MetricRepository {
 					},
 					{
 						Name: "deletedAt",
-						Value: isDate(metric.deletedAt) ? metric.deletedAt.toISOString() : metric.deletedAt || "0",
-						Type: "VARCHAR",
+						Value: isDate(metric.deletedAt) ? "1" : metric.deletedAt || "0",
+						Type: "BOOLEAN",
 					},
 					{
 						Name: "takenAt",
-						Value: metric.takenAt.toString(),
-						Type: "VARCHAR",
+						Value: metric.takenAt.getTime().toString(),
+						Type: "TIMESTAMP",
 					},
 					{
 						Name: "takenAtOffset",
 						Value: metric.takenAtOffset.toString(),
-						Type: "VARCHAR",
+						Type: "BIGINT",
 					},
 				],
 				MeasureName: "metric",
@@ -218,7 +217,6 @@ export class MetricRepository {
 		};
 
 		const res = await this.writeClient.writeRecords(command).promise();
-		console.log(res);
 		metrics.forEach((metric) => (metric.recordedAt = recordedAt));
 
 		return metrics;
@@ -276,10 +274,10 @@ export class MetricRepository {
 		return new Metric(metricData as any);
 	}
 
-	private buildQuery(params: MetricSearchParamsInterface, offset: number, limit: number, sort: any): string {
+	private buildQuery(params: MetricSearchParamsInterface, offset: number, limit: number, sort: string[]): string {
 		let query = `SELECT *
                  FROM "${this.configuration.DatabaseName}"."${this.configuration.TableName}"`;
-		const filters: string[] = ["deletedAt = '0'"];
+		const filters: string[] = ["deletedAt = false"];
 
 		if (params.orgId) filters.push(`orgId = '${params.orgId}'`);
 		if (params.accountId) filters.push(`accountId = '${params.accountId}'`);
@@ -300,13 +298,13 @@ export class MetricRepository {
 
 		if (params.takenAtMin) {
 			const takenAtMinDate = new Date(params.takenAtMin);
-			const takenAtMinISO = takenAtMinDate.toISOString();
-			filters.push(`takenAt >= '${takenAtMinISO}'`);
+			const takenAtMinFormatted = this.formatDateToTimestamp(takenAtMinDate);
+			filters.push(`takenAt >= '${takenAtMinFormatted}'`);
 		}
 		if (params.takenAtMax) {
 			const takenAtMaxDate = new Date(params.takenAtMax);
-			const takenAtMaxISO = takenAtMaxDate.toISOString();
-			filters.push(`takenAt <= '${takenAtMaxISO}'`);
+			const takenAtMaxFormatted = this.formatDateToTimestamp(takenAtMaxDate);
+			filters.push(`takenAt <= '${takenAtMaxFormatted}'`);
 		}
 
 		if (params.recordedAtMin) {
@@ -331,19 +329,35 @@ export class MetricRepository {
 		}
 
 		if (sort && sort.length > 0) {
-			const orderClause = `${sort[0]} ${sort[1]}`;
-			query += ` ORDER BY ${orderClause}`;
+			let sqlOrder = sort
+				.map((item) => {
+					const [field, order] = item.split(":");
+					return `${field} ${order.toUpperCase()}`;
+				})
+				.join(", ");
+			query += ` ORDER BY ${sqlOrder}`;
 		} else {
 			query += ` ORDER BY time DESC`;
 		}
-		//query += ` LIMIT ${limit} OFFSET ${offset}`;
 		query += ` LIMIT ${limit} `;
 
 		this.logger.debug(`Timestream query`, query);
 
 		return query;
 	}
+	private formatDateToTimestamp(date) {
+		const pad = (num, size) => ("000" + num).slice(size * -1);
+		const year = date.getUTCFullYear();
+		const month = pad(date.getUTCMonth() + 1, 2);
+		const day = pad(date.getUTCDate(), 2);
+		const hours = pad(date.getUTCHours(), 2);
+		const minutes = pad(date.getUTCMinutes(), 2);
+		const seconds = pad(date.getUTCSeconds(), 2);
+		const milliseconds = pad(date.getUTCMilliseconds(), 3);
+		const nanoseconds = "000000"; // Nanoseconds part will be fixed to '000000' as we don't have precision beyond milliseconds
 
+		return `${year}-${month}-${day} ${hours}:${minutes}:${seconds}.${milliseconds}${nanoseconds}`;
+	}
 	private async executeQuery(query: string): Promise<any> {
 		try {
 			const params = {

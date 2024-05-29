@@ -161,10 +161,9 @@ describe("GET /api/v1/metrics", () => {
 		assert.equal(body.data[0].deviceId, deviceId);
 		assert.equal(body.data[0].batchId,batchId);
 		assert.equal(body.data[0].value, value);
-		assert.equal(body.data[0].takenAt, "2024-05-16T14:30:00+00:00");
+		assert.equal(body.data[0].takenAt, "2024-05-16 14:30:00.000000000");
 		assert.equal(body.data[0].takenAtOffset, takenAtOffset);
 		assert.isString(body.data[0].recordedAt);
-		assert.equal(body.data[0].deletedAt, 0);
 		assert.equal(body.page, 1);
 		assert.equal(body.limit, 20);
 		assert.equal(body.total, 1);
@@ -190,7 +189,8 @@ describe("GET /api/v1/metrics", () => {
 		const { statusCode, body } = await server.get("/v1/metrics").query({
 			userId,
 			value: value,
-			sort: [[sortField, sortOrder]],
+			'sort[0]': "value:desc",
+			'sort[1]': "takenAt:asc",
 		});
 		assert.equal(statusCode, 200);
 		assert.equal(body.data[0].value, value);
@@ -221,8 +221,8 @@ describe("GET /api/v1/metrics", () => {
         it("Should search by taken time range", async () => {
             const { statusCode, body } = await server.get("/v1/metrics").query({
                 userId,
-                takenAtMin: "2024-05-10T14:30:00+00:00",
-                takenAtMax: "2024-05-18T14:30:00+00:00",
+                takenAtMin: "2024-04-28 12:29:34",
+                takenAtMax: "2024-05-28 12:29:34",
             });
             assert.equal(statusCode, 200);
             assert.isString(body.data[0].takenAt);
