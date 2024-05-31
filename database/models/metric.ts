@@ -16,7 +16,7 @@ export interface MetricAttributes {
 	takenAt: Date;
 	takenAtOffset: number;
 	recordedAt: Date;
-	deletedAt: Date | null;
+	deletedAt: boolean;
 	arn: string;
 }
 export interface MetricCreationAttributes extends Omit<MetricAttributes, "arn" | "recordedAt"> {}
@@ -39,7 +39,7 @@ export class Metric implements MetricAttributes {
 	takenAt: Date;
 	takenAtOffset: number;
 	recordedAt: Date;
-	deletedAt: Date | null;
+	deletedAt: boolean;
 
 	constructor(
 		data: Omit<MetricAttributes, "recordedAt" | "arn"> & {

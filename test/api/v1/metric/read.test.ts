@@ -106,7 +106,7 @@ describe("GET /api/v1/metrics:metricId", () => {
 		assert.equal(body.takenAtOffset, takenAtOffset);
 		assert.isString(body.recordedAt);
 	}).timeout(1800000);
-/*
+
 	it("Should return error is metric type id is wrong", async () => {
 		const { statusCode, body } = await server.get(`/v1/metrics/9999`).send({
 		});
@@ -114,5 +114,5 @@ describe("GET /api/v1/metrics:metricId", () => {
 		assert.isString(body.message);
 	}).timeout(1800000);
 
-*/
+
 });

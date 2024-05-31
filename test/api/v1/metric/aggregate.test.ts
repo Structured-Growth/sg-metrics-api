@@ -76,8 +76,8 @@ describe("GET /api/v1/metrics/aggregate", () => {
 				metricTypeVersion: metricTypeVersion,
 				deviceId: deviceId,
 				batchId: batchId,
-				value: value,
-				takenAt: "2024-05-16T14:30:00+00:00",
+				value: value + factor,
+				takenAt: "2024-05-30T14:30:00+00:00",
 				takenAtOffset: takenAtOffset,
 			}
 		]);
@@ -100,7 +100,7 @@ describe("GET /api/v1/metrics/aggregate", () => {
 				deviceId: deviceId,
 				batchId: batchId,
 				value: value - factor,
-				takenAt: "2024-05-16T11:30:00+00:00",
+				takenAt: "2024-05-21T11:30:00+00:00",
 				takenAtOffset: takenAtOffset,
 			}
 		]);
@@ -123,5 +123,41 @@ describe("GET /api/v1/metrics/aggregate", () => {
 		assert.equal(statusCode, 200);
 	}).timeout(1800000);
 
+	it("Should aggregate metrics wih one filter", async () => {
+		const { statusCode, body } = await server.get(`/v1/metrics/aggregate`).query({
+			"aggregationInterval": "30d",
+			orgId
+		});
+		assert.equal(statusCode, 200);
+	}).timeout(1800000);
 
+	it("Should aggregate metrics wih one filter and new sort", async () => {
+		const { statusCode, body } = await server.get(`/v1/metrics/aggregate`).query({
+			"aggregationInterval": "30d",
+			orgId,
+			'sort[0]': "value:desc",
+			'sort[1]': "takenAt:asc"
+		});
+		assert.equal(statusCode, 200);
+	}).timeout(1800000);
+
+	it("Should aggregate metrics wih two filter", async () => {
+		const { statusCode, body } = await server.get(`/v1/metrics/aggregate`).query({
+			"aggregationInterval": "30d",
+			metricTypeId: context.createdMetricTypeId,
+			deviceId: deviceId
+		});
+		assert.equal(statusCode, 200);
+	}).timeout(1800000);
+
+
+	it("Should aggregate metrics wih three filter", async () => {
+		const { statusCode, body } = await server.get(`/v1/metrics/aggregate`).query({
+			"aggregationInterval": "30d",
+			metricTypeId: context.createdMetricTypeId,
+			accountId: accountId,
+			userId: userId
+		});
+		assert.equal(statusCode, 200);
+	}).timeout(1800000);
 });

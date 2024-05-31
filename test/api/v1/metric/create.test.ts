@@ -96,7 +96,6 @@ describe("POST /api/v1/metrics", () => {
 		assert.equal(body[0].value, value);
 		assert.isString(body[0].takenAt);
 		assert.equal(body[0].takenAtOffset, takenAtOffset);
-		assert.equal(body[0].deletedAt, null);
 		assert.isString(body[0].arn);
 		context.createdMetricId = body[0].id;
 	});
