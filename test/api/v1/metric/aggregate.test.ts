@@ -119,6 +119,7 @@ describe("GET /api/v1/metrics/aggregate", () => {
 	it("Should aggregate metrics", async () => {
 		const { statusCode, body } = await server.get(`/v1/metrics/aggregate`).query({
 			"aggregationInterval": "30d",
+			"takenAtFrom": "01-05-2024"
 		});
 		assert.equal(statusCode, 200);
 	}).timeout(1800000);

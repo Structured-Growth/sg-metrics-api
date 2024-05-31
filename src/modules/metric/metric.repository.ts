@@ -53,7 +53,7 @@ export class MetricRepository {
 		const query = `SELECT *
                    FROM "${this.configuration.DatabaseName}"."${this.configuration.TableName}"
                    WHERE id = '${id}'
-                   AND deletedAt = false
+                     AND deletedAt = false
                    LIMIT 1`;
 		const result = await this.executeQuery(query);
 
@@ -72,15 +72,19 @@ export class MetricRepository {
 		if (!metric) {
 			throw new NotFoundError(`Metric ${id} not found`);
 		}
+		//
+		// if (!params.takenAt) {
+		// 	params.takenAt = new Date(metric.takenAt);
+		// } else {
+		// 	params.takenAt = new Date(params.takenAt);
+		// }
 
-		if (!params.takenAt) {
-			params.takenAt = new Date(metric.takenAt);
-		} else {
-			params.takenAt = new Date(params.takenAt);
+		if (metric.takenAt !== params.takenAt) {
+			await this.delete(id);
 		}
 
 		Object.assign(metric, params);
-		await this.writeRecord([metric], metric.recordedAt);
+		await this.writeRecord([metric]);
 
 		return metric;
 	}
@@ -146,11 +150,7 @@ export class MetricRepository {
 			throw new NotFoundError(`Invalid time range: ${params.aggregationInterval}`);
 		}
 
-		let filters: string[] = [
-			`time >= '${formattedTimeRangeFilter}'`,
-			`deletedAt = false`,
-			`measure_name = 'metric'`
-		];
+		let filters: string[] = [`time >= '${formattedTimeRangeFilter}'`, `deletedAt = false`, `measure_name = 'metric'`];
 
 		if (params.orgId) filters.push(`orgId = '${params.orgId}'`);
 		if (params.accountId) filters.push(`accountId = '${params.accountId}'`);
@@ -198,16 +198,16 @@ export class MetricRepository {
 		}
 
 		let query = `SELECT ROUND(AVG(value), 2)                        AS avg,
-                    MIN(value)                                  AS min,
-                    MAX(value)                                  AS max,
-                    SUM(value)                                  AS sum,
-                    COUNT(*)                                    AS count,
-                    MIN(takenAt)                                AS takenAt,
-                    MIN(takenAtOffset)                          AS takenAtOffset,
-                    BIN(takenAt, ${params.aggregationInterval}) AS recordedAt
-             FROM "${this.configuration.DatabaseName}"."${this.configuration.TableName}"
-             WHERE ${filters.join(" AND ")}
-             GROUP BY BIN(takenAt, ${params.aggregationInterval})`;
+                        MIN(value)                                  AS min,
+                        MAX(value)                                  AS max,
+                        SUM(value)                                  AS sum,
+                        COUNT(*)                                    AS count,
+                        MIN(takenAt)                                AS takenAt,
+                        MIN(takenAtOffset)                          AS takenAtOffset,
+                        BIN(takenAt, ${params.aggregationInterval}) AS recordedAt
+                 FROM "${this.configuration.DatabaseName}"."${this.configuration.TableName}"
+                 WHERE ${filters.join(" AND ")}
+                 GROUP BY BIN(takenAt, ${params.aggregationInterval})`;
 
 		if (order && order.length > 0) {
 			let sqlOrder = order
@@ -246,62 +246,61 @@ export class MetricRepository {
 		};
 	}
 
-
-
-	private async writeRecord(metrics: Metric[], recordedAt?: Date): Promise<Metric[]> {
-		recordedAt = recordedAt || new Date();
-
+	private async writeRecord(metrics: Metric[]): Promise<Metric[]> {
 		const command: WriteRecordsRequest = {
 			DatabaseName: this.configuration.DatabaseName,
 			TableName: this.configuration.TableName,
 			CommonAttributes: {
 				Version: Date.now(),
 			},
-			Records: metrics.map((metric) => ({
-				Dimensions: [
-					{ Name: "id", Value: metric.id },
-					{ Name: "orgId", Value: metric.orgId.toString() },
-					{ Name: "region", Value: metric.region?.toString() || RegionEnum.US },
-					{ Name: "accountId", Value: metric.accountId.toString() },
-					{ Name: "userId", Value: metric.userId.toString() },
-					{ Name: "relatedToRn", Value: metric.relatedToRn?.toString() || "0" },
-					{ Name: "metricCategoryId", Value: metric.metricCategoryId.toString() },
-					{ Name: "metricTypeId", Value: metric.metricTypeId.toString() },
-					{ Name: "metricTypeVersion", Value: metric.metricTypeVersion.toString() },
-					{ Name: "deviceId", Value: metric.deviceId.toString() },
-					{ Name: "batchId", Value: metric.batchId.toString() },
-				],
-				MeasureValues: [
-					{
-						Name: "value",
-						Value: metric.value.toString(),
-						Type: "BIGINT",
-					},
-					{
-						Name: "deletedAt",
-						Value: metric.deletedAt.toString(),
-						Type: "BOOLEAN",
-					},
-					{
-						Name: "takenAt",
-						Value: metric.takenAt.getTime().toString(),
-						Type: "TIMESTAMP",
-					},
-					{
-						Name: "takenAtOffset",
-						Value: metric.takenAtOffset.toString(),
-						Type: "BIGINT",
-					},
-				],
-				MeasureName: "metric",
-				MeasureValueType: "MULTI",
-				Time: recordedAt.getTime().toString(),
-				TimeUnit: "MILLISECONDS",
-			})),
+			Records: metrics.map((metric) => {
+				metric.recordedAt = metric.recordedAt || new Date();
+
+				return {
+					Dimensions: [
+						{ Name: "id", Value: metric.id },
+						{ Name: "orgId", Value: metric.orgId.toString() },
+						{ Name: "region", Value: metric.region?.toString() || RegionEnum.US },
+						{ Name: "accountId", Value: metric.accountId.toString() },
+						{ Name: "userId", Value: metric.userId.toString() },
+						{ Name: "relatedToRn", Value: metric.relatedToRn?.toString() || "0" },
+						{ Name: "metricCategoryId", Value: metric.metricCategoryId.toString() },
+						{ Name: "metricTypeId", Value: metric.metricTypeId.toString() },
+						{ Name: "metricTypeVersion", Value: metric.metricTypeVersion.toString() },
+						{ Name: "deviceId", Value: metric.deviceId.toString() },
+						{ Name: "batchId", Value: metric.batchId.toString() },
+					],
+					MeasureValues: [
+						{
+							Name: "value",
+							Value: metric.value.toString(),
+							Type: "BIGINT",
+						},
+						{
+							Name: "recordedAt",
+							Value: metric.recordedAt.getTime().toString(),
+							Type: "TIMESTAMP",
+						},
+						{
+							Name: "deletedAt",
+							Value: metric.deletedAt.toString(),
+							Type: "BOOLEAN",
+						},
+						{
+							Name: "takenAtOffset",
+							Value: metric.takenAtOffset.toString(),
+							Type: "BIGINT",
+						},
+					],
+					MeasureName: "metric",
+					MeasureValueType: "MULTI",
+					Time: metric.takenAt.getTime().toString(),
+					TimeUnit: "MILLISECONDS",
+				};
+			}),
 		};
 
-		const res = await this.writeClient.writeRecords(command).promise();
-		metrics.forEach((metric) => (metric.recordedAt = recordedAt));
+		await this.writeClient.writeRecords(command).promise();
 
 		return metrics;
 	}
@@ -429,6 +428,7 @@ export class MetricRepository {
 
 		return query;
 	}
+
 	private formatDateToTimestamp(date) {
 		const pad = (num, size) => ("000" + num).slice(size * -1);
 		const year = date.getUTCFullYear();
@@ -442,6 +442,7 @@ export class MetricRepository {
 
 		return `${year}-${month}-${day} ${hours}:${minutes}:${seconds}.${milliseconds}${nanoseconds}`;
 	}
+
 	private async executeQuery(query: string): Promise<any> {
 		try {
 			const params = {
