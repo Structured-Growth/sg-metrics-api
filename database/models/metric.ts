@@ -16,7 +16,7 @@ export interface MetricAttributes {
 	takenAt: Date;
 	takenAtOffset: number;
 	recordedAt: Date;
-	deletedAt: boolean;
+	isDeleted: boolean;
 	arn: string;
 }
 export interface MetricCreationAttributes extends Omit<MetricAttributes, "arn" | "recordedAt"> {}
@@ -39,7 +39,7 @@ export class Metric implements MetricAttributes {
 	takenAt: Date;
 	takenAtOffset: number;
 	recordedAt: Date;
-	deletedAt: boolean;
+	isDeleted: boolean;
 
 	constructor(
 		data: Omit<MetricAttributes, "recordedAt" | "arn"> & {
@@ -61,7 +61,7 @@ export class Metric implements MetricAttributes {
 		this.takenAt = data.takenAt;
 		this.takenAtOffset = data.takenAtOffset;
 		this.recordedAt = data.recordedAt;
-		this.deletedAt = data.deletedAt;
+		this.isDeleted = data.isDeleted;
 	}
 
 	static get arnPattern(): string {
@@ -105,7 +105,7 @@ export class Metric implements MetricAttributes {
 			takenAt: this.takenAt,
 			takenAtOffset: this.takenAtOffset,
 			recordedAt: this.recordedAt,
-			deletedAt: this.deletedAt,
+			isDeleted: this.isDeleted,
 			arn: this.arn,
 		};
 	}

@@ -102,7 +102,7 @@ describe("GET /api/v1/metrics:metricId", () => {
 		assert.equal(body.deviceId, deviceId);
 		assert.equal(body.batchId,batchId);
 		assert.equal(body.value, value);
-		assert.equal(body.takenAt, "2024-05-16 14:30:00.000000000");
+		assert.equal(body.takenAt, "2024-05-16T14:30:00.000Z");
 		assert.equal(body.takenAtOffset, takenAtOffset);
 		assert.isString(body.recordedAt);
 	}).timeout(1800000);

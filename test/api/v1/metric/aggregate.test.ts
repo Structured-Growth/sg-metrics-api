@@ -19,8 +19,6 @@ describe("GET /api/v1/metrics/aggregate", () => {
 	const batchId = `batchId-${Date.now()}`;
 	const value = parseInt(Date.now().toString().slice(0, 5));
 	const takenAtOffset = 90;
-	const valueMin = value - factor;
-	const valueMax = value + factor;
 
 	before(async () => container.resolve<App>("App").ready);
 
