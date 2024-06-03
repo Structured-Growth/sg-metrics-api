@@ -80,7 +80,8 @@ export class MetricRepository {
 		// }
 
 		if (metric.takenAt !== params.takenAt) {
-			await this.delete(id);
+			metric.isDeleted = true;
+			await this.writeRecord([metric]);
 		}
 
 		Object.assign(metric, params);
