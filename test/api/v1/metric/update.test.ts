@@ -19,8 +19,6 @@ describe("PUT /api/v1/metrics/:metricId", () => {
 	const batchId = `batchId-${Date.now()}`;
 	const value = parseInt(Date.now().toString().slice(0, 5));
 	const takenAtOffset = 90;
-	const valueMin = value - factor;
-	const valueMax = value + factor;
 
 	before(async () => container.resolve<App>("App").ready);
 
@@ -82,44 +80,78 @@ describe("PUT /api/v1/metrics/:metricId", () => {
 			}
 		]);
 		assert.equal(statusCode, 201);
-		assert.equal(body[0].relatedToRn, relatedToRn);
 		context.createdMetricId = body[0].id;
+	});
+
+	it("Should create second metric", async () => {
+		const { statusCode, body } = await server.post("/v1/metrics").send([
+			{
+				orgId: orgId,
+				region: RegionEnum.US,
+				accountId: accountId,
+				userId: userId,
+				relatedToRn: relatedToRn,
+				metricCategoryId: context.createdMetricCategoryId,
+				metricTypeId: context.createdMetricTypeId,
+				metricTypeVersion: metricTypeVersion,
+				deviceId: deviceId,
+				batchId: batchId,
+				value: value,
+				takenAt: "2024-05-16T11:30:00+00:00",
+				takenAtOffset: takenAtOffset,
+			}
+		]);
+		assert.equal(statusCode, 201);
+		assert.equal(body[0].relatedToRn, relatedToRn);
+		context.createdMetric2Id = body[0].id;
 	});
 
 	it("Should return metric", async () => {
 		const { statusCode, body } = await server.get(`/v1/metrics/${context.createdMetricId}`);
 		assert.equal(statusCode, 200);
 		console.log(body);
-	});
+		assert.equal(body.id, context["createdMetricId"]);
+
+	}).timeout(1800000);
 
 	it("Should update metric value", async () => {
 		const { statusCode, body } = await server.put(`/v1/metrics/${context.createdMetricId}`).send({
 			value: value + 100,
 		});
 		assert.equal(statusCode, 200);
+		assert.equal(body.value, value + 100);
 		console.log(body);
-	});
+	}).timeout(1800000);
 
 	it("Should return updated metric with new value", async () => {
 		const { statusCode, body } = await server.get(`/v1/metrics/${context.createdMetricId}`);
 		assert.equal(statusCode, 200);
+		assert.equal(body.value, value + 100);
 		console.log(body);
 	}).timeout(1800000);
 
 	it("Should update metric time", async () => {
-		const { statusCode, body } = await server.put(`/v1/metrics/${context.createdMetricId}`).send({
+		const { statusCode, body } = await server.put(`/v1/metrics/${context.createdMetric2Id}`).send({
 			takenAt: new Date().toISOString(),
 			takenAtOffset: 0,
 		});
 		assert.equal(statusCode, 200);
+		assert.equal(body.takenAtOffset, 0);
+		context.createdMetric2NewId = body[0].id;
 		console.log(body);
 	}).timeout(1800000);
 
 	it("Should return updated metric with new time", async () => {
-		const { statusCode, body } = await server.get(`/v1/metrics/${context.createdMetricId}`);
+		const { statusCode, body } = await server.get(`/v1/metrics/${context.createdMetric2NewId}`);
 		assert.equal(statusCode, 200);
+		assert.equal(body.takenAtOffset, 0);
 		console.log(body);
 	}).timeout(1800000);
 
+	it("Should not return updated metric with old time", async () => {
+		const { statusCode, body } = await server.get(`/v1/metrics/${context.createdMetric2Id}`);
+		assert.equal(statusCode, 404);
+		console.log(body);
+	}).timeout(1800000);
 
 });

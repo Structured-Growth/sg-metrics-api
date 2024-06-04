@@ -161,7 +161,7 @@ describe("GET /api/v1/metrics", () => {
 		assert.equal(body.data[0].deviceId, deviceId);
 		assert.equal(body.data[0].batchId,batchId);
 		assert.equal(body.data[0].value, value);
-		assert.equal(body.data[0].takenAt, "2024-05-16 14:30:00.000000000");
+		assert.equal(body.data[0].takenAt, "2024-05-16T14:30:00.000Z");
 		assert.equal(body.data[0].takenAtOffset, takenAtOffset);
 		assert.isString(body.data[0].recordedAt);
 		assert.equal(body.page, 1);
@@ -176,7 +176,8 @@ describe("GET /api/v1/metrics", () => {
 			"id[1]": context["createdMetric2Id"],
 		});
 		assert.equal(statusCode, 200);
-		assert.equal(body.data[0].id, context["createdMetric2Id"]);
+		assert.equal(body.data[0].id, context["createdMetricId"]);
+		assert.equal(body.data[1].id, context["createdMetric2Id"]);
 		assert.equal(body.page, 1);
 		assert.equal(body.limit, 20);
 		assert.equal(body.total, 2);

@@ -42,7 +42,7 @@ export class MetricRepository {
 				new Metric({
 					id: uuidv4(),
 					...item,
-					deletedAt: null,
+					isDeleted: false,
 				})
 		);
 
@@ -53,7 +53,7 @@ export class MetricRepository {
 		const query = `SELECT *
                    FROM "${this.configuration.DatabaseName}"."${this.configuration.TableName}"
                    WHERE id = '${id}'
-                   AND deletedAt = false
+                     AND isDeleted = false
                    LIMIT 1`;
 		const result = await this.executeQuery(query);
 
@@ -66,22 +66,38 @@ export class MetricRepository {
 
 	public async update(
 		id: string,
-		params: Partial<Pick<MetricAttributes, "value" | "takenAt" | "takenAtOffset" | "deletedAt">>
+		params: Partial<Pick<MetricAttributes, "value" | "takenAt" | "takenAtOffset" | "isDeleted">>
 	): Promise<Metric> {
 		const metric = await this.read(id);
 		if (!metric) {
 			throw new NotFoundError(`Metric ${id} not found`);
 		}
+		//
+		// if (!params.takenAt) {
+		// 	params.takenAt = new Date(metric.takenAt);
+		// } else {
+		// 	params.takenAt = new Date(params.takenAt);
+		// }
+
+		if (metric.takenAt !== params.takenAt) {
+			metric.isDeleted = true;
+			await this.writeRecord([metric]);
+		}
 
 		Object.assign(metric, params);
-		await this.writeRecord([metric], metric.recordedAt);
+		await this.writeRecord([metric]);
 
 		return metric;
 	}
 
 	public async delete(id: string): Promise<void> {
+		const metric = await this.read(id);
+		if (!metric) {
+			throw new NotFoundError(`Metric ${id} not found`);
+		}
+		//const takenAtDate = new Date(metric.takenAt);
 		await this.update(id, {
-			deletedAt: new Date(),
+			isDeleted: true,
 		});
 	}
 
@@ -90,11 +106,16 @@ export class MetricRepository {
 		const limit = params.limit || 20;
 		const offset = (page - 1) * limit;
 
-		let order;
-		if (params.sort && params.sort[0] === "recordedAt") {
-			order = ["time", params.sort[1]];
+		let order: string[] = [];
+
+		if (params.sort) {
+			order = params.sort.map(sortParam => {
+				const [field, direction] = sortParam.split(':');
+				const sortField = field === 'takenAt' ? 'time' : field;
+				return `${sortField}:${direction.toUpperCase()}`;
+			});
 		} else {
-			order = params.sort;
+			order = ['time:DESC'];
 		}
 
 		const query = this.buildQuery(params, offset, limit, order);
@@ -116,6 +137,13 @@ export class MetricRepository {
 		const limit = params.limit || 20;
 		const offset = (page - 1) * limit;
 
+		let order;
+		if (params.sort && params.sort[0] === "recordedAt") {
+			order = ["time", params.sort[1]];
+		} else {
+			order = params.sort;
+		}
+
 		const timeRangeFilter = `ago(${params.aggregationInterval})`;
 		const timeRange = params.aggregationInterval;
 		const validTimeRanges = ["1m", "5m", "30m", "1h", "4h", "6h", "12h", "1d", "7d", "30d", "60d"];
@@ -124,7 +152,54 @@ export class MetricRepository {
 		);
 
 		if (!validTimeRanges.includes(timeRange)) {
-			throw new Error(`Invalid time range: ${params.aggregationInterval}`);
+			throw new NotFoundError(`Invalid time range: ${params.aggregationInterval}`);
+		}
+
+		let filters: string[] = [`time >= '${formattedTimeRangeFilter}'`, `isDeleted = false`, `measure_name = 'metric'`];
+
+		if (params.orgId) filters.push(`orgId = '${params.orgId}'`);
+		if (params.accountId) filters.push(`accountId = '${params.accountId}'`);
+		if (params.userId) filters.push(`userId = '${params.userId}'`);
+		if (params.metricTypeId) filters.push(`metricTypeId = '${params.metricTypeId}'`);
+		if (params.metricTypeVersion) filters.push(`metricTypeVersion = '${params.metricTypeVersion}'`);
+		if (params.deviceId) filters.push(`deviceId = '${params.deviceId}'`);
+		if (params.batchId) filters.push(`batchId = '${params.batchId}'`);
+		if (params.value) filters.push(`value = ${params.value}`);
+
+		if (params.id && params.id.length > 0) {
+			const idConditions = params.id.map((id) => `id = '${id}'`);
+			filters.push(`(${idConditions.join(" OR ")})`);
+		}
+
+		if (params.valueMin !== undefined) filters.push(`value >= ${params.valueMin}`);
+		if (params.valueMax !== undefined) filters.push(`value <= ${params.valueMax}`);
+
+		if (params.recordedAtMin) {
+			const recordedAtMinDate = new Date(params.recordedAtMin);
+			const recordedAtMinFormatted = this.formatDateToTimestamp(recordedAtMinDate);
+			filters.push(`recordedAt >= '${recordedAtMinFormatted}'`);
+		}
+		if (params.recordedAtMax) {
+			const recordedAtMaxDate = new Date(params.recordedAtMax);
+			const recordedAtMaxFormatted = this.formatDateToTimestamp(recordedAtMaxDate);
+			filters.push(`recordedAt <= '${recordedAtMaxFormatted}'`);
+		}
+
+		if (params.takenAtMin) {
+			const takenAtMinDate = new Date(params.takenAtMin);
+			const takenAtMinISO = takenAtMinDate
+				.toISOString()
+				.replace("T", " ")
+				.replace(/\.\d{3}Z$/, "");
+			filters.push(`time >= '${takenAtMinISO}'`);
+		}
+		if (params.takenAtMax) {
+			const takenAtMaxDate = new Date(params.takenAtMax);
+			const takenAtMaxISO = takenAtMaxDate
+				.toISOString()
+				.replace("T", " ")
+				.replace(/\.\d{3}Z$/, "");
+			filters.push(`time <= '${takenAtMaxISO}'`);
 		}
 
 		let query = `SELECT ROUND(AVG(value), 2)                        AS avg,
@@ -136,15 +211,27 @@ export class MetricRepository {
                         MIN(takenAtOffset)                          AS takenAtOffset,
                         BIN(takenAt, ${params.aggregationInterval}) AS recordedAt
                  FROM "${this.configuration.DatabaseName}"."${this.configuration.TableName}"
-                 WHERE time >= '${formattedTimeRangeFilter}'
-                   AND deletedAt = false
-                   AND measure_name = 'metric'
+                 WHERE ${filters.join(" AND ")}
                  GROUP BY BIN(takenAt, ${params.aggregationInterval})`;
 
-		query += ` ORDER BY BIN(takenAt, ${params.aggregationInterval}) ASC`;
+		if (order && order.length > 0) {
+			let sqlOrder = order
+				.map((item) => {
+					const [field, order] = item.split(":");
+					return `${field} ${order.toUpperCase()}`;
+				})
+				.join(", ");
+			query += ` ORDER BY ${sqlOrder}`;
+		} else {
+			query += ` ORDER BY BIN(takenAt, ${params.aggregationInterval}) ASC`;
+		}
 		query += ` LIMIT ${limit}`;
 
+		this.logger.debug(`Aggregate query: ${query}`);
+
 		const result = await this.executeQuery(query);
+
+		this.logger.debug(`Aggregate result: ${JSON.stringify(result)}`);
 
 		const aggregatedData = result.Rows.map((row: any) => ({
 			avg: parseFloat(row.Data[0].ScalarValue),
@@ -164,63 +251,73 @@ export class MetricRepository {
 		};
 	}
 
-	private async writeRecord(metrics: Metric[], recordedAt?: Date): Promise<Metric[]> {
-		recordedAt = recordedAt || new Date();
-
+	private async writeRecord(metrics: Metric[]): Promise<Metric[]> {
 		const command: WriteRecordsRequest = {
 			DatabaseName: this.configuration.DatabaseName,
 			TableName: this.configuration.TableName,
 			CommonAttributes: {
 				Version: Date.now(),
 			},
-			Records: metrics.map((metric) => ({
-				Dimensions: [
-					{ Name: "id", Value: metric.id },
-					{ Name: "orgId", Value: metric.orgId.toString() },
-					{ Name: "region", Value: metric.region?.toString() || RegionEnum.US },
-					{ Name: "accountId", Value: metric.accountId.toString() },
-					{ Name: "userId", Value: metric.userId.toString() },
-					{ Name: "relatedToRn", Value: metric.relatedToRn?.toString() || "0" },
-					{ Name: "metricCategoryId", Value: metric.metricCategoryId.toString() },
-					{ Name: "metricTypeId", Value: metric.metricTypeId.toString() },
-					{ Name: "metricTypeVersion", Value: metric.metricTypeVersion.toString() },
-					{ Name: "deviceId", Value: metric.deviceId.toString() },
-					{ Name: "batchId", Value: metric.batchId.toString() },
-				],
-				MeasureValues: [
-					{
-						Name: "value",
-						Value: metric.value.toString(),
-						Type: "BIGINT",
-					},
-					{
-						Name: "deletedAt",
-						Value: isDate(metric.deletedAt) ? "1" : metric.deletedAt || "0",
-						Type: "BOOLEAN",
-					},
-					{
-						Name: "takenAt",
-						Value: metric.takenAt.getTime().toString(),
-						Type: "TIMESTAMP",
-					},
-					{
-						Name: "takenAtOffset",
-						Value: metric.takenAtOffset.toString(),
-						Type: "BIGINT",
-					},
-				],
-				MeasureName: "metric",
-				MeasureValueType: "MULTI",
-				Time: recordedAt.getTime().toString(),
-				TimeUnit: "MILLISECONDS",
-			})),
+			Records: metrics.map((metric) => {
+				metric.recordedAt = metric.recordedAt || new Date();
+
+				return {
+					Dimensions: [
+						{ Name: "id", Value: metric.id },
+						{ Name: "orgId", Value: metric.orgId.toString() },
+						{ Name: "region", Value: metric.region?.toString() || RegionEnum.US },
+						{ Name: "accountId", Value: metric.accountId.toString() },
+						{ Name: "userId", Value: metric.userId.toString() },
+						{ Name: "relatedToRn", Value: metric.relatedToRn?.toString() || "0" },
+						{ Name: "metricCategoryId", Value: metric.metricCategoryId.toString() },
+						{ Name: "metricTypeId", Value: metric.metricTypeId.toString() },
+						{ Name: "metricTypeVersion", Value: metric.metricTypeVersion.toString() },
+						{ Name: "deviceId", Value: metric.deviceId.toString() },
+						{ Name: "batchId", Value: metric.batchId.toString() },
+					],
+					MeasureValues: [
+						{
+							Name: "value",
+							Value: metric.value.toString(),
+							Type: "BIGINT",
+						},
+						{
+							Name: "recordedAt",
+							Value: metric.recordedAt.getTime().toString(),
+							Type: "TIMESTAMP",
+						},
+						{
+							Name: "isDeleted",
+							Value: metric.isDeleted.toString(),
+							Type: "BOOLEAN",
+						},
+						{
+							Name: "takenAtOffset",
+							Value: metric.takenAtOffset.toString(),
+							Type: "BIGINT",
+						},
+					],
+					MeasureName: "metric",
+					MeasureValueType: "MULTI",
+					Time: metric.takenAt.getTime().toString(),
+					TimeUnit: "MILLISECONDS",
+				};
+			}),
 		};
 
-		const res = await this.writeClient.writeRecords(command).promise();
-		metrics.forEach((metric) => (metric.recordedAt = recordedAt));
+		try {
+			await this.writeClient.writeRecords(command).promise();
+		} catch (error) {
+			console.error("Error writing records to Timestream:", error);
+			if (error.RejectedRecords) {
+				console.error("Rejected Records:", JSON.stringify(error.RejectedRecords, null, 2));
+			}
+			throw error;
+		}
 
 		return metrics;
 	}
+
 
 	private parseTimeInterval(timeRangeFilter: string): number {
 		const match = timeRangeFilter.match(/([0-9]+)([a-zA-Z]+)/);
@@ -257,12 +354,8 @@ export class MetricRepository {
 			}
 
 			let name = item.Name;
-			if (name === "measure_value::bigint") {
-				name = "value";
-			}
-
 			if (name === "time") {
-				acc["recordedAt"] = new Date(row.Data[index].ScalarValue + "Z");
+				acc["takenAt"] = new Date(row.Data[index].ScalarValue + "Z");
 			} else {
 				const scalarValue = row.Data[index].ScalarValue;
 				const isNumeric = !isNaN(Number(scalarValue)) && !isNaN(parseFloat(scalarValue));
@@ -277,7 +370,7 @@ export class MetricRepository {
 	private buildQuery(params: MetricSearchParamsInterface, offset: number, limit: number, sort: string[]): string {
 		let query = `SELECT *
                  FROM "${this.configuration.DatabaseName}"."${this.configuration.TableName}"`;
-		const filters: string[] = ["deletedAt = false"];
+		const filters: string[] = ["isDeleted = false"];
 
 		if (params.orgId) filters.push(`orgId = '${params.orgId}'`);
 		if (params.accountId) filters.push(`accountId = '${params.accountId}'`);
@@ -296,32 +389,32 @@ export class MetricRepository {
 		if (params.valueMin !== undefined) filters.push(`value >= ${params.valueMin}`);
 		if (params.valueMax !== undefined) filters.push(`value <= ${params.valueMax}`);
 
-		if (params.takenAtMin) {
-			const takenAtMinDate = new Date(params.takenAtMin);
-			const takenAtMinFormatted = this.formatDateToTimestamp(takenAtMinDate);
-			filters.push(`takenAt >= '${takenAtMinFormatted}'`);
-		}
-		if (params.takenAtMax) {
-			const takenAtMaxDate = new Date(params.takenAtMax);
-			const takenAtMaxFormatted = this.formatDateToTimestamp(takenAtMaxDate);
-			filters.push(`takenAt <= '${takenAtMaxFormatted}'`);
-		}
-
 		if (params.recordedAtMin) {
 			const recordedAtMinDate = new Date(params.recordedAtMin);
-			const recordedAtMinISO = recordedAtMinDate
-				.toISOString()
-				.replace("T", " ")
-				.replace(/\.\d{3}Z$/, "");
-			filters.push(`time >= '${recordedAtMinISO}'`);
+			const recordedAtMinFormatted = this.formatDateToTimestamp(recordedAtMinDate);
+			filters.push(`recordedAt >= '${recordedAtMinFormatted}'`);
 		}
 		if (params.recordedAtMax) {
 			const recordedAtMaxDate = new Date(params.recordedAtMax);
-			const recordedAtMaxISO = recordedAtMaxDate
+			const recordedAtMaxFormatted = this.formatDateToTimestamp(recordedAtMaxDate);
+			filters.push(`recordedAt <= '${recordedAtMaxFormatted}'`);
+		}
+
+		if (params.takenAtMin) {
+			const takenAtMinDate = new Date(params.takenAtMin);
+			const takenAtMinISO = takenAtMinDate
 				.toISOString()
 				.replace("T", " ")
 				.replace(/\.\d{3}Z$/, "");
-			filters.push(`time <= '${recordedAtMaxISO}'`);
+			filters.push(`time >= '${takenAtMinISO}'`);
+		}
+		if (params.takenAtMax) {
+			const takenAtMaxDate = new Date(params.takenAtMax);
+			const takenAtMaxISO = takenAtMaxDate
+				.toISOString()
+				.replace("T", " ")
+				.replace(/\.\d{3}Z$/, "");
+			filters.push(`time <= '${takenAtMaxISO}'`);
 		}
 
 		if (filters.length > 0) {
@@ -345,6 +438,7 @@ export class MetricRepository {
 
 		return query;
 	}
+
 	private formatDateToTimestamp(date) {
 		const pad = (num, size) => ("000" + num).slice(size * -1);
 		const year = date.getUTCFullYear();
@@ -358,6 +452,7 @@ export class MetricRepository {
 
 		return `${year}-${month}-${day} ${hours}:${minutes}:${seconds}.${milliseconds}${nanoseconds}`;
 	}
+
 	private async executeQuery(query: string): Promise<any> {
 		try {
 			const params = {
