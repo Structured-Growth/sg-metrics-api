@@ -17,7 +17,7 @@ export interface ReportUpdateAttributes
 	tableName: "reports",
 	timestamps: true,
 	underscored: true,
-	paranoid: true,
+	paranoid: false,
 })
 export class ReportSequelize extends Model<ReportAttributes, ReportCreationAttributes> implements ReportAttributes {
 	@Column

@@ -18,7 +18,7 @@ import { MetricUpdateBodyInterface } from "../../interfaces/metric-update-body.i
 import { MetricSearchParamsValidator } from "../../validators/metric-search-params.validator";
 import { MetricCreateParamsValidator } from "../../validators/metric-create-params.validator";
 import { MetricUpdateParamsValidator } from "../../validators/metric-update-params.validator";
-import { pick } from "lodash";
+import { isUndefined, omitBy, pick } from "lodash";
 import { MetricAggregateParamsInterface } from "../../interfaces/metric-aggregate-params.interface";
 import { MetricAggregateResultInterface } from "../../interfaces/metric-aggregate-result.interface";
 
@@ -109,6 +109,14 @@ export class MetricController extends BaseController {
 				takenAt: new Date(item.takenAt),
 			}))
 		);
+
+		// new Date().toISOString()
+		// '2024-06-07T09:08:27.773Z'
+
+		new Date("2024-06-08T22:00:00"); //  >> 2024-06-09T01:00:00
+		new Date("2024-06-08T22:00:00Z"); // >> 2024-06-08T22:00:00
+		new Date(); // server time 2024-06-07T12:06:00+02:00
+
 		this.response.status(201);
 
 		return metrics.map((metric) => ({
@@ -152,7 +160,10 @@ export class MetricController extends BaseController {
 		@Queries() query: {},
 		@Body() body: MetricUpdateBodyInterface
 	): Promise<PublicMetricAttributes> {
-		const metric = await this.metricRepository.update(metricId, body);
+		const metric = await this.metricRepository.update(metricId, omitBy({
+			...body,
+			takenAt: body.takenAt ? new Date(body.takenAt) : undefined,
+		}, isUndefined) as any);
 
 		return {
 			...(pick(metric.toJSON(), publicMetricAttributes) as PublicMetricAttributes),
