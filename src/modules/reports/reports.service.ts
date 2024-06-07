@@ -5,8 +5,5 @@ import { ReportsRepository } from "./reports.repository";
 
 @autoInjectable()
 export class ReportsService {
-	constructor(
-		@inject("ReportsRepository") private reportRepository: ReportsRepository,
-	) {}
-
+	constructor(@inject("ReportsRepository") private reportRepository: ReportsRepository) {}
 }

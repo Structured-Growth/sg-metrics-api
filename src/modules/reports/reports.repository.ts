@@ -5,16 +5,17 @@ import {
 	SearchResultInterface,
 	NotFoundError,
 } from "@structured-growth/microservice-sdk";
-import ReportSequelize, { ReportCreationAttributes, ReportUpdateAttributes } from "../../../database/models/report.sequelize";
+import ReportSequelize, {
+	ReportCreationAttributes,
+	ReportUpdateAttributes,
+} from "../../../database/models/report.sequelize";
 import { ReportSearchParamsInterface } from "../../interfaces/report-search-params.interface";
 
-
 @autoInjectable()
-export class ReportsRepository implements RepositoryInterface<ReportSequelize, ReportSearchParamsInterface, ReportCreationAttributes> {
-
-	public async search(
-		params: ReportSearchParamsInterface,
-	): Promise<SearchResultInterface<ReportSequelize>> {
+export class ReportsRepository
+	implements RepositoryInterface<ReportSequelize, ReportSearchParamsInterface, ReportCreationAttributes>
+{
+	public async search(params: ReportSearchParamsInterface): Promise<SearchResultInterface<ReportSequelize>> {
 		const page = params.page || 1;
 		const limit = params.limit || 20;
 		const offset = (page - 1) * limit;

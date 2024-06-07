@@ -106,13 +106,13 @@ export class MetricRepository {
 		let order: string[] = [];
 
 		if (params.sort) {
-			order = params.sort.map(sortParam => {
-				const [field, direction] = sortParam.split(':');
-				const sortField = field === 'takenAt' ? 'time' : field;
+			order = params.sort.map((sortParam) => {
+				const [field, direction] = sortParam.split(":");
+				const sortField = field === "takenAt" ? "time" : field;
 				return `${sortField}:${direction.toUpperCase()}`;
 			});
 		} else {
-			order = ['time:DESC'];
+			order = ["time:DESC"];
 		}
 
 		const query = this.buildQuery(params, offset, limit, order);
@@ -155,7 +155,7 @@ export class MetricRepository {
 		let filters: string[] = [
 			// `time >= '${formattedTimeRangeFilter}'`,
 			`isDeleted = false`,
-			`measure_name = 'metric'`
+			`measure_name = 'metric'`,
 		];
 
 		if (params.orgId) filters.push(`orgId = '${params.orgId}'`);
@@ -322,7 +322,6 @@ export class MetricRepository {
 
 		return metrics;
 	}
-
 
 	private parseTimeInterval(timeRangeFilter: string): number {
 		const match = timeRangeFilter.match(/([0-9]+)([a-zA-Z]+)/);

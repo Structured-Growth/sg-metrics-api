@@ -41,9 +41,7 @@ type PublicReportAttributes = Pick<ReportAttributes, ReportKeys>;
 @Tags("Reports")
 @autoInjectable()
 export class ReportsController extends BaseController {
-	constructor(
-		@inject("ReportsRepository") private reportsRepository: ReportsRepository,
-	) {
+	constructor(@inject("ReportsRepository") private reportsRepository: ReportsRepository) {
 		super();
 	}
 
