@@ -69,12 +69,9 @@ export class MetricRepository {
 		params: Partial<Pick<MetricAttributes, "value" | "takenAt" | "takenAtOffset" | "isDeleted">>
 	): Promise<Metric> {
 		const metric = await this.read(id);
-		console.log("Metric: ", metric);
-
 		if (!metric) {
 			throw new NotFoundError(`Metric ${id} not found`);
 		}
-
 		//
 		// if (!params.takenAt) {
 		// 	params.takenAt = new Date(metric.takenAt);
@@ -209,14 +206,13 @@ export class MetricRepository {
 			filters.push(`time <= '${takenAtMaxISO}'`);
 		}
 
-		let query = `SELECT ROUND(AVG(value), 2)                 AS avg,
+		let query = `SELECT ROUND(AVG(value), 2)                        AS avg,
                         MIN(value)                                  AS min,
-                        MAX(value)                                  AS max,
                         SUM(value)                                  AS sum,
                         COUNT(*)                                    AS count,
-                        MIN(time)                                   AS takenAt,
+                        MIN(recordedAt)                                AS recordedAt,
                         MIN(takenAtOffset)                          AS takenAtOffset,
-                        MIN(recordedAt)                             AS recordedAt
+                        BIN(time, ${params.aggregationInterval}) AS recordedAt
                  FROM "${this.configuration.DatabaseName}"."${this.configuration.TableName}"
                  WHERE ${filters.join(" AND ")}
                  GROUP BY BIN(time, ${params.aggregationInterval})`;
@@ -266,9 +262,7 @@ export class MetricRepository {
 				Version: Date.now(),
 			},
 			Records: metrics.map((metric) => {
-				metric.recordedAt = metric.recordedAt ? new Date(metric.recordedAt) : new Date();
-
-				console.log("Test");
+				metric.recordedAt = metric.recordedAt || new Date();
 
 				return {
 					Dimensions: [

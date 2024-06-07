@@ -44,6 +44,13 @@ router.get(pathPrefix + '/v1/metric-type/:metricTypeId', handleRequest(Controlle
 router.put(pathPrefix + '/v1/metric-type/:metricTypeId', handleRequest(Controllers.MetricTypeController, "update", handlerOpts));
 router.delete(pathPrefix + '/v1/metric-type/:metricTypeId', handleRequest(Controllers.MetricTypeController, "delete", handlerOpts));
 
+//ReportsController
+router.get(pathPrefix + '/v1/reports', handleRequest(Controllers.ReportsController, "search", handlerOpts));
+router.post(pathPrefix + '/v1/reports', handleRequest(Controllers.ReportsController, "create", handlerOpts));
+router.get(pathPrefix + '/v1/reports/:reportId', handleRequest(Controllers.ReportsController, "get", handlerOpts));
+router.put(pathPrefix + '/v1/reports/:reportId', handleRequest(Controllers.ReportsController, "update", handlerOpts));
+router.delete(pathPrefix + '/v1/reports/:reportId', handleRequest(Controllers.ReportsController, "delete", handlerOpts));
+
 //ResolverController
 router.get(pathPrefix + '/v1/resolver/resolve', handleRequest(Controllers.ResolverController, "resolve", handlerOpts));
 router.get(pathPrefix + '/v1/resolver/actions', handleRequest(Controllers.ResolverController, "actions", handlerOpts));
@@ -69,6 +76,11 @@ export const actionToRouteMap = {
 	"MetricTypeController.get": 'get /v1/metric-type/:metricTypeId',
 	"MetricTypeController.update": 'put /v1/metric-type/:metricTypeId',
 	"MetricTypeController.delete": 'delete /v1/metric-type/:metricTypeId',
+	"ReportsController.search": 'get /v1/reports',
+	"ReportsController.create": 'post /v1/reports',
+	"ReportsController.get": 'get /v1/reports/:reportId',
+	"ReportsController.update": 'put /v1/reports/:reportId',
+	"ReportsController.delete": 'delete /v1/reports/:reportId',
 	"ResolverController.resolve": 'get /v1/resolver/resolve',
 	"ResolverController.actions": 'get /v1/resolver/actions',
 	"ResolverController.models": 'get /v1/resolver/models',
