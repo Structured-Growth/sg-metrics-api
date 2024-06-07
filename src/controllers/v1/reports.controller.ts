@@ -43,7 +43,6 @@ type PublicReportAttributes = Pick<ReportAttributes, ReportKeys>;
 export class ReportsController extends BaseController {
 	constructor(
 		@inject("ReportsRepository") private reportsRepository: ReportsRepository,
-		@inject("ReportsService") private reportsService: ReportsService
 	) {
 		super();
 	}
@@ -77,7 +76,7 @@ export class ReportsController extends BaseController {
 	@DescribeAction("reports/create")
 	@ValidateFuncArgs(ReportCreateParamsValidator)
 	async create(@Queries() query: {}, @Body() body: ReportCreateBodyInterface): Promise<PublicReportAttributes> {
-		const report = await this.reportsService.create(body);
+		const report = await this.reportsRepository.create(body);
 		this.response.status(201);
 
 		return {

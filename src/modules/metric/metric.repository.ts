@@ -69,22 +69,16 @@ export class MetricRepository {
 		params: Partial<Pick<MetricAttributes, "value" | "takenAt" | "takenAtOffset" | "isDeleted">>
 	): Promise<Metric> {
 		const metric = await this.read(id);
-		console.log("Metric: ", metric);
 
 		if (!metric) {
 			throw new NotFoundError(`Metric ${id} not found`);
 		}
 
-		//
-		// if (!params.takenAt) {
-		// 	params.takenAt = new Date(metric.takenAt);
-		// } else {
-		// 	params.takenAt = new Date(params.takenAt);
-		// }
-
-		if (params.takenAt && metric.takenAt !== params.takenAt) {
+		if (!params.takenAt) {
 			metric.isDeleted = true;
 			await this.writeRecord([metric]);
+
+			return metric;
 		}
 
 		Object.assign(metric, params);
@@ -268,7 +262,9 @@ export class MetricRepository {
 			Records: metrics.map((metric) => {
 				metric.recordedAt = metric.recordedAt ? new Date(metric.recordedAt) : new Date();
 
-				console.log("Test");
+				if (metric.takenAt) {
+					metric.takenAt = new Date(metric.takenAt);
+				}
 
 				return {
 					Dimensions: [
