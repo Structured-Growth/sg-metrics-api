@@ -69,19 +69,16 @@ export class MetricRepository {
 		params: Partial<Pick<MetricAttributes, "value" | "takenAt" | "takenAtOffset" | "isDeleted">>
 	): Promise<Metric> {
 		const metric = await this.read(id);
+
 		if (!metric) {
 			throw new NotFoundError(`Metric ${id} not found`);
 		}
-		//
-		// if (!params.takenAt) {
-		// 	params.takenAt = new Date(metric.takenAt);
-		// } else {
-		// 	params.takenAt = new Date(params.takenAt);
-		// }
 
-		if (metric.takenAt !== params.takenAt) {
+		if (!params.takenAt) {
 			metric.isDeleted = true;
 			await this.writeRecord([metric]);
+
+			return metric;
 		}
 
 		Object.assign(metric, params);
@@ -109,13 +106,13 @@ export class MetricRepository {
 		let order: string[] = [];
 
 		if (params.sort) {
-			order = params.sort.map(sortParam => {
-				const [field, direction] = sortParam.split(':');
-				const sortField = field === 'takenAt' ? 'time' : field;
+			order = params.sort.map((sortParam) => {
+				const [field, direction] = sortParam.split(":");
+				const sortField = field === "takenAt" ? "time" : field;
 				return `${sortField}:${direction.toUpperCase()}`;
 			});
 		} else {
-			order = ['time:DESC'];
+			order = ["time:DESC"];
 		}
 
 		const query = this.buildQuery(params, offset, limit, order);
@@ -144,18 +141,22 @@ export class MetricRepository {
 			order = params.sort;
 		}
 
-		const timeRangeFilter = `ago(${params.aggregationInterval})`;
-		const timeRange = params.aggregationInterval;
+		// const timeRangeFilter = `ago(${params.aggregationInterval})`;
+		// const timeRange = params.aggregationInterval;
 		const validTimeRanges = ["1m", "5m", "30m", "1h", "4h", "6h", "12h", "1d", "7d", "30d", "60d"];
-		const formattedTimeRangeFilter = this.formatDate(
-			new Date(new Date().getTime() - this.parseTimeInterval(timeRangeFilter))
-		);
-
-		if (!validTimeRanges.includes(timeRange)) {
+		// const formattedTimeRangeFilter = this.formatDate(
+		// 	new Date(new Date().getTime() - this.parseTimeInterval(timeRangeFilter))
+		// );
+		//
+		if (!validTimeRanges.includes(params.aggregationInterval)) {
 			throw new NotFoundError(`Invalid time range: ${params.aggregationInterval}`);
 		}
 
-		let filters: string[] = [`time >= '${formattedTimeRangeFilter}'`, `isDeleted = false`, `measure_name = 'metric'`];
+		let filters: string[] = [
+			// `time >= '${formattedTimeRangeFilter}'`,
+			`isDeleted = false`,
+			`measure_name = 'metric'`,
+		];
 
 		if (params.orgId) filters.push(`orgId = '${params.orgId}'`);
 		if (params.accountId) filters.push(`accountId = '${params.accountId}'`);
@@ -202,17 +203,17 @@ export class MetricRepository {
 			filters.push(`time <= '${takenAtMaxISO}'`);
 		}
 
-		let query = `SELECT ROUND(AVG(value), 2)                        AS avg,
+		let query = `SELECT ROUND(AVG(value), 2)                 AS avg,
                         MIN(value)                                  AS min,
                         MAX(value)                                  AS max,
                         SUM(value)                                  AS sum,
                         COUNT(*)                                    AS count,
-                        MIN(takenAt)                                AS takenAt,
+                        MIN(time)                                   AS takenAt,
                         MIN(takenAtOffset)                          AS takenAtOffset,
-                        BIN(takenAt, ${params.aggregationInterval}) AS recordedAt
+                        MIN(recordedAt)                             AS recordedAt
                  FROM "${this.configuration.DatabaseName}"."${this.configuration.TableName}"
                  WHERE ${filters.join(" AND ")}
-                 GROUP BY BIN(takenAt, ${params.aggregationInterval})`;
+                 GROUP BY BIN(time, ${params.aggregationInterval})`;
 
 		if (order && order.length > 0) {
 			let sqlOrder = order
@@ -223,7 +224,7 @@ export class MetricRepository {
 				.join(", ");
 			query += ` ORDER BY ${sqlOrder}`;
 		} else {
-			query += ` ORDER BY BIN(takenAt, ${params.aggregationInterval}) ASC`;
+			query += ` ORDER BY BIN(time, ${params.aggregationInterval}) ASC`;
 		}
 		query += ` LIMIT ${limit}`;
 
@@ -259,7 +260,11 @@ export class MetricRepository {
 				Version: Date.now(),
 			},
 			Records: metrics.map((metric) => {
-				metric.recordedAt = metric.recordedAt || new Date();
+				metric.recordedAt = metric.recordedAt ? new Date(metric.recordedAt) : new Date();
+
+				if (metric.takenAt) {
+					metric.takenAt = new Date(metric.takenAt);
+				}
 
 				return {
 					Dimensions: [
@@ -317,7 +322,6 @@ export class MetricRepository {
 
 		return metrics;
 	}
-
 
 	private parseTimeInterval(timeRangeFilter: string): number {
 		const match = timeRangeFilter.match(/([0-9]+)([a-zA-Z]+)/);

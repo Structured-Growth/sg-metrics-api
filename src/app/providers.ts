@@ -8,6 +8,8 @@ import { MetricTypeRepository } from "../modules/metric-type/metric-type.reposit
 import { MetricCategoryService } from "../modules/metric-category/metric-category.service";
 import { MetricCategoryRepository } from "../modules/metric-category/metric-category.repository";
 import { MetricRepository } from "../modules/metric/metric.repository";
+import { ReportsRepository } from "../modules/reports/reports.repository";
+import { ReportsService } from "../modules/reports/reports.service";
 
 // load and validate env variables
 loadEnvironment();
@@ -30,8 +32,10 @@ container.register("Logger", Logger);
 container.register("App", App, { lifecycle: Lifecycle.Singleton });
 container.register("MetricCategoryService", MetricCategoryService);
 container.register("MetricTypeService", MetricTypeService);
+container.register("ReportsService", ReportsService);
 
 // repositories
 container.register("MetricCategoryRepository", MetricCategoryRepository);
 container.register("MetricTypeRepository", MetricTypeRepository);
 container.register("MetricRepository", MetricRepository);
+container.register("ReportsRepository", ReportsRepository);

@@ -137,7 +137,7 @@ describe("PUT /api/v1/metrics/:metricId", () => {
 		});
 		assert.equal(statusCode, 200);
 		assert.equal(body.takenAtOffset, 0);
-		context.createdMetric2NewId = body[0].id;
+		context.createdMetric2NewId = body.id;
 		console.log(body);
 	}).timeout(1800000);
 
