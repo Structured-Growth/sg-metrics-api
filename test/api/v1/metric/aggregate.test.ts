@@ -2,8 +2,8 @@ import "../../../../src/app/providers";
 import { App } from "../../../../src/app/app";
 import { container, webServer } from "@structured-growth/microservice-sdk";
 import { RegionEnum } from "@structured-growth/microservice-sdk";
-import {assert} from "chai";
-import {initTest} from "../../../common/init-test";
+import { assert } from "chai";
+import { initTest } from "../../../common/init-test";
 
 describe("GET /api/v1/metrics/aggregate", () => {
 	const { server, context } = initTest();
@@ -77,7 +77,7 @@ describe("GET /api/v1/metrics/aggregate", () => {
 				value: value + factor,
 				takenAt: "2024-05-30T14:30:00+00:00",
 				takenAtOffset: takenAtOffset,
-			}
+			},
 		]);
 		assert.equal(statusCode, 201);
 		assert.equal(body[0].relatedToRn, relatedToRn);
@@ -100,7 +100,7 @@ describe("GET /api/v1/metrics/aggregate", () => {
 				value: value - factor,
 				takenAt: "2024-05-21T11:30:00+00:00",
 				takenAtOffset: takenAtOffset,
-			}
+			},
 		]);
 		assert.equal(statusCode, 201);
 		assert.equal(body[0].relatedToRn, relatedToRn);
@@ -108,54 +108,52 @@ describe("GET /api/v1/metrics/aggregate", () => {
 	});
 
 	it("Should return metric", async () => {
-		const { statusCode, body } = await server.get(`/v1/metrics/${context.createdMetricId}`).send({
-		});
+		const { statusCode, body } = await server.get(`/v1/metrics/${context.createdMetricId}`).send({});
 		assert.equal(statusCode, 200);
 		assert.equal(body.id, context["createdMetricId"]);
 	}).timeout(1800000);
 
 	it("Should aggregate metrics", async () => {
 		const { statusCode, body } = await server.get(`/v1/metrics/aggregate`).query({
-			"aggregationInterval": "30d",
-			"takenAtMin": "2024-05-01T00:00:00Z"
+			aggregationInterval: "30d",
+			takenAtMin: "2024-05-01T00:00:00Z",
 		});
 		assert.equal(statusCode, 200);
 	}).timeout(1800000);
 
-	it("Should aggregate metrics wih one filter", async () => {
+	it("Should aggregate metrics with one filter", async () => {
 		const { statusCode, body } = await server.get(`/v1/metrics/aggregate`).query({
-			"aggregationInterval": "30d",
-			orgId
+			aggregationInterval: "30d",
+			orgId,
 		});
 		assert.equal(statusCode, 200);
 	}).timeout(1800000);
 
 	it("Should aggregate metrics wih one filter and new sort", async () => {
 		const { statusCode, body } = await server.get(`/v1/metrics/aggregate`).query({
-			"aggregationInterval": "30d",
+			aggregationInterval: "30d",
 			orgId,
-			'sort[0]': "avg:desc",
-			'sort[1]': "takenAt:asc"
+			"sort[0]": "avg:desc",
+			"sort[1]": "takenAt:asc",
 		});
 		assert.equal(statusCode, 200);
 	}).timeout(1800000);
 
 	it("Should aggregate metrics wih two filter", async () => {
 		const { statusCode, body } = await server.get(`/v1/metrics/aggregate`).query({
-			"aggregationInterval": "30d",
+			aggregationInterval: "30d",
 			metricTypeId: context.createdMetricTypeId,
-			deviceId: deviceId
+			deviceId: deviceId,
 		});
 		assert.equal(statusCode, 200);
 	}).timeout(1800000);
 
-
 	it("Should aggregate metrics wih three filter", async () => {
 		const { statusCode, body } = await server.get(`/v1/metrics/aggregate`).query({
-			"aggregationInterval": "30d",
+			aggregationInterval: "30d",
 			metricTypeId: context.createdMetricTypeId,
 			accountId: accountId,
-			userId: userId
+			userId: userId,
 		});
 		assert.equal(statusCode, 200);
 	}).timeout(1800000);
