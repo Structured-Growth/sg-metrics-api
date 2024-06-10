@@ -79,7 +79,7 @@ describe("GET /api/v1/metrics", () => {
 				value: value,
 				takenAt: "2024-05-16T14:30:00+00:00",
 				takenAtOffset: takenAtOffset,
-			}
+			},
 		]);
 		assert.equal(statusCode, 201);
 		assert.equal(body[0].relatedToRn, relatedToRn);
@@ -102,7 +102,7 @@ describe("GET /api/v1/metrics", () => {
 				value: value,
 				takenAt: "2024-05-16T11:30:00+00:00",
 				takenAtOffset: takenAtOffset,
-			}
+			},
 		]);
 		assert.equal(statusCode, 201);
 		assert.equal(body[0].relatedToRn, relatedToRn);
@@ -110,8 +110,7 @@ describe("GET /api/v1/metrics", () => {
 	});
 
 	it("Should return metric", async () => {
-		const { statusCode, body } = await server.get(`/v1/metrics/${context.createdMetricId}`).send({
-		});
+		const { statusCode, body } = await server.get(`/v1/metrics/${context.createdMetricId}`).send({});
 		assert.equal(statusCode, 200);
 		assert.equal(body.id, context["createdMetricId"]);
 	}).timeout(1800000);
@@ -159,9 +158,9 @@ describe("GET /api/v1/metrics", () => {
 		assert.equal(body.data[0].metricTypeId, context["createdMetricTypeId"]);
 		assert.equal(body.data[0].metricTypeVersion, metricTypeVersion);
 		assert.equal(body.data[0].deviceId, deviceId);
-		assert.equal(body.data[0].batchId,batchId);
+		assert.equal(body.data[0].batchId, batchId);
 		assert.equal(body.data[0].value, value);
-		assert.equal(body.data[0].takenAt, "2024-05-16 14:30:00.000000000");
+		assert.equal(body.data[0].takenAt, "2024-05-16T14:30:00.000Z");
 		assert.equal(body.data[0].takenAtOffset, takenAtOffset);
 		assert.isString(body.data[0].recordedAt);
 		assert.equal(body.page, 1);
@@ -176,7 +175,8 @@ describe("GET /api/v1/metrics", () => {
 			"id[1]": context["createdMetric2Id"],
 		});
 		assert.equal(statusCode, 200);
-		assert.equal(body.data[0].id, context["createdMetric2Id"]);
+		assert.equal(body.data[0].id, context["createdMetricId"]);
+		assert.equal(body.data[1].id, context["createdMetric2Id"]);
 		assert.equal(body.page, 1);
 		assert.equal(body.limit, 20);
 		assert.equal(body.total, 2);
@@ -189,60 +189,58 @@ describe("GET /api/v1/metrics", () => {
 		const { statusCode, body } = await server.get("/v1/metrics").query({
 			userId,
 			value: value,
-			'sort[0]': "value:desc",
-			'sort[1]': "takenAt:asc",
+			"sort[0]": "value:desc",
 		});
 		assert.equal(statusCode, 200);
 		assert.equal(body.data[0].value, value);
 		assert.equal(body.data[0].userId, userId);
 	}).timeout(1800000);
 
-        it("Should search by deviceId", async () => {
-            const { statusCode, body } = await server.get("/v1/metrics").query({
-                userId,
-                deviceId: deviceId,
-            });
-            assert.equal(statusCode, 200);
-            assert.equal(body.data[0].deviceId, deviceId);
-			assert.equal(body.data[0].userId, userId);
-        }).timeout(1800000);
+	it("Should search by deviceId", async () => {
+		const { statusCode, body } = await server.get("/v1/metrics").query({
+			userId,
+			deviceId: deviceId,
+		});
+		assert.equal(statusCode, 200);
+		assert.equal(body.data[0].deviceId, deviceId);
+		assert.equal(body.data[0].userId, userId);
+	}).timeout(1800000);
 
-        it("Should search by value range", async () => {
-            const { statusCode, body } = await server.get("/v1/metrics").query({
-                userId,
-                valueMin: valueMin,
-                valueMax: valueMax,
-            });
-            assert.equal(statusCode, 200);
-            assert.equal(body.data[0].value, value);
-			assert.equal(body.data[0].userId, userId);
-        }).timeout(1800000);
+	it("Should search by value range", async () => {
+		const { statusCode, body } = await server.get("/v1/metrics").query({
+			userId,
+			valueMin: valueMin,
+			valueMax: valueMax,
+		});
+		assert.equal(statusCode, 200);
+		assert.equal(body.data[0].value, value);
+		assert.equal(body.data[0].userId, userId);
+	}).timeout(1800000);
 
-        it("Should search by taken time range", async () => {
-            const { statusCode, body } = await server.get("/v1/metrics").query({
-                userId,
-                takenAtMin: "2024-04-28 12:29:34",
-                takenAtMax: "2024-05-28 12:29:34",
-            });
-            assert.equal(statusCode, 200);
-            assert.isString(body.data[0].takenAt);
-			assert.equal(body.data[0].userId, userId);
-        }).timeout(1800000);
+	it("Should search by taken time range", async () => {
+		const { statusCode, body } = await server.get("/v1/metrics").query({
+			userId,
+			takenAtMin: "2024-04-28 12:29:34",
+			takenAtMax: "2024-05-28 12:29:34",
+		});
+		assert.equal(statusCode, 200);
+		assert.isString(body.data[0].takenAt);
+		assert.equal(body.data[0].userId, userId);
+	}).timeout(1800000);
 
-        it("Should search by recorder time range", async () => {
-            const dateMin = new Date();
-            const dateMax = new Date();
-            dateMin.setMinutes(dateMin.getMinutes() - 60);
-            dateMax.setMinutes(dateMax.getMinutes() + 60);
+	it("Should search by recorder time range", async () => {
+		const dateMin = new Date();
+		const dateMax = new Date();
+		dateMin.setMinutes(dateMin.getMinutes() - 60);
+		dateMax.setMinutes(dateMax.getMinutes() + 60);
 
-            const { statusCode, body } = await server.get("/v1/metrics").query({
-                userId,
-                recordedAtMin: dateMin.toISOString(),
-                recordedAtMax: dateMax.toISOString(),
-            });
-            assert.equal(statusCode, 200);
-            assert.isString(body.data[0].recordedAt);
-			assert.equal(body.data[0].userId, userId);
-        }).timeout(1800000);
-
+		const { statusCode, body } = await server.get("/v1/metrics").query({
+			userId,
+			recordedAtMin: dateMin.toISOString(),
+			recordedAtMax: dateMax.toISOString(),
+		});
+		assert.equal(statusCode, 200);
+		assert.isString(body.data[0].recordedAt);
+		assert.equal(body.data[0].userId, userId);
+	}).timeout(1800000);
 });

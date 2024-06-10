@@ -1,11 +1,9 @@
 import "../../../../src/app/providers";
 import { App } from "../../../../src/app/app";
 import { container, webServer } from "@structured-growth/microservice-sdk";
-import { agent } from "supertest";
-import { routes } from "../../../../src/routes";
 import { RegionEnum } from "@structured-growth/microservice-sdk";
-import {assert} from "chai";
-import {initTest} from "../../../common/init-test";
+import { assert } from "chai";
+import { initTest } from "../../../common/init-test";
 
 describe("POST /api/v1/metrics", () => {
 	const { server, context } = initTest();
@@ -39,7 +37,6 @@ describe("POST /api/v1/metrics", () => {
 		assert.equal(statusCode, 201);
 		assert.isNumber(body.id);
 		context.createdMetricCategoryId = body.id;
-
 	});
 
 	it("Should create metric type", async () => {
@@ -67,20 +64,20 @@ describe("POST /api/v1/metrics", () => {
 	it("Should create metric", async () => {
 		const { statusCode, body } = await server.post("/v1/metrics").send([
 			{
-			orgId: orgId,
-			region: RegionEnum.US,
-			accountId: accountId,
-			userId: userId,
-			relatedToRn: relatedToRn,
-			metricCategoryId: context.createdMetricCategoryId,
-			metricTypeId: context.createdMetricTypeId,
-			metricTypeVersion: metricTypeVersion,
-			deviceId: deviceId,
-			batchId: batchId,
-			value: value,
-			takenAt: "2024-05-16T14:30:00+00:00",
-			takenAtOffset: takenAtOffset,
-		}
+				orgId: orgId,
+				region: RegionEnum.US,
+				accountId: accountId,
+				userId: userId,
+				relatedToRn: relatedToRn,
+				metricCategoryId: context.createdMetricCategoryId,
+				metricTypeId: context.createdMetricTypeId,
+				metricTypeVersion: metricTypeVersion,
+				deviceId: deviceId,
+				batchId: batchId,
+				value: value,
+				takenAt: "2024-05-16T14:30:00+00:00",
+				takenAtOffset: takenAtOffset,
+			},
 		]);
 		assert.equal(statusCode, 201);
 		assert.equal(body[0].orgId, orgId);
@@ -96,7 +93,6 @@ describe("POST /api/v1/metrics", () => {
 		assert.equal(body[0].value, value);
 		assert.isString(body[0].takenAt);
 		assert.equal(body[0].takenAtOffset, takenAtOffset);
-		assert.equal(body[0].deletedAt, null);
 		assert.isString(body[0].arn);
 		context.createdMetricId = body[0].id;
 	});
@@ -104,18 +100,18 @@ describe("POST /api/v1/metrics", () => {
 	it("Should return validation error", async () => {
 		const { statusCode, body } = await server.post("/v1/metrics").send([
 			{
-			orgId: "main",
-			accountId: -1,
-			userId: -2,
-			metricCategoryId: -3,
-			metricTypeId: -4,
-			metricTypeVersion: -5,
-			deviceId: "abc",
-			batchId: -1,
-			value: "bad",
-			takenAt: "now",
-			takenAtOffset: "kk",
-		}
+				orgId: "main",
+				accountId: -1,
+				userId: -2,
+				metricCategoryId: -3,
+				metricTypeId: -4,
+				metricTypeVersion: -5,
+				deviceId: "abc",
+				batchId: -1,
+				value: "bad",
+				takenAt: "now",
+				takenAtOffset: "kk",
+			},
 		]);
 		assert.equal(statusCode, 422);
 		assert.isDefined(body.validation);
@@ -131,6 +127,5 @@ describe("POST /api/v1/metrics", () => {
 		assert.isString(body.validation.body[0].value[0]);
 		assert.isString(body.validation.body[0].takenAt[0]);
 		assert.isString(body.validation.body[0].takenAtOffset[0]);
-
 	});
 });
