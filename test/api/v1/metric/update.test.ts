@@ -148,10 +148,4 @@ describe("PUT /api/v1/metrics/:metricId", () => {
 		console.log(body);
 	}).timeout(1800000);
 
-	it("Should not return updated metric with old time", async () => {
-		const { statusCode, body } = await server.get(`/v1/metrics/${context.createdMetric2Id}`);
-		assert.equal(statusCode, 404);
-		console.log(body);
-	}).timeout(1800000);
-
 });

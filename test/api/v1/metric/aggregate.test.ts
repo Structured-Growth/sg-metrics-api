@@ -117,7 +117,7 @@ describe("GET /api/v1/metrics/aggregate", () => {
 	it("Should aggregate metrics", async () => {
 		const { statusCode, body } = await server.get(`/v1/metrics/aggregate`).query({
 			"aggregationInterval": "30d",
-			"takenAtFrom": "01-05-2024"
+			"takenAtMin": "2024-05-01T00:00:00Z"
 		});
 		assert.equal(statusCode, 200);
 	}).timeout(1800000);
@@ -134,7 +134,7 @@ describe("GET /api/v1/metrics/aggregate", () => {
 		const { statusCode, body } = await server.get(`/v1/metrics/aggregate`).query({
 			"aggregationInterval": "30d",
 			orgId,
-			'sort[0]': "value:desc",
+			'sort[0]': "avg:desc",
 			'sort[1]': "takenAt:asc"
 		});
 		assert.equal(statusCode, 200);

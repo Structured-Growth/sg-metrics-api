@@ -45,7 +45,7 @@ describe("GET /api/v1/metric-category", () => {
 	it("Should return created metric category by id", async () => {
 		const { statusCode, body } = await server.get("/v1/metric-category").query({
 			"id[0]": context["createdMetricCategoryId"],
-			"orgId[0]": orgId,
+			orgId: orgId,
 		});
 		assert.equal(statusCode, 200);
 		assert.equal(body.data[0].id, context["createdMetricCategoryId"]);
@@ -64,13 +64,12 @@ describe("GET /api/v1/metric-category", () => {
 	it("Should search by code", async () => {
 		const { statusCode, body } = await server.get("/v1/metric-category").query({
 			"title[0]": code,
-			"orgId[0]": orgId,
+			orgId: orgId,
 		});
 		assert.equal(statusCode, 200);
 		assert.equal(body.total, 1);
 		assert.equal(body.data[0].id, context["createdMetricCategoryId"]);
 	});
-
 
 	it("Should return error if one status is invalid", async () => {
 		const { statusCode, body } = await server.get("/v1/metric-category").query({
@@ -85,7 +84,7 @@ describe("GET /api/v1/metric-category", () => {
 		const { statusCode, body } = await server.get("/v1/metric-category").query({
 			"status[0]": "inactive",
 			"status[1]": "active",
-			"orgId[0]": orgId,
+			orgId: orgId,
 		});
 		assert.equal(statusCode, 200);
 	});

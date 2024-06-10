@@ -160,7 +160,16 @@ export class MetricController extends BaseController {
 		@Queries() query: {},
 		@Body() body: MetricUpdateBodyInterface
 	): Promise<PublicMetricAttributes> {
-		const metric = await this.metricRepository.update(metricId, body);
+		const metric = await this.metricRepository.update(
+			metricId,
+			omitBy(
+				{
+					...body,
+					takenAt: body.takenAt ? new Date(body.takenAt) : undefined,
+				},
+				isUndefined
+			) as any
+		);
 
 		return {
 			...(pick(metric.toJSON(), publicMetricAttributes) as PublicMetricAttributes),

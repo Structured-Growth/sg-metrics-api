@@ -74,13 +74,14 @@ export class MetricRepository {
 			throw new NotFoundError(`Metric ${id} not found`);
 		}
 
-		if (!params.takenAt) {
-			metric.isDeleted = true;
-			await this.writeRecord([metric]);
-
-			return metric;
+		if (params.takenAt) {
+			if (params.takenAt.getTime() !== metric.takenAt.getTime()) {
+				metric.isDeleted = true;
+				await this.writeRecord([metric]);
+			}
 		}
 
+		metric.isDeleted = false;
 		Object.assign(metric, params);
 		await this.writeRecord([metric]);
 
@@ -92,7 +93,7 @@ export class MetricRepository {
 		if (!metric) {
 			throw new NotFoundError(`Metric ${id} not found`);
 		}
-		//const takenAtDate = new Date(metric.takenAt);
+
 		await this.update(id, {
 			isDeleted: true,
 		});
@@ -262,10 +263,6 @@ export class MetricRepository {
 			Records: metrics.map((metric) => {
 				metric.recordedAt = metric.recordedAt ? new Date(metric.recordedAt) : new Date();
 
-				if (metric.takenAt) {
-					metric.takenAt = new Date(metric.takenAt);
-				}
-
 				return {
 					Dimensions: [
 						{ Name: "id", Value: metric.id },
@@ -359,6 +356,7 @@ export class MetricRepository {
 
 			let name = item.Name;
 			if (name === "time") {
+				row.Data[index].ScalarValue;
 				acc["takenAt"] = new Date(row.Data[index].ScalarValue + "Z");
 			} else {
 				const scalarValue = row.Data[index].ScalarValue;
