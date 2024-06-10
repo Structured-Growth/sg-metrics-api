@@ -189,7 +189,7 @@ describe("GET /api/v1/metrics", () => {
 		const { statusCode, body } = await server.get("/v1/metrics").query({
 			userId,
 			value: value,
-			"sort[0]": "value:desc",
+			"sort[1]": "takenAt:asc",
 		});
 		assert.equal(statusCode, 200);
 		assert.equal(body.data[0].value, value);

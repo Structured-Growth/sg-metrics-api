@@ -43,7 +43,7 @@ export const MetricSearchParamsValidator = joi.object({
 						"sum:asc",
 						"sum:desc",
 						"takenAt:asc",
-						"takenAt:desc",
+						"takenAt:desc"
 					)
 			)
 			.label("Sort"),
