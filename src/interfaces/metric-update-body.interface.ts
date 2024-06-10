@@ -1,5 +1,8 @@
 export interface MetricUpdateBodyInterface {
 	value?: number;
-	takenAt?: Date;
+	/**
+	 * Date string in ISO format
+	 */
+	takenAt?: string;
 	takenAtOffset?: number;
 }
