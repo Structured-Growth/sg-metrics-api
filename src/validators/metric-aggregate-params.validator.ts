@@ -1,6 +1,6 @@
 import { joi } from "@structured-growth/microservice-sdk";
 
-export const MetricSearchParamsValidator = joi.object({
+export const MetricAggregateParamsValidator = joi.object({
 	query: joi.object({
 		id: joi.array().items(joi.string().required()).label("Metric Id"),
 		orgId: joi.number().positive().label("Organization Id"),
@@ -24,6 +24,31 @@ export const MetricSearchParamsValidator = joi.object({
 		arn: joi.array().items(joi.string().required()).label("Entity ARNs"),
 		page: joi.number().positive().label("Page"),
 		limit: joi.number().positive().label("Limit"),
-		sort: joi.array().items(joi.string().required()).label("Sort"),
+		sort: joi
+			.array()
+			.items(
+				joi
+					.string()
+					.required()
+					.valid(
+						"min:asc",
+						"min:desc",
+						"max:asc",
+						"max:desc",
+						"avg:asc",
+						"avg:desc",
+						"count:asc",
+						"count:desc",
+						"sum:asc",
+						"sum:desc",
+						"takenAt:asc",
+						"takenAt:desc"
+					)
+			)
+			.label("Sort"),
+		aggregationInterval: joi
+			.string()
+			.valid("1m", "5m", "30m", "1h", "4h", "6h", "12h", "1d", "7d", "30d", "60d")
+			.label("Aggregation Interval"),
 	}),
 });
