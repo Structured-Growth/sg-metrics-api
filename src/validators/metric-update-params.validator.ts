@@ -8,6 +8,5 @@ export const MetricUpdateParamsValidator = joi.object({
 	body: joi.object({
 		value: joi.number().positive().label("Value"),
 		takenAt: joi.string().regex(isoFormatWithTimezone).required().label("Taken at"),
-		takenAtOffset: joi.number().label("Taken at Offset"),
 	}),
 });

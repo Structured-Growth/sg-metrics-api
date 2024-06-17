@@ -21,7 +21,6 @@ export const MetricCreateParamsValidator = joi.object({
 					batchId: joi.string().max(50).required().label("Batch id"),
 					value: joi.number().required().label("Value"),
 					takenAt: joi.string().regex(isoFormatWithTimezone).required().label("Taken at"),
-					takenAtOffset: joi.number().required().label("Taken at Offset"),
 				})
 				.required()
 		)

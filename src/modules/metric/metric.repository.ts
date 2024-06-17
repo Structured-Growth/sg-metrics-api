@@ -99,10 +99,12 @@ export class MetricRepository {
 		});
 	}
 
-	public async search(params: MetricSearchParamsInterface & {}): Promise<SearchResultInterface<Metric>> {
+	public async search(params: MetricSearchParamsInterface & {}): Promise<
+		Omit<SearchResultInterface<Metric>, "page" | "total"> & {
+			nextToken?: string;
+		}
+	> {
 		const limit = params.limit || 20;
-
-		let presentToken;
 		let order: string[] = [];
 
 		if (params.sort) {
@@ -118,39 +120,17 @@ export class MetricRepository {
 		const query = this.buildQuery(params, order);
 		let result;
 
-		// if (params.nextToken) {
-		// 	if (previousTokens.includes(params.nextToken)) {
-		// 		const tokenIndex = previousTokens.indexOf(params.nextToken);
-		// 		previousTokens = previousTokens.slice(0, tokenIndex + 1);
-		// 		result = await this.executeQuery(query, limit, params.nextToken);
-		// 	} else {
-		// 		result = await this.executeQuery(query, limit, params.nextToken);
-		// 		previousTokens.push(params.nextToken);
-		// 	}
-		// } else {
-		// 	const initialResult = await this.executeQuery(query, limit);
-		// 	previousTokens.push(initialResult.NextToken);
-		//
-		// 	result = await this.executeQuery(query, limit, initialResult.NextToken);
-		// }
 		if (params.nextToken) {
 			result = await this.executeQuery(query, limit, params.nextToken);
-			presentToken = params.nextToken;
 		} else {
 			const initialResult = await this.executeQuery(query, limit);
-
-			presentToken = initialResult.NextToken;
-
 			result = await this.executeQuery(query, limit, initialResult.NextToken);
 		}
-
-		console.log("Result: ", result);
 
 		return {
 			data: this.parseResult(result.ColumnInfo, result.Rows),
 			limit: limit,
 			nextToken: result.NextToken,
-			presentToken,
 		};
 	}
 
@@ -230,14 +210,14 @@ export class MetricRepository {
 			filters.push(`time <= '${takenAtMaxISO}'`);
 		}
 
-		let query = `SELECT ROUND(AVG(value), 2)                 AS avg,
-                        MIN(value)                                  AS min,
-                        MAX(value)                                  AS max,
-                        SUM(value)                                  AS sum,
-                        COUNT(*)                                    AS count,
-                        MIN(time)                                   AS takenAt,
-                        MIN(takenAtOffset)                          AS takenAtOffset,
-                        MIN(recordedAt)                             AS recordedAt
+		let query = `SELECT ROUND(AVG(value), 2) AS avg,
+                        MIN(value)           AS min,
+                        MAX(value)           AS max,
+                        SUM(value)           AS sum,
+                        COUNT(*)             AS count,
+                        MIN(time)            AS takenAt,
+                        MIN(takenAtOffset)   AS takenAtOffset,
+                        MIN(recordedAt)      AS recordedAt
                  FROM "${this.configuration.DatabaseName}"."${this.configuration.TableName}"
                  WHERE ${filters.join(" AND ")}
                  GROUP BY BIN(time, ${params.aggregationInterval})`;

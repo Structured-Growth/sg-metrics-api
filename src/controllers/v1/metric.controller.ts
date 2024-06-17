@@ -107,9 +107,7 @@ export class MetricController extends BaseController {
 			body.map((item) => {
 				const localDate = new Date(item.takenAt);
 				const takenAtOffset = -localDate.getTimezoneOffset();
-
-				console.log("Taken At Offset: ", takenAtOffset);
-
+				// TODO
 				return {
 					...item,
 					takenAt: new Date(item.takenAt),
@@ -117,13 +115,6 @@ export class MetricController extends BaseController {
 				};
 			})
 		);
-
-		// new Date().toISOString()
-		// '2024-06-07T09:08:27.773Z'
-
-		new Date("2024-06-08T22:00:00"); //  >> 2024-06-09T01:00:00
-		new Date("2024-06-08T22:00:00Z"); // >> 2024-06-08T22:00:00
-		new Date(); // server time 2024-06-07T12:06:00+02:00
 
 		this.response.status(201);
 

@@ -1,4 +1,5 @@
 import { RegionEnum } from "@structured-growth/microservice-sdk";
+
 export interface MetricCreateBodyInterface {
 	orgId: number;
 	region: RegionEnum;
@@ -21,11 +22,8 @@ export interface MetricCreateBodyInterface {
 	 */
 	value: number;
 	/**
-	 * Taken at datetime in ISO format.
+	 * Taken at datetime in ISO format. Must include user's timezone.
+	 * Example: 2024-01-01T00:00:00+00:00
 	 */
 	takenAt: Date;
-	/**
-	 * Timezone offset in minutes.
-	 */
-	takenAtOffset: number;
 }
