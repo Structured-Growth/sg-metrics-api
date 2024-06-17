@@ -100,10 +100,9 @@ export class MetricRepository {
 	}
 
 	public async search(params: MetricSearchParamsInterface & {}): Promise<SearchResultInterface<Metric>> {
-		const page = params.page || 1;
 		const limit = params.limit || 20;
-		const offset = (page - 1) * limit;
 
+		let presentToken;
 		let order: string[] = [];
 
 		if (params.sort) {
@@ -116,15 +115,42 @@ export class MetricRepository {
 			order = ["time:DESC"];
 		}
 
-		const query = this.buildQuery(params, offset, limit, order);
-		const result = await this.executeQuery(query);
-		const totalCount = result.Rows.length;
+		const query = this.buildQuery(params, order);
+		let result;
+
+		// if (params.nextToken) {
+		// 	if (previousTokens.includes(params.nextToken)) {
+		// 		const tokenIndex = previousTokens.indexOf(params.nextToken);
+		// 		previousTokens = previousTokens.slice(0, tokenIndex + 1);
+		// 		result = await this.executeQuery(query, limit, params.nextToken);
+		// 	} else {
+		// 		result = await this.executeQuery(query, limit, params.nextToken);
+		// 		previousTokens.push(params.nextToken);
+		// 	}
+		// } else {
+		// 	const initialResult = await this.executeQuery(query, limit);
+		// 	previousTokens.push(initialResult.NextToken);
+		//
+		// 	result = await this.executeQuery(query, limit, initialResult.NextToken);
+		// }
+		if (params.nextToken) {
+			result = await this.executeQuery(query, limit, params.nextToken);
+			presentToken = params.nextToken;
+		} else {
+			const initialResult = await this.executeQuery(query, limit);
+
+			presentToken = initialResult.NextToken;
+
+			result = await this.executeQuery(query, limit, initialResult.NextToken);
+		}
+
+		console.log("Result: ", result);
 
 		return {
 			data: this.parseResult(result.ColumnInfo, result.Rows),
-			page: page,
 			limit: limit,
-			total: totalCount,
+			nextToken: result.NextToken,
+			presentToken,
 		};
 	}
 
@@ -369,7 +395,7 @@ export class MetricRepository {
 		return new Metric(metricData as any);
 	}
 
-	private buildQuery(params: MetricSearchParamsInterface, offset: number, limit: number, sort: string[]): string {
+	private buildQuery(params: MetricSearchParamsInterface, sort: string[]): string {
 		let query = `SELECT *
                  FROM "${this.configuration.DatabaseName}"."${this.configuration.TableName}"`;
 		const filters: string[] = ["isDeleted = false"];
@@ -434,7 +460,6 @@ export class MetricRepository {
 		} else {
 			query += ` ORDER BY time DESC`;
 		}
-		query += ` LIMIT ${limit} `;
 
 		this.logger.debug(`Timestream query`, query);
 
@@ -455,11 +480,19 @@ export class MetricRepository {
 		return `${year}-${month}-${day} ${hours}:${minutes}:${seconds}.${milliseconds}${nanoseconds}`;
 	}
 
-	private async executeQuery(query: string): Promise<any> {
+	private async executeQuery(query: string, maxRows?: number, nextToken: string = null): Promise<any> {
 		try {
 			const params = {
 				QueryString: query,
 			};
+
+			if (maxRows) {
+				params["MaxRows"] = maxRows;
+			}
+
+			if (nextToken) {
+				params["NextToken"] = nextToken;
+			}
 
 			return await this.timestreamQuery.query(params).promise();
 		} catch (error) {

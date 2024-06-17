@@ -104,10 +104,18 @@ export class MetricController extends BaseController {
 	@ValidateFuncArgs(MetricCreateParamsValidator)
 	async create(@Queries() query: {}, @Body() body: MetricCreateBodyInterface[]): Promise<PublicMetricAttributes[]> {
 		const metrics = await this.metricRepository.create(
-			body.map((item) => ({
-				...item,
-				takenAt: new Date(item.takenAt),
-			}))
+			body.map((item) => {
+				const localDate = new Date(item.takenAt);
+				const takenAtOffset = -localDate.getTimezoneOffset();
+
+				console.log("Taken At Offset: ", takenAtOffset);
+
+				return {
+					...item,
+					takenAt: new Date(item.takenAt),
+					takenAtOffset,
+				};
+			})
 		);
 
 		// new Date().toISOString()
