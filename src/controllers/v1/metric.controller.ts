@@ -22,6 +22,7 @@ import { isUndefined, omitBy, pick } from "lodash";
 import { MetricAggregateParamsInterface } from "../../interfaces/metric-aggregate-params.interface";
 import { MetricAggregateResultInterface } from "../../interfaces/metric-aggregate-result.interface";
 import { getTimezoneOffset } from "../../helpers/get-timezone-offset";
+import { MetricAggregateParamsValidator } from "../../validators/metric-aggregate-params.validator";
 
 const publicMetricAttributes = [
 	"id",
@@ -79,7 +80,7 @@ export class MetricController extends BaseController {
 	@Get("/aggregate")
 	@SuccessResponse(200, "Returns list of aggregated metrics")
 	@DescribeAction("metrics/aggregate")
-	@ValidateFuncArgs(MetricSearchParamsValidator)
+	@ValidateFuncArgs(MetricAggregateParamsValidator)
 	public async aggregate(@Queries() query: MetricAggregateParamsInterface): Promise<MetricAggregateResultInterface> {
 		const { data, ...result } = await this.metricRepository.aggregate(query);
 		this.response.status(200);
