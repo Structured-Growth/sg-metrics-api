@@ -51,5 +51,7 @@ export const MetricSearchParamsValidator = joi.object({
 			.valid("1m", "5m", "30m", "1h", "4h", "6h", "12h", "1d", "7d", "30d", "60d")
 			.label("Aggregation Interval"),
 		nextToken: joi.string().label("Next Token"),
+		aggregateColumn: joi.string().max(50).label("Aggregate Column"),
+		aggregateRow: joi.string().max(50).label("Aggregate Row"),
 	}),
 });

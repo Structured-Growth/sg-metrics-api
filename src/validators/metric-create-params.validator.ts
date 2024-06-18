@@ -1,6 +1,6 @@
 import { joi } from "@structured-growth/microservice-sdk";
 
-const isoFormatWithTimezone = /^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}\+[0-9]{2}:[0-9]{2}$/;
+const isoFormatWithTimezone = /^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}\+[0-9]{2}:00$/;
 
 export const MetricCreateParamsValidator = joi.object({
 	query: joi.object(),
@@ -21,6 +21,7 @@ export const MetricCreateParamsValidator = joi.object({
 					batchId: joi.string().max(50).required().label("Batch id"),
 					value: joi.number().required().label("Value"),
 					takenAt: joi.string().regex(isoFormatWithTimezone).required().label("Taken at"),
+					takenAtOffset: joi.number().label("Taken at Offset"),
 				})
 				.required()
 		)

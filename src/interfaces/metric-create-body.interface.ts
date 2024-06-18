@@ -26,4 +26,8 @@ export interface MetricCreateBodyInterface {
 	 * Example: 2024-01-01T00:00:00+00:00
 	 */
 	takenAt: Date;
+	/**
+	 * Timezone offset in minutes.
+	 */
+	takenAtOffset: number;
 }

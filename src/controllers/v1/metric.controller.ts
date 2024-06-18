@@ -21,6 +21,7 @@ import { MetricUpdateParamsValidator } from "../../validators/metric-update-para
 import { isUndefined, omitBy, pick } from "lodash";
 import { MetricAggregateParamsInterface } from "../../interfaces/metric-aggregate-params.interface";
 import { MetricAggregateResultInterface } from "../../interfaces/metric-aggregate-result.interface";
+import { getTimezoneOffset } from "../../helpers/get-timezone-offset";
 
 const publicMetricAttributes = [
 	"id",
@@ -42,6 +43,7 @@ const publicMetricAttributes = [
 ] as const;
 type MetricKeys = (typeof publicMetricAttributes)[number];
 type PublicMetricAttributes = Pick<Omit<MetricAttributes, "deletedAt">, MetricKeys> & {};
+interface MetricCreateBodyWithoutOffset extends Omit<MetricCreateBodyInterface, "takenAtOffset"> {}
 
 @Route("v1/metrics")
 @Tags("Metric")
@@ -102,16 +104,13 @@ export class MetricController extends BaseController {
 	@DescribeResource("MetricType", ({ body }) => Number(body.metricTypeId))
 	@DescribeResource("Device", ({ body }) => Number(body.deviceId))
 	@ValidateFuncArgs(MetricCreateParamsValidator)
-	async create(@Queries() query: {}, @Body() body: MetricCreateBodyInterface[]): Promise<PublicMetricAttributes[]> {
+	async create(@Queries() query: {}, @Body() body: MetricCreateBodyWithoutOffset[]): Promise<PublicMetricAttributes[]> {
 		const metrics = await this.metricRepository.create(
 			body.map((item) => {
-				const localDate = new Date(item.takenAt);
-				const takenAtOffset = -localDate.getTimezoneOffset();
-				// TODO
 				return {
 					...item,
 					takenAt: new Date(item.takenAt),
-					takenAtOffset,
+					takenAtOffset: getTimezoneOffset(item.takenAt.toString()),
 				};
 			})
 		);
@@ -165,6 +164,7 @@ export class MetricController extends BaseController {
 				{
 					...body,
 					takenAt: body.takenAt ? new Date(body.takenAt) : undefined,
+					takenAtOffset: getTimezoneOffset(body.takenAt.toString()),
 				},
 				isUndefined
 			) as any

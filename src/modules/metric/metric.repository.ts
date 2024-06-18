@@ -148,22 +148,13 @@ export class MetricRepository {
 			order = params.sort;
 		}
 
-		// const timeRangeFilter = `ago(${params.aggregationInterval})`;
-		// const timeRange = params.aggregationInterval;
 		const validTimeRanges = ["1m", "5m", "30m", "1h", "4h", "6h", "12h", "1d", "7d", "30d", "60d"];
-		// const formattedTimeRangeFilter = this.formatDate(
-		// 	new Date(new Date().getTime() - this.parseTimeInterval(timeRangeFilter))
-		// );
-		//
+
 		if (!validTimeRanges.includes(params.aggregationInterval)) {
 			throw new NotFoundError(`Invalid time range: ${params.aggregationInterval}`);
 		}
 
-		let filters: string[] = [
-			// `time >= '${formattedTimeRangeFilter}'`,
-			`isDeleted = false`,
-			`measure_name = 'metric'`,
-		];
+		let filters: string[] = [`isDeleted = false`, `measure_name = 'metric'`];
 
 		if (params.orgId) filters.push(`orgId = '${params.orgId}'`);
 		if (params.accountId) filters.push(`accountId = '${params.accountId}'`);
@@ -210,17 +201,48 @@ export class MetricRepository {
 			filters.push(`time <= '${takenAtMaxISO}'`);
 		}
 
-		let query = `SELECT ROUND(AVG(value), 2) AS avg,
-                        MIN(value)           AS min,
-                        MAX(value)           AS max,
-                        SUM(value)           AS sum,
-                        COUNT(*)             AS count,
-                        MIN(time)            AS takenAt,
-                        MIN(takenAtOffset)   AS takenAtOffset,
-                        MIN(recordedAt)      AS recordedAt
-                 FROM "${this.configuration.DatabaseName}"."${this.configuration.TableName}"
-                 WHERE ${filters.join(" AND ")}
-                 GROUP BY BIN(time, ${params.aggregationInterval})`;
+		const aggregateColumn = params.aggregateColumn || "time";
+		const aggregateRow = params.aggregateRow || "value";
+
+		let query: string;
+
+		if (["time", "recordedAt"].includes(aggregateColumn)) {
+			query = `SELECT ROUND(AVG(${aggregateRow}), 2) AS avg,
+									 MIN(${aggregateRow})           AS min,
+                   MAX(${aggregateRow})           AS max,
+                   SUM(${aggregateRow})           AS sum,
+                   COUNT(*)                       AS count,
+                   MIN(${aggregateColumn})        AS takenAt,
+                   MIN(takenAtOffset)   					AS takenAtOffset,
+                   MIN(recordedAt)      					AS recordedAt
+               FROM "${this.configuration.DatabaseName}"."${this.configuration.TableName}"
+               WHERE ${filters.join(" AND ")}
+               GROUP BY BIN(${aggregateColumn}, ${params.aggregationInterval})`;
+		} else {
+			query = `SELECT
+                   ${aggregateColumn} AS columnValue,
+                   ROUND(AVG(EXTRACT(EPOCH FROM ${aggregateRow})), 2) AS avgEpoch,
+                   MIN(${aggregateRow}) AS minDate,
+                   MAX(${aggregateRow}) AS maxDate,
+                   COUNT(*) AS count
+               FROM "${this.configuration.DatabaseName}"."${this.configuration.TableName}"
+               WHERE ${filters.join(" AND ")}
+               GROUP BY ${aggregateColumn}
+               ORDER BY ${aggregateColumn} ASC
+			`;
+		}
+
+		// let query = `SELECT ROUND(AVG(value), 2) AS avg,
+		//                     MIN(value)           AS min,
+		//                     MAX(value)           AS max,
+		//                     SUM(value)           AS sum,
+		//                     COUNT(*)             AS count,
+		//                     MIN(time)            AS takenAt,
+		//                     MIN(takenAtOffset)   AS takenAtOffset,
+		//                     MIN(recordedAt)      AS recordedAt
+		//              FROM "${this.configuration.DatabaseName}"."${this.configuration.TableName}"
+		//              WHERE ${filters.join(" AND ")}
+		//              GROUP BY BIN(time, ${params.aggregationInterval})`;
 
 		if (order && order.length > 0) {
 			let sqlOrder = order
@@ -239,18 +261,47 @@ export class MetricRepository {
 
 		const result = await this.executeQuery(query);
 
+		console.log("Result: ", result);
+
 		this.logger.debug(`Aggregate result: ${JSON.stringify(result)}`);
 
-		const aggregatedData = result.Rows.map((row: any) => ({
-			avg: parseFloat(row.Data[0].ScalarValue),
-			min: parseInt(row.Data[1].ScalarValue),
-			max: parseInt(row.Data[2].ScalarValue),
-			sum: parseInt(row.Data[3].ScalarValue),
-			count: parseInt(row.Data[4].ScalarValue),
-			takenAt: new Date(row.Data[5].ScalarValue),
-			takenAtOffset: parseInt(row.Data[6].ScalarValue),
-			recordedAt: new Date(row.Data[7].ScalarValue),
-		}));
+		// const aggregatedData = result.Rows.map((row: any) => ({
+		// 	avg: parseFloat(row.Data[0].ScalarValue),
+		// 	min: parseInt(row.Data[1].ScalarValue),
+		// 	max: parseInt(row.Data[2].ScalarValue),
+		// 	sum: parseInt(row.Data[3].ScalarValue),
+		// 	count: parseInt(row.Data[4].ScalarValue),
+		// 	takenAt: new Date(row.Data[5].ScalarValue),
+		// 	takenAtOffset: parseInt(row.Data[6].ScalarValue),
+		// 	recordedAt: new Date(row.Data[7].ScalarValue),
+		// }));
+
+		const aggregatedData = result.Rows.map((row: any) => {
+			let parsedRow: any;
+
+			if (["time", "recordedAt"].includes(aggregateColumn)) {
+				parsedRow = {
+					avg: parseFloat(row.Data[0].ScalarValue),
+					min: parseInt(row.Data[1].ScalarValue),
+					max: parseInt(row.Data[2].ScalarValue),
+					sum: parseInt(row.Data[3].ScalarValue),
+					count: parseInt(row.Data[4].ScalarValue),
+					takenAt: new Date(row.Data[5].ScalarValue),
+					takenAtOffset: parseInt(row.Data[6].ScalarValue),
+					recordedAt: new Date(row.Data[7].ScalarValue),
+				};
+			} else {
+				parsedRow = {
+					columnValue: row.Data[0].ScalarValue,
+					avgEpoch: parseFloat(row.Data[1].ScalarValue),
+					minDate: new Date(parseFloat(row.Data[2].ScalarValue) * 1000),
+					maxDate: new Date(parseFloat(row.Data[3].ScalarValue) * 1000),
+					count: parseInt(row.Data[4].ScalarValue),
+				};
+			}
+
+			return parsedRow;
+		});
 
 		return {
 			data: aggregatedData,
