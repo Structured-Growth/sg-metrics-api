@@ -21,6 +21,7 @@ import { MetricUpdateParamsValidator } from "../../validators/metric-update-para
 import { isUndefined, omitBy, pick } from "lodash";
 import { MetricAggregateParamsInterface } from "../../interfaces/metric-aggregate-params.interface";
 import { MetricAggregateResultInterface } from "../../interfaces/metric-aggregate-result.interface";
+import { getTimezoneOffset } from "../../helpers/get-timezone-offset";
 import { MetricAggregateParamsValidator } from "../../validators/metric-aggregate-params.validator";
 
 const publicMetricAttributes = [
@@ -43,6 +44,7 @@ const publicMetricAttributes = [
 ] as const;
 type MetricKeys = (typeof publicMetricAttributes)[number];
 type PublicMetricAttributes = Pick<Omit<MetricAttributes, "deletedAt">, MetricKeys> & {};
+interface MetricCreateBodyWithoutOffset extends Omit<MetricCreateBodyInterface, "takenAtOffset"> {}
 
 @Route("v1/metrics")
 @Tags("Metric")
@@ -103,20 +105,16 @@ export class MetricController extends BaseController {
 	@DescribeResource("MetricType", ({ body }) => Number(body.metricTypeId))
 	@DescribeResource("Device", ({ body }) => Number(body.deviceId))
 	@ValidateFuncArgs(MetricCreateParamsValidator)
-	async create(@Queries() query: {}, @Body() body: MetricCreateBodyInterface[]): Promise<PublicMetricAttributes[]> {
+	async create(@Queries() query: {}, @Body() body: MetricCreateBodyWithoutOffset[]): Promise<PublicMetricAttributes[]> {
 		const metrics = await this.metricRepository.create(
-			body.map((item) => ({
-				...item,
-				takenAt: new Date(item.takenAt),
-			}))
+			body.map((item) => {
+				return {
+					...item,
+					takenAt: new Date(item.takenAt),
+					takenAtOffset: getTimezoneOffset(item.takenAt.toString()),
+				};
+			})
 		);
-
-		// new Date().toISOString()
-		// '2024-06-07T09:08:27.773Z'
-
-		new Date("2024-06-08T22:00:00"); //  >> 2024-06-09T01:00:00
-		new Date("2024-06-08T22:00:00Z"); // >> 2024-06-08T22:00:00
-		new Date(); // server time 2024-06-07T12:06:00+02:00
 
 		this.response.status(201);
 
@@ -167,6 +165,7 @@ export class MetricController extends BaseController {
 				{
 					...body,
 					takenAt: body.takenAt ? new Date(body.takenAt) : undefined,
+					takenAtOffset: getTimezoneOffset(body.takenAt.toString()),
 				},
 				isUndefined
 			) as any
