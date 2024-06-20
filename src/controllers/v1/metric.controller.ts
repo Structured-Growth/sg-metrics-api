@@ -44,6 +44,7 @@ const publicMetricAttributes = [
 ] as const;
 type MetricKeys = (typeof publicMetricAttributes)[number];
 type PublicMetricAttributes = Pick<Omit<MetricAttributes, "deletedAt">, MetricKeys> & {};
+
 interface MetricCreateBodyWithoutOffset extends Omit<MetricCreateBodyInterface, "takenAtOffset"> {}
 
 @Route("v1/metrics")
@@ -62,9 +63,11 @@ export class MetricController extends BaseController {
 	@SuccessResponse(200, "Returns list of metrics")
 	@DescribeAction("metrics/search")
 	@ValidateFuncArgs(MetricSearchParamsValidator)
-	public async search(
-		@Queries() query: MetricSearchParamsInterface
-	): Promise<SearchResultInterface<PublicMetricAttributes>> {
+	public async search(@Queries() query: MetricSearchParamsInterface): Promise<
+		Omit<SearchResultInterface<PublicMetricAttributes>, "page" | "total"> & {
+			nextToken?: string;
+		}
+	> {
 		const { data, ...result } = await this.metricRepository.search(query);
 		this.response.status(200);
 		return {
