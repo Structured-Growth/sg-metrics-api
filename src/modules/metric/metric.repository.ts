@@ -208,22 +208,6 @@ export class MetricRepository {
 			aggregationSelect = `${rowAggregation.toUpperCase()}(${row}) AS ${rowAggregation.toLowerCase()}`;
 		}
 
-		// if (rowAggregation.toUpperCase() === "COUNT") {
-		// 	if (row === "value") {
-		// 		aggregationSelect = `COUNT(*) AS count`;
-		// 	} else if (row === "time" || row === "recordedAt") {
-		// 		aggregationSelect = `COUNT(${row}) AS count_time`;
-		// 	} else {
-		// 		aggregationSelect = `COUNT(DISTINCT ${row}) AS unique_org_count`;
-		// 	}
-		// } else {
-		// 	if ((column === "time" || column === "recordedAt") && row !== "value") {
-		// 		aggregationSelect = `${rowAggregation.toUpperCase()}(${column}) AS ${rowAggregation.toLowerCase()}`;
-		// 	} else {
-		// 		aggregationSelect = `${rowAggregation.toUpperCase()}(${row}) AS ${rowAggregation.toLowerCase()}`;
-		// 	}
-		// }
-
 		let countSelect: string;
 
 		if (row === "value") {
@@ -281,18 +265,6 @@ export class MetricRepository {
 
 			data[rowAggregation.toLowerCase()] = parseFloat(item.Data[0].ScalarValue);
 			data["count"] = parseInt(item.Data[1].ScalarValue);
-			// if (rowAggregation.toUpperCase() === "COUNT") {
-			// 	if (row === "value") {
-			// 		data.count = parseInt(item.Data[0].ScalarValue);
-			// 	} else if (row === "time" || row === "recordedAt") {
-			// 		data.count_time = parseInt(item.Data[0].ScalarValue);
-			// 	} else {
-			// 		data.unique_org_count = parseInt(item.Data[0].ScalarValue);
-			// 	}
-			// } else {
-			//
-			// }
-
 			data[column === "time" || column === "createdAt" ? "takenAt" : column] = new Date(item.Data[2].ScalarValue);
 
 			return data;
