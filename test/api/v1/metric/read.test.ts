@@ -2,8 +2,8 @@ import "../../../../src/app/providers";
 import { App } from "../../../../src/app/app";
 import { container, webServer } from "@structured-growth/microservice-sdk";
 import { RegionEnum } from "@structured-growth/microservice-sdk";
-import {assert} from "chai";
-import {initTest} from "../../../common/init-test";
+import { assert } from "chai";
+import { initTest } from "../../../common/init-test";
 
 describe("GET /api/v1/metrics:metricId", () => {
 	const { server, context } = initTest();
@@ -19,7 +19,6 @@ describe("GET /api/v1/metrics:metricId", () => {
 	const batchId = `batchId-${Date.now()}`;
 	const value = parseInt(Date.now().toString().slice(0, 5));
 	const takenAtOffset = 90;
-
 
 	before(async () => container.resolve<App>("App").ready);
 
@@ -38,7 +37,6 @@ describe("GET /api/v1/metrics:metricId", () => {
 		assert.equal(statusCode, 201);
 		assert.isNumber(body.id);
 		context.createdMetricCategoryId = body.id;
-
 	});
 
 	it("Should create metric type", async () => {
@@ -61,7 +59,6 @@ describe("GET /api/v1/metrics:metricId", () => {
 		assert.equal(statusCode, 201);
 		assert.isNumber(body.id);
 		context.createdMetricTypeId = body.id;
-
 	});
 	it("Should create metric", async () => {
 		const { statusCode, body } = await server.post("/v1/metrics").send([
@@ -77,9 +74,8 @@ describe("GET /api/v1/metrics:metricId", () => {
 				deviceId: deviceId,
 				batchId: batchId,
 				value: value,
-				takenAt: "2024-05-16T14:30:00+00:00",
-				takenAtOffset: takenAtOffset,
-		}
+				takenAt: "2024-05-16T14:30:00+01:00",
+			},
 		]);
 		assert.equal(statusCode, 201);
 		assert.equal(body[0].relatedToRn, relatedToRn);
@@ -87,8 +83,7 @@ describe("GET /api/v1/metrics:metricId", () => {
 	});
 
 	it("Should return metric", async () => {
-		const { statusCode, body } = await server.get(`/v1/metrics/${context.createdMetricId}`).send({
-		});
+		const { statusCode, body } = await server.get(`/v1/metrics/${context.createdMetricId}`).send({});
 		assert.equal(statusCode, 200);
 		assert.equal(body.id, context["createdMetricId"]);
 		assert.equal(body.orgId, orgId);
@@ -100,19 +95,16 @@ describe("GET /api/v1/metrics:metricId", () => {
 		assert.equal(body.metricTypeId, context["createdMetricTypeId"]);
 		assert.equal(body.metricTypeVersion, metricTypeVersion);
 		assert.equal(body.deviceId, deviceId);
-		assert.equal(body.batchId,batchId);
+		assert.equal(body.batchId, batchId);
 		assert.equal(body.value, value);
-		assert.equal(body.takenAt, "2024-05-16T14:30:00.000Z");
-		assert.equal(body.takenAtOffset, takenAtOffset);
+		assert.equal(body.takenAt, "2024-05-16T13:30:00.000Z");
+		assert.equal(body.takenAtOffset, 60);
 		assert.isString(body.recordedAt);
 	}).timeout(1800000);
 
 	it("Should return error is metric type id is wrong", async () => {
-		const { statusCode, body } = await server.get(`/v1/metrics/9999`).send({
-		});
+		const { statusCode, body } = await server.get(`/v1/metrics/9999`).send({});
 		assert.equal(statusCode, 404);
 		assert.isString(body.message);
 	}).timeout(1800000);
-
-
 });

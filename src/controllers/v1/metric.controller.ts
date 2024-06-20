@@ -86,8 +86,8 @@ export class MetricController extends BaseController {
 		this.response.status(200);
 		return {
 			data,
-			page: result.page,
 			limit: result.limit,
+			nextToken: result.nextToken,
 		};
 	}
 
@@ -165,7 +165,7 @@ export class MetricController extends BaseController {
 				{
 					...body,
 					takenAt: body.takenAt ? new Date(body.takenAt) : undefined,
-					takenAtOffset: getTimezoneOffset(body.takenAt.toString()),
+					takenAtOffset: body.takenAt ? getTimezoneOffset(body.takenAt.toString()) : undefined,
 				},
 				isUndefined
 			) as any

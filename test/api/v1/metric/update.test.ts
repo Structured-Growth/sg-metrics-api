@@ -2,8 +2,8 @@ import "../../../../src/app/providers";
 import { App } from "../../../../src/app/app";
 import { container, webServer } from "@structured-growth/microservice-sdk";
 import { RegionEnum } from "@structured-growth/microservice-sdk";
-import {assert} from "chai";
-import {initTest} from "../../../common/init-test";
+import { assert } from "chai";
+import { initTest } from "../../../common/init-test";
 
 describe("PUT /api/v1/metrics/:metricId", () => {
 	const { server, context } = initTest();
@@ -18,7 +18,6 @@ describe("PUT /api/v1/metrics/:metricId", () => {
 	const deviceId = parseInt(Date.now().toString().slice(0, 4));
 	const batchId = `batchId-${Date.now()}`;
 	const value = parseInt(Date.now().toString().slice(0, 5));
-	const takenAtOffset = 90;
 
 	before(async () => container.resolve<App>("App").ready);
 
@@ -76,8 +75,7 @@ describe("PUT /api/v1/metrics/:metricId", () => {
 				batchId: batchId,
 				value: value,
 				takenAt: "2024-05-16T14:30:00+00:00",
-				takenAtOffset: takenAtOffset,
-			}
+			},
 		]);
 		assert.equal(statusCode, 201);
 		context.createdMetricId = body[0].id;
@@ -98,8 +96,7 @@ describe("PUT /api/v1/metrics/:metricId", () => {
 				batchId: batchId,
 				value: value,
 				takenAt: "2024-05-16T11:30:00+00:00",
-				takenAtOffset: takenAtOffset,
-			}
+			},
 		]);
 		assert.equal(statusCode, 201);
 		assert.equal(body[0].relatedToRn, relatedToRn);
@@ -109,9 +106,7 @@ describe("PUT /api/v1/metrics/:metricId", () => {
 	it("Should return metric", async () => {
 		const { statusCode, body } = await server.get(`/v1/metrics/${context.createdMetricId}`);
 		assert.equal(statusCode, 200);
-		console.log(body);
 		assert.equal(body.id, context["createdMetricId"]);
-
 	}).timeout(1800000);
 
 	it("Should update metric value", async () => {
@@ -127,13 +122,11 @@ describe("PUT /api/v1/metrics/:metricId", () => {
 		const { statusCode, body } = await server.get(`/v1/metrics/${context.createdMetricId}`);
 		assert.equal(statusCode, 200);
 		assert.equal(body.value, value + 100);
-		console.log(body);
 	}).timeout(1800000);
 
 	it("Should update metric time", async () => {
 		const { statusCode, body } = await server.put(`/v1/metrics/${context.createdMetric2Id}`).send({
-			takenAt: new Date().toISOString(),
-			takenAtOffset: 0,
+			takenAt: new Date().toISOString().split(".")[0] + "+00:00",
 		});
 		assert.equal(statusCode, 200);
 		assert.equal(body.takenAtOffset, 0);
@@ -147,5 +140,4 @@ describe("PUT /api/v1/metrics/:metricId", () => {
 		assert.equal(body.takenAtOffset, 0);
 		console.log(body);
 	}).timeout(1800000);
-
 });
