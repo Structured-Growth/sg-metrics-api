@@ -6,7 +6,6 @@ import {
 	DescribeAction,
 	NotFoundError,
 } from "@structured-growth/microservice-sdk";
-import { App } from "../../app/app";
 import * as controllers from "./index";
 import { ResolveQueryParamsInterface } from "../../interfaces/resolve-query-params.interface";
 import { ResolveResourceResponseInterface } from "../../interfaces/resolve-resource-response.interface";
@@ -17,10 +16,6 @@ import { ResolveModelsResponseInterface } from "../../interfaces/resolve-models-
 @Tags("Resolver")
 @autoInjectable()
 export class ResolverController extends BaseController {
-	constructor(@inject("App") private app?: App, @inject("appPrefix") private appPrefix?: string) {
-		super();
-	}
-
 	/**
 	 * Resolve resource's ARN
 	 */

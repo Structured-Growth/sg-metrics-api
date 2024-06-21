@@ -1,7 +1,14 @@
 import "reflect-metadata";
 import "./load-environment";
 import { App } from "./app";
-import { container, Lifecycle, logWriters, Logger } from "@structured-growth/microservice-sdk";
+import {
+	container,
+	Lifecycle,
+	logWriters,
+	Logger,
+	AuthService,
+	PolicyService, eventBusProviders, EventbusService,
+} from "@structured-growth/microservice-sdk";
 import { loadEnvironment } from "./load-environment";
 import { MetricTypeService } from "../modules/metric-type/metric-type.service";
 import { MetricTypeRepository } from "../modules/metric-type/metric-type.repository";
@@ -23,6 +30,10 @@ container.register("isTest", { useValue: process.env.STAGE === "test" });
 container.register("logDbRequests", { useValue: process.env.LOG_DB_REQUESTS === "true" });
 container.register("logRequestBody", { useValue: process.env.LOG_HTTP_REQUEST_BODY === "true" });
 container.register("logResponses", { useValue: process.env.LOG_HTTP_RESPONSES === "true" });
+container.register("authenticationEnabled", { useValue: process.env.AUTHENTICATION_ENABLED === "true" });
+container.register("authorizationEnabled", { useValue: process.env.AUTHORIZATION_ENABLED === "true" });
+container.register("oAuthServiceGetUserUrl", { useValue: process.env.OAUTH_USER_URL });
+container.register("policiesServiceUrl", { useValue: process.env.POLICY_SERVICE_URL });
 
 // services
 container.register("LogWriter", logWriters[process.env.LOG_WRITER] || "ConsoleLogWriter", {
@@ -30,9 +41,15 @@ container.register("LogWriter", logWriters[process.env.LOG_WRITER] || "ConsoleLo
 });
 container.register("Logger", Logger);
 container.register("App", App, { lifecycle: Lifecycle.Singleton });
+container.register("AuthService", AuthService);
+container.register("PolicyService", PolicyService);
 container.register("MetricCategoryService", MetricCategoryService);
 container.register("MetricTypeService", MetricTypeService);
 container.register("ReportsService", ReportsService);
+
+container.register("eventbusName", { useValue: process.env.EVENTBUS_NAME || "sg-eventbus-dev" });
+container.register("EventbusProvider", eventBusProviders[process.env.EVENTBUS_PROVIDER || "TestEventbusProvider"]);
+container.register("EventbusService", EventbusService);
 
 // repositories
 container.register("MetricCategoryRepository", MetricCategoryRepository);

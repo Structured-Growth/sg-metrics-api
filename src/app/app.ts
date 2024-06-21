@@ -9,6 +9,7 @@ import {
 import * as path from "path";
 import { Sequelize } from "sequelize-typescript";
 import * as dbConfig from "../../database/config/config.js";
+import Metric from "../../database/models/metric";
 
 @autoInjectable()
 export class App {
@@ -29,8 +30,11 @@ export class App {
 	/**
 	 * Returns all initialized models
 	 */
-	get models(): Sequelize["models"] {
-		return this.sequelize.models;
+	get models(): any[] {
+		return {
+			...this.sequelize.models,
+			Metric,
+		};
 	}
 
 	/**

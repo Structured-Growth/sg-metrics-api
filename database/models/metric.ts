@@ -1,4 +1,5 @@
-import { container, RegionEnum } from "@structured-growth/microservice-sdk";
+import { container, NotFoundError, RegionEnum } from "@structured-growth/microservice-sdk";
+import { MetricRepository } from "../../src/modules/metric/metric.repository";
 
 export interface MetricAttributes {
 	id: string;
@@ -6,7 +7,7 @@ export interface MetricAttributes {
 	region: RegionEnum;
 	accountId?: number;
 	userId?: number;
-	relatedToRn?: string,
+	relatedToRn?: string;
 	metricCategoryId: number;
 	metricTypeId: number;
 	metricTypeVersion: number;
@@ -19,6 +20,7 @@ export interface MetricAttributes {
 	isDeleted: boolean;
 	arn: string;
 }
+
 export interface MetricCreationAttributes extends Omit<MetricAttributes, "arn" | "recordedAt"> {}
 
 //export interface MetricUpdateAttributes extends Pick<MetricAttributes, "isActive"> {}
@@ -81,7 +83,7 @@ export class Metric implements MetricAttributes {
 			container.resolve("appPrefix"),
 			`:${this.region}`,
 			`:${this.orgId}`,
-			`:${this.accountId}`|| "-",
+			`:${this.accountId}` || "-",
 			`/metric-category/${this.metricCategoryId}`,
 			`/metric-type/${this.metricTypeId}`,
 			`/metric/${this.id}`,
@@ -108,6 +110,28 @@ export class Metric implements MetricAttributes {
 			isDeleted: this.isDeleted,
 			arn: this.arn,
 		};
+	}
+
+	/**
+	 * Returns metric model by its ID.
+	 * Should be implemented in order to resource resolver works properly.
+	 * Method signature should be compatible with the sequelize findOne method.
+	 */
+	public static findOne(params: {
+		where: {
+			id: string;
+		};
+	}): Promise<Metric | null> {
+		const repository = container.resolve<MetricRepository>("MetricRepository");
+		try {
+			return repository.read(params.where.id);
+		} catch (e) {
+			if (e instanceof NotFoundError) {
+				return null;
+			} else {
+				throw e;
+			}
+		}
 	}
 }
 
