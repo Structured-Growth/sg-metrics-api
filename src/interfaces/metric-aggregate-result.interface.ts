@@ -11,4 +11,7 @@ export interface MetricAggregationInterface {
 	recordedAt: Date;
 }
 
-export interface MetricAggregateResultInterface extends SearchResultInterface<MetricAggregationInterface> {}
+export interface MetricAggregateResultInterface
+	extends Omit<SearchResultInterface<MetricAggregationInterface>, "page" | "total"> {
+	nextToken?: string;
+}
