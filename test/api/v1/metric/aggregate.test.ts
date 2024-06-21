@@ -115,7 +115,10 @@ describe("GET /api/v1/metrics/aggregate", () => {
 
 	it("Should aggregate metrics", async () => {
 		const { statusCode, body } = await server.get(`/v1/metrics/aggregate`).query({
-			aggregationInterval: "30d",
+			column: "time",
+			columnAggregation: "1d",
+			row: "value",
+			rowAggregation: "avg",
 			takenAtMin: "2024-05-01T00:00:00Z",
 		});
 		assert.equal(statusCode, 200);
@@ -123,7 +126,10 @@ describe("GET /api/v1/metrics/aggregate", () => {
 
 	it("Should aggregate metrics with one filter", async () => {
 		const { statusCode, body } = await server.get(`/v1/metrics/aggregate`).query({
-			aggregationInterval: "30d",
+			column: "time",
+			columnAggregation: "1d",
+			row: "value",
+			rowAggregation: "avg",
 			orgId,
 		});
 		assert.equal(statusCode, 200);
@@ -131,17 +137,22 @@ describe("GET /api/v1/metrics/aggregate", () => {
 
 	it("Should aggregate metrics wih one filter and new sort", async () => {
 		const { statusCode, body } = await server.get(`/v1/metrics/aggregate`).query({
-			aggregationInterval: "30d",
-			orgId,
-			"sort[0]": "avg:desc",
-			"sort[1]": "takenAt:asc",
+			column: "time",
+			columnAggregation: "1d",
+			row: "value",
+			rowAggregation: "avg",
+			orgId: orgId,
+			sort: ["avg:desc", "takenAt:asc"],
 		});
 		assert.equal(statusCode, 200);
 	}).timeout(1800000);
 
 	it("Should aggregate metrics wih two filter", async () => {
 		const { statusCode, body } = await server.get(`/v1/metrics/aggregate`).query({
-			aggregationInterval: "30d",
+			column: "time",
+			columnAggregation: "1d",
+			row: "value",
+			rowAggregation: "avg",
 			metricTypeId: context.createdMetricTypeId,
 			deviceId: deviceId,
 		});
@@ -150,11 +161,265 @@ describe("GET /api/v1/metrics/aggregate", () => {
 
 	it("Should aggregate metrics wih three filter", async () => {
 		const { statusCode, body } = await server.get(`/v1/metrics/aggregate`).query({
-			aggregationInterval: "30d",
+			column: "time",
+			columnAggregation: "1d",
+			row: "value",
+			rowAggregation: "avg",
 			metricTypeId: context.createdMetricTypeId,
 			accountId: accountId,
 			userId: userId,
 		});
 		assert.equal(statusCode, 200);
+	}).timeout(1800000);
+
+	it("Should return nextToken when aggregate results exceed limit", async () => {
+		for (let i = 0; i < 15; i++) {
+			const metricValue = value + i;
+			const takenAtTime = new Date();
+			takenAtTime.setMinutes(takenAtTime.getMinutes() + i);
+
+			const takenAtFormatted = takenAtTime.toISOString().replace(/\.\d{3}Z$/, "+00:00");
+
+			const { statusCode } = await server.post("/v1/metrics").send([
+				{
+					orgId: orgId,
+					region: RegionEnum.US,
+					accountId: accountId,
+					userId: userId,
+					relatedToRn: relatedToRn,
+					metricCategoryId: context.createdMetricCategoryId,
+					metricTypeId: context.createdMetricTypeId,
+					metricTypeVersion: metricTypeVersion,
+					deviceId: deviceId,
+					batchId: batchId,
+					value: metricValue,
+					takenAt: takenAtFormatted,
+				},
+			]);
+			assert.equal(statusCode, 201);
+		}
+
+		let { statusCode, body } = await server.get("/v1/metrics/aggregate").query({
+			column: "time",
+			columnAggregation: "1d",
+			row: "value",
+			rowAggregation: "avg",
+			limit: 5,
+		});
+		assert.equal(statusCode, 200);
+		assert.equal(body.data.length, 5);
+		assert.isString(body.nextToken);
+
+		const firstNextToken = body.nextToken;
+
+		({ statusCode, body } = await server.get("/v1/metrics/aggregate").query({
+			column: "time",
+			columnAggregation: "1d",
+			row: "value",
+			rowAggregation: "avg",
+			limit: 5,
+			nextToken: firstNextToken,
+		}));
+		assert.equal(statusCode, 200);
+		assert.equal(body.data.length, 5);
+		assert.isString(body.nextToken);
+
+		const secondNextToken = body.nextToken;
+
+		({ statusCode, body } = await server.get("/v1/metrics/aggregate").query({
+			column: "time",
+			columnAggregation: "1d",
+			row: "value",
+			rowAggregation: "avg",
+			limit: 5,
+			nextToken: secondNextToken,
+		}));
+		assert.equal(statusCode, 200);
+		assert.equal(body.data.length, 5);
+		assert.isString(body.nextToken);
+	}).timeout(1800000);
+
+	it("Should aggregate metrics with sum row aggregation", async () => {
+		const { statusCode, body } = await server.get(`/v1/metrics/aggregate`).query({
+			column: "time",
+			columnAggregation: "1d",
+			row: "value",
+			rowAggregation: "sum",
+			limit: 5,
+		});
+		assert.equal(statusCode, 200);
+	}).timeout(1800000);
+
+	it("Should aggregate metrics with min row aggregation", async () => {
+		const { statusCode, body } = await server.get(`/v1/metrics/aggregate`).query({
+			column: "time",
+			columnAggregation: "1d",
+			row: "value",
+			rowAggregation: "min",
+			limit: 5,
+		});
+		assert.equal(statusCode, 200);
+	}).timeout(1800000);
+
+	it("Should aggregate metrics with max row aggregation", async () => {
+		const { statusCode, body } = await server.get(`/v1/metrics/aggregate`).query({
+			column: "time",
+			columnAggregation: "1d",
+			row: "value",
+			rowAggregation: "max",
+			limit: 5,
+		});
+		assert.equal(statusCode, 200);
+	}).timeout(1800000);
+
+	it("Should aggregate metrics with avg row aggregation", async () => {
+		const { statusCode, body } = await server.get(`/v1/metrics/aggregate`).query({
+			column: "time",
+			columnAggregation: "1d",
+			row: "value",
+			rowAggregation: "avg",
+			limit: 5,
+		});
+		assert.equal(statusCode, 200);
+	}).timeout(1800000);
+
+	it("Should aggregate metrics with 1h column aggregation", async () => {
+		const { statusCode, body } = await server.get(`/v1/metrics/aggregate`).query({
+			column: "time",
+			columnAggregation: "1h",
+			row: "value",
+			rowAggregation: "avg",
+			limit: 5,
+		});
+		assert.equal(statusCode, 200);
+	}).timeout(1800000);
+
+	it("Should aggregate metrics with 1d column aggregation", async () => {
+		const { statusCode, body } = await server.get(`/v1/metrics/aggregate`).query({
+			column: "time",
+			columnAggregation: "1d",
+			row: "value",
+			rowAggregation: "avg",
+			limit: 5,
+		});
+		assert.equal(statusCode, 200);
+	}).timeout(1800000);
+
+	it("Should aggregate metrics with 30d column aggregation", async () => {
+		const { statusCode, body } = await server.get(`/v1/metrics/aggregate`).query({
+			column: "time",
+			columnAggregation: "30d",
+			row: "value",
+			rowAggregation: "avg",
+			limit: 5,
+		});
+		assert.equal(statusCode, 200);
+	}).timeout(1800000);
+
+	it("Should aggregate metrics with column as orgId and row as value", async () => {
+		const { statusCode, body } = await server.get(`/v1/metrics/aggregate`).query({
+			column: "orgId",
+			row: "value",
+			rowAggregation: "avg",
+			limit: 5,
+		});
+		assert.equal(statusCode, 200);
+		assert.isArray(body.data);
+		body.data.forEach((item) => {
+			assert.property(item, "orgId");
+			assert.property(item, "avg");
+		});
+	}).timeout(1800000);
+
+	it("Should aggregate metrics with column as orgId, row as value, and rowAggregation as max", async () => {
+		const { statusCode, body } = await server.get(`/v1/metrics/aggregate`).query({
+			column: "orgId",
+			row: "value",
+			rowAggregation: "max",
+			limit: 5,
+		});
+		assert.equal(statusCode, 200);
+		assert.isArray(body.data);
+		body.data.forEach((item) => {
+			assert.property(item, "orgId");
+			assert.property(item, "max");
+		});
+	}).timeout(1800000);
+
+	it("Should aggregate metrics with column as orgId, row as value, and rowAggregation as min", async () => {
+		const { statusCode, body } = await server.get(`/v1/metrics/aggregate`).query({
+			column: "orgId",
+			row: "value",
+			rowAggregation: "min",
+			limit: 5,
+		});
+		assert.equal(statusCode, 200);
+		assert.isArray(body.data);
+		body.data.forEach((item) => {
+			assert.property(item, "orgId");
+			assert.property(item, "min");
+		});
+	}).timeout(1800000);
+
+	it("Should aggregate metrics with column as orgId and row as time with min aggregation", async () => {
+		const { statusCode, body } = await server.get(`/v1/metrics/aggregate`).query({
+			column: "orgId",
+			row: "time",
+			rowAggregation: "min",
+			limit: 5,
+		});
+		assert.equal(statusCode, 200);
+		assert.isArray(body.data);
+		body.data.forEach((item) => {
+			assert.property(item, "orgId");
+			assert.property(item, "min");
+		});
+	}).timeout(1800000);
+
+	it("Should aggregate metrics with column as orgId and row as time with max aggregation", async () => {
+		const { statusCode, body } = await server.get(`/v1/metrics/aggregate`).query({
+			column: "orgId",
+			row: "time",
+			rowAggregation: "max",
+			limit: 5,
+		});
+		assert.equal(statusCode, 200);
+		assert.isArray(body.data);
+		body.data.forEach((item) => {
+			assert.property(item, "orgId");
+			assert.property(item, "max");
+		});
+	}).timeout(1800000);
+
+	it("Should aggregate metrics with column as time and row as orgId with min aggregation", async () => {
+		const { statusCode, body } = await server.get(`/v1/metrics/aggregate`).query({
+			column: "time",
+			columnAggregation: "1d",
+			row: "orgId",
+			rowAggregation: "min",
+			limit: 5,
+		});
+		assert.equal(statusCode, 200);
+		assert.isArray(body.data);
+		body.data.forEach((item) => {
+			assert.property(item, "takenAt");
+			assert.property(item, "min");
+		});
+	}).timeout(1800000);
+
+	it("Should aggregate metrics with column as time and row as orgId with max aggregation", async () => {
+		const { statusCode, body } = await server.get(`/v1/metrics/aggregate`).query({
+			column: "time",
+			columnAggregation: "1d",
+			row: "orgId",
+			rowAggregation: "max",
+			limit: 5,
+		});
+		assert.equal(statusCode, 200);
+		assert.isArray(body.data);
+		body.data.forEach((item) => {
+			assert.property(item, "takenAt");
+			assert.property(item, "max");
+		});
 	}).timeout(1800000);
 });
