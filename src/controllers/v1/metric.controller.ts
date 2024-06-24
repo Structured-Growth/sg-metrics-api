@@ -89,8 +89,8 @@ export class MetricController extends BaseController {
 		this.response.status(200);
 		return {
 			data,
-			page: result.page,
 			limit: result.limit,
+			nextToken: result.nextToken,
 		};
 	}
 
@@ -101,12 +101,12 @@ export class MetricController extends BaseController {
 	@Post("/")
 	@SuccessResponse(201, "Returns created metric")
 	@DescribeAction("metrics/create")
-	@DescribeResource("Organization", ({ body }) => Number(body.orgId))
-	@DescribeResource("Account", ({ body }) => Number(body.accountId))
-	@DescribeResource("User", ({ body }) => Number(body.userId))
-	@DescribeResource("MetricCategory", ({ body }) => Number(body.metricCategoryId))
-	@DescribeResource("MetricType", ({ body }) => Number(body.metricTypeId))
-	@DescribeResource("Device", ({ body }) => Number(body.deviceId))
+	@DescribeResource("Organization", ({ body }) => Number(body[0].orgId))
+	@DescribeResource("Account", ({ body }) => Number(body[0].accountId))
+	@DescribeResource("User", ({ body }) => Number(body[0].userId))
+	@DescribeResource("MetricCategory", ({ body }) => Number(body[0].metricCategoryId))
+	@DescribeResource("MetricType", ({ body }) => Number(body[0].metricTypeId))
+	@DescribeResource("Device", ({ body }) => Number(body[0].deviceId))
 	@ValidateFuncArgs(MetricCreateParamsValidator)
 	async create(@Queries() query: {}, @Body() body: MetricCreateBodyWithoutOffset[]): Promise<PublicMetricAttributes[]> {
 		const metrics = await this.metricRepository.create(
@@ -134,7 +134,7 @@ export class MetricController extends BaseController {
 	@Get("/:metricId")
 	@SuccessResponse(200, "Returns metric")
 	@DescribeAction("metrics/read")
-	@DescribeResource("Metric", ({ params }) => Number(params.metricId))
+	@DescribeResource("Metric", ({ params }) => params.metricId)
 	public async get(@Path() metricId: string): Promise<PublicMetricAttributes> {
 		const metric = await this.metricRepository.read(metricId);
 		this.response.status(200);
@@ -155,7 +155,7 @@ export class MetricController extends BaseController {
 	@Put("/:metricId")
 	@SuccessResponse(200, "Returns updated metric")
 	@DescribeAction("metrics/update")
-	@DescribeResource("Metric", ({ params }) => Number(params.metricId))
+	@DescribeResource("Metric", ({ params }) => params.metricId)
 	@ValidateFuncArgs(MetricUpdateParamsValidator)
 	public async update(
 		@Path() metricId: string,
@@ -168,7 +168,7 @@ export class MetricController extends BaseController {
 				{
 					...body,
 					takenAt: body.takenAt ? new Date(body.takenAt) : undefined,
-					takenAtOffset: getTimezoneOffset(body.takenAt.toString()),
+					takenAtOffset: body.takenAt ? getTimezoneOffset(body.takenAt.toString()) : undefined,
 				},
 				isUndefined
 			) as any
@@ -188,7 +188,7 @@ export class MetricController extends BaseController {
 	@Delete("/:metricId")
 	@SuccessResponse(204, "Returns metric")
 	@DescribeAction("metrics/delete")
-	@DescribeResource("Metric", ({ params }) => Number(params.metricId))
+	@DescribeResource("Metric", ({ params }) => params.metricId)
 	public async delete(@Path() metricId: string): Promise<void> {
 		await this.metricRepository.delete(metricId);
 		this.response.status(204);

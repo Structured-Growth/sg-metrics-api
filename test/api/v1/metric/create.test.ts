@@ -18,7 +18,6 @@ describe("POST /api/v1/metrics", () => {
 	const deviceId = version - accountId;
 	const batchId = `batchId-${Date.now()}`;
 	const value = factor - metricTypeVersion;
-	const takenAtOffset = metricTypeVersion + factor;
 
 	before(async () => container.resolve<App>("App").ready);
 
@@ -75,8 +74,7 @@ describe("POST /api/v1/metrics", () => {
 				deviceId: deviceId,
 				batchId: batchId,
 				value: value,
-				takenAt: "2024-05-16T14:30:00+00:00",
-				takenAtOffset: takenAtOffset,
+				takenAt: "2024-05-16T14:30:00+01:00",
 			},
 		]);
 		assert.equal(statusCode, 201);
@@ -92,7 +90,7 @@ describe("POST /api/v1/metrics", () => {
 		assert.equal(body[0].batchId, batchId);
 		assert.equal(body[0].value, value);
 		assert.isString(body[0].takenAt);
-		assert.equal(body[0].takenAtOffset, takenAtOffset);
+		assert.equal(body[0].takenAtOffset, 60);
 		assert.isString(body[0].arn);
 		context.createdMetricId = body[0].id;
 	});

@@ -2,7 +2,7 @@ import { Post, Route, Hidden } from "@tsoa/runtime";
 import { Sequelize } from "sequelize";
 import { SequelizeStorage, Umzug } from "umzug";
 import * as dbConfig from "../../../database/config/config";
-import { BaseController, injectable } from "@structured-growth/microservice-sdk";
+import { BaseController, DescribeAction, injectable } from "@structured-growth/microservice-sdk";
 import { Tags } from "tsoa";
 import { Options } from "sequelize/types/sequelize";
 
@@ -14,6 +14,7 @@ export class SystemController extends BaseController {
 	 * Apply last migrations
 	 */
 	@Post("migrate")
+	@DescribeAction("system/migrate")
 	@Hidden()
 	public async migrate(): Promise<void> {
 		this.logger.info("Applying latest migrations...");

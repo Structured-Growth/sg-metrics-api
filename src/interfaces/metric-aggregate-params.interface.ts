@@ -1,9 +1,10 @@
 import { MetricSearchParamsInterface } from "./metric-search-params.interface";
 
 export interface MetricAggregateParamsInterface extends Omit<MetricSearchParamsInterface, "sort"> {
-	aggregationInterval: "1m" | "5m" | "30m" | "1h" | "4h" | "6h" | "12h" | "1d" | "7d" | "30d" | "60d";
-	aggregateColumn: string;
-	aggregateRow: string;
+	column: string;
+	columnAggregation: string;
+	row: string;
+	rowAggregation: string;
 	/**
 	 * Sort data by multiple fields.
 	 *

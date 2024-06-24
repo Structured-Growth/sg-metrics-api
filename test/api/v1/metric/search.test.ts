@@ -18,7 +18,6 @@ describe("GET /api/v1/metrics", () => {
 	const deviceId = parseInt(Date.now().toString().slice(0, 4));
 	const batchId = `batchId-${Date.now()}`;
 	const value = parseInt(Date.now().toString().slice(0, 5));
-	const takenAtOffset = 90;
 	const valueMin = value - factor;
 	const valueMax = value + factor;
 
@@ -77,8 +76,7 @@ describe("GET /api/v1/metrics", () => {
 				deviceId: deviceId,
 				batchId: batchId,
 				value: value,
-				takenAt: "2024-05-16T14:30:00+00:00",
-				takenAtOffset: takenAtOffset,
+				takenAt: "2024-05-16T14:30:00+01:00",
 			},
 		]);
 		assert.equal(statusCode, 201);
@@ -100,8 +98,7 @@ describe("GET /api/v1/metrics", () => {
 				deviceId: deviceId,
 				batchId: batchId,
 				value: value,
-				takenAt: "2024-05-16T11:30:00+00:00",
-				takenAtOffset: takenAtOffset,
+				takenAt: "2024-05-16T11:30:00+01:00",
 			},
 		]);
 		assert.equal(statusCode, 201);
@@ -160,12 +157,10 @@ describe("GET /api/v1/metrics", () => {
 		assert.equal(body.data[0].deviceId, deviceId);
 		assert.equal(body.data[0].batchId, batchId);
 		assert.equal(body.data[0].value, value);
-		assert.equal(body.data[0].takenAt, "2024-05-16T14:30:00.000Z");
-		assert.equal(body.data[0].takenAtOffset, takenAtOffset);
+		assert.equal(body.data[0].takenAt, "2024-05-16T13:30:00.000Z");
+		assert.equal(body.data[0].takenAtOffset, 60);
 		assert.isString(body.data[0].recordedAt);
-		assert.equal(body.page, 1);
 		assert.equal(body.limit, 20);
-		assert.equal(body.total, 1);
 	}).timeout(1800000);
 
 	it("Should return created metrics by ids", async () => {
@@ -177,9 +172,7 @@ describe("GET /api/v1/metrics", () => {
 		assert.equal(statusCode, 200);
 		assert.equal(body.data[0].id, context["createdMetricId"]);
 		assert.equal(body.data[1].id, context["createdMetric2Id"]);
-		assert.equal(body.page, 1);
 		assert.equal(body.limit, 20);
-		assert.equal(body.total, 2);
 	}).timeout(1800000);
 
 	it("Should search by value and sort by time", async () => {
@@ -242,5 +235,63 @@ describe("GET /api/v1/metrics", () => {
 		assert.equal(statusCode, 200);
 		assert.isString(body.data[0].recordedAt);
 		assert.equal(body.data[0].userId, userId);
+	}).timeout(1800000);
+
+	it("Should return nextToken when results exceed limit", async () => {
+		for (let i = 0; i < 15; i++) {
+			const metricValue = value + i;
+			const takenAtTime = new Date();
+			takenAtTime.setMinutes(takenAtTime.getMinutes() + i);
+
+			const takenAtFormatted = takenAtTime.toISOString().replace(/\.\d{3}Z$/, "+00:00");
+
+			const { statusCode } = await server.post("/v1/metrics").send([
+				{
+					orgId: orgId,
+					region: RegionEnum.US,
+					accountId: accountId,
+					userId: userId,
+					relatedToRn: relatedToRn,
+					metricCategoryId: context.createdMetricCategoryId,
+					metricTypeId: context.createdMetricTypeId,
+					metricTypeVersion: metricTypeVersion,
+					deviceId: deviceId,
+					batchId: batchId,
+					value: metricValue,
+					takenAt: takenAtFormatted,
+				},
+			]);
+			assert.equal(statusCode, 201);
+		}
+
+		let { statusCode, body } = await server.get("/v1/metrics").query({
+			userId,
+			limit: 5,
+		});
+		assert.equal(statusCode, 200);
+		assert.equal(body.data.length, 5);
+		assert.isString(body.nextToken);
+
+		const firstNextToken = body.nextToken;
+
+		({ statusCode, body } = await server.get("/v1/metrics").query({
+			userId,
+			limit: 5,
+			nextToken: firstNextToken,
+		}));
+		assert.equal(statusCode, 200);
+		assert.equal(body.data.length, 5);
+		assert.isString(body.nextToken);
+
+		const secondNextToken = body.nextToken;
+
+		({ statusCode, body } = await server.get("/v1/metrics").query({
+			userId,
+			limit: 5,
+			nextToken: secondNextToken,
+		}));
+		assert.equal(statusCode, 200);
+		assert.equal(body.data.length, 5);
+		assert.isString(body.nextToken);
 	}).timeout(1800000);
 });

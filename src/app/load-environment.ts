@@ -44,5 +44,11 @@ export function loadEnvironment() {
 		DB_MIGRATION_TABLE_NAME: joi.string().required(),
 		TIMESTREAM_DB_NAME: joi.string().required(),
 		TIMESTREAM_TABLE_NAME: joi.string().required(),
+		EVENTBUS_PROVIDER: joi.string().required(),
+		EVENTBUS_NAME: joi.string().required(),
+		AUTHENTICATION_ENABLED: joi.bool().required(),
+		AUTHORIZATION_ENABLED: joi.bool().required(),
+		OAUTH_USER_URL: joi.string().required(),
+		POLICY_SERVICE_URL: joi.string().required(),
 	});
 }
