@@ -226,4 +226,21 @@ describe("e2e/aggregation-average", () => {
 		assert.isArray(body.data);
 		assert.equal(body.data.length, uniqCount);
 	});
+
+	it("Should find min user id", async () => {
+		const { statusCode, body } = await server.get(`/v1/metrics/aggregate`).query({
+			orgId,
+			column: "time",
+			columnAggregation: "30d",
+			row: "userId",
+			rowAggregation: "min",
+			limit: 100,
+		});
+
+		const uniqCount = uniqBy<MetricAttributes>(context.metrics, m => m.value).length;
+
+		assert.equal(statusCode, 200);
+		assert.isArray(body.data);
+		assert.equal(body.data[0].min, 1);
+	});
 });

@@ -200,11 +200,11 @@ export class MetricRepository {
 
 		let aggregationSelect: string;
 
-		if ((column === "time" || column === "recordedAt") && row !== "value") {
-			aggregationSelect = `${rowAggregation.toUpperCase()}(${column}) AS ${rowAggregation.toLowerCase()}`;
-		} else {
+		// if ((column === "time" || column === "recordedAt") && row !== "value") {
+		// 	aggregationSelect = `${rowAggregation.toUpperCase()}(${column}) AS ${rowAggregation.toLowerCase()}`;
+		// } else {
 			aggregationSelect = `${rowAggregation.toUpperCase()}(${row}) AS ${rowAggregation.toLowerCase()}`;
-		}
+		// }
 
 		let countSelect: string;
 
@@ -257,6 +257,8 @@ export class MetricRepository {
 		// console.log("Result Column Info: ", result.ColumnInfo);
 		// console.log("Result Rows: ", result.Rows[0]);
 
+		console.log(result);
+		console.log(result.Rows[0]);
 		const aggregatedData = result.Rows.map((item: any) => {
 			let data: any = {
 				takenAtOffset: parseInt(item.Data[3].ScalarValue),
