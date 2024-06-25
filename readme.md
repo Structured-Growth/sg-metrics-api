@@ -1,6 +1,6 @@
 # Metrics API
 
-TODO readme
+TODO readme.
 
 ## Features
 
