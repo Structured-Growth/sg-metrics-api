@@ -55,6 +55,7 @@ export const MetricAggregateParamsValidator = joi.object({
 				"orgId",
 				"accountId",
 				"userId",
+				"value",
 				"deviceId",
 				"metricTypeId",
 				"metricTypeVersion"

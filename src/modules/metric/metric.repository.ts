@@ -219,15 +219,14 @@ export class MetricRepository {
 		console.log("Aggregation Select: ", aggregationSelect);
 
 		let query = `
-			SELECT
-				${aggregationSelect},
-				${countSelect},
-				MIN(${column}) AS ${column === "time" || column === "recordedAt" ? "takenAt" : column},
-				MIN(takenAtOffset)   AS takenAtOffset,
-				MIN(recordedAt)      AS recordedAt
-			FROM "${this.configuration.DatabaseName}"."${this.configuration.TableName}"
-			WHERE ${filters.join(" AND ")}
-			GROUP BY ${column === "time" || column === "recordedAt" ? `BIN(${column}, ${columnAggregation})` : `${column}`}
+        SELECT ${aggregationSelect},
+               ${countSelect},
+               MIN(${column})     AS ${column === "time" || column === "recordedAt" ? "takenAt" : column},
+               MIN(takenAtOffset) AS takenAtOffset,
+               MIN(recordedAt)    AS recordedAt
+        FROM "${this.configuration.DatabaseName}"."${this.configuration.TableName}"
+        WHERE ${filters.join(" AND ")}
+        GROUP BY ${column === "time" || column === "recordedAt" ? `BIN(${column}, ${columnAggregation})` : `${column}`}
 		`;
 
 		if (order && order.length > 0) {
@@ -265,7 +264,7 @@ export class MetricRepository {
 			};
 
 			if (row === "time" || row === "recordedAt") {
-				data[rowAggregation.toLowerCase()] = item.Data[0].ScalarValue;
+				data[rowAggregation.toLowerCase()] = new Date(item.Data[0].ScalarValue + "Z").toISOString();
 			} else {
 				data[rowAggregation.toLowerCase()] = parseFloat(item.Data[0].ScalarValue);
 			}
@@ -273,7 +272,7 @@ export class MetricRepository {
 			data["count"] = parseInt(item.Data[1].ScalarValue);
 			data[column === "time" || column === "createdAt" ? "takenAt" : column] =
 				column === "time" || column === "createdAt"
-					? new Date(item.Data[2].ScalarValue)
+					? new Date(item.Data[2].ScalarValue + "Z").toISOString()
 					: parseFloat(item.Data[2].ScalarValue);
 
 			return data;
