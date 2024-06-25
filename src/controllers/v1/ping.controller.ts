@@ -6,10 +6,6 @@ import { inject } from "@structured-growth/microservice-sdk";
 @Tags("Ping")
 @autoInjectable()
 export class PingController extends BaseController {
-	constructor(@inject("appPrefix") private appPrefix?: string) {
-		super();
-	}
-
 	/**
 	 * Check if server is alive
 	 */
