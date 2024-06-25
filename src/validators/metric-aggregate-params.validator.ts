@@ -46,17 +46,43 @@ export const MetricAggregateParamsValidator = joi.object({
 					)
 			)
 			.label("Sort"),
-		column: joi.string().valid("time", "recordedAt", "id", "orgId", "accountId", "userId").required().label("Column"),
+		column: joi
+			.string()
+			.valid(
+				"time",
+				"recordedAt",
+				"id",
+				"orgId",
+				"accountId",
+				"userId",
+				"value",
+				"deviceId",
+				"metricTypeId",
+				"metricTypeVersion"
+			)
+			.required()
+			.label("Column"),
 		row: joi
 			.string()
-			.valid("time", "recordedAt", "id", "orgId", "accountId", "userId", "value")
+			.valid(
+				"time",
+				"recordedAt",
+				"id",
+				"orgId",
+				"accountId",
+				"userId",
+				"value",
+				"deviceId",
+				"metricTypeId",
+				"metricTypeVersion"
+			)
 			.required()
 			.label("Row"),
 		columnAggregation: joi
 			.string()
 			.valid("1m", "5m", "30m", "1h", "4h", "6h", "12h", "1d", "7d", "30d", "60d")
 			.label("Aggregate Column"),
-		rowAggregation: joi.string().valid("avg", "min", "max", "sum").required().label("Aggregate Row"),
+		rowAggregation: joi.string().valid("avg", "min", "max", "sum", "count").label("Aggregate Row"),
 		nextToken: joi.string().label("Next Token"),
 	}),
 });

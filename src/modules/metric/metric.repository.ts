@@ -127,8 +127,6 @@ export class MetricRepository {
 			result = await this.executeQuery(query, limit, initialResult.NextToken);
 		}
 
-		console.log("Next Token: ", result.NextToken);
-
 		return {
 			data: this.parseResult(result.ColumnInfo, result.Rows),
 			limit: limit,
@@ -218,16 +216,17 @@ export class MetricRepository {
 			countSelect = `COUNT(DISTINCT ${row}) AS count`;
 		}
 
+		console.log("Aggregation Select: ", aggregationSelect);
+
 		let query = `
-			SELECT
-				${aggregationSelect},
-				${countSelect},
-				MIN(${column}) AS ${column === "time" || column === "createdAt" ? "takenAt" : column},
-				MIN(takenAtOffset)   AS takenAtOffset,
-				MIN(recordedAt)      AS recordedAt
-			FROM "${this.configuration.DatabaseName}"."${this.configuration.TableName}"
-			WHERE ${filters.join(" AND ")}
-			GROUP BY ${column === "time" || column === "createdAt" ? `BIN(${column}, ${columnAggregation})` : `${column}`}
+        SELECT ${aggregationSelect},
+               ${countSelect},
+               MIN(${column})     AS ${column === "time" || column === "recordedAt" ? "takenAt" : column},
+               MIN(takenAtOffset) AS takenAtOffset,
+               MIN(recordedAt)    AS recordedAt
+        FROM "${this.configuration.DatabaseName}"."${this.configuration.TableName}"
+        WHERE ${filters.join(" AND ")}
+        GROUP BY ${column === "time" || column === "recordedAt" ? `BIN(${column}, ${columnAggregation})` : `${column}`}
 		`;
 
 		if (order && order.length > 0) {
@@ -239,7 +238,7 @@ export class MetricRepository {
 				.join(", ");
 			query += ` ORDER BY ${sqlOrder}`;
 		} else {
-			// query += ` ORDER BY BIN(time, ${params.aggregationInterval}) ASC`;
+			query += ` ORDER BY MIN(time) ASC`;
 		}
 
 		this.logger.debug(`Aggregate query: ${query}`);
@@ -253,9 +252,10 @@ export class MetricRepository {
 			result = await this.executeQuery(query, limit, initialResult.NextToken);
 		}
 
-		console.log("Result: ", result);
-
 		this.logger.debug(`Aggregate result: ${JSON.stringify(result)}`);
+
+		// console.log("Result Column Info: ", result.ColumnInfo);
+		// console.log("Result Rows: ", result.Rows[0]);
 
 		const aggregatedData = result.Rows.map((item: any) => {
 			let data: any = {
@@ -263,12 +263,22 @@ export class MetricRepository {
 				recordedAt: new Date(item.Data[4].ScalarValue),
 			};
 
-			data[rowAggregation.toLowerCase()] = parseFloat(item.Data[0].ScalarValue);
+			if (row === "time" || row === "recordedAt") {
+				data[rowAggregation.toLowerCase()] = new Date(item.Data[0].ScalarValue + "Z").toISOString();
+			} else {
+				data[rowAggregation.toLowerCase()] = parseFloat(item.Data[0].ScalarValue);
+			}
+
 			data["count"] = parseInt(item.Data[1].ScalarValue);
-			data[column === "time" || column === "createdAt" ? "takenAt" : column] = new Date(item.Data[2].ScalarValue);
+			data[column === "time" || column === "createdAt" ? "takenAt" : column] =
+				column === "time" || column === "createdAt"
+					? new Date(item.Data[2].ScalarValue + "Z").toISOString()
+					: parseFloat(item.Data[2].ScalarValue);
 
 			return data;
 		});
+
+		// const aggregatedData = this.parseResult(result.ColumnInfo, result.Rows) as any;
 
 		return {
 			data: aggregatedData,
