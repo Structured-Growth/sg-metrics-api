@@ -200,11 +200,7 @@ export class MetricRepository {
 
 		let aggregationSelect: string;
 
-		// if ((column === "time" || column === "recordedAt") && row !== "value") {
-		// 	aggregationSelect = `${rowAggregation.toUpperCase()}(${column}) AS ${rowAggregation.toLowerCase()}`;
-		// } else {
-			aggregationSelect = `${rowAggregation.toUpperCase()}(${row}) AS ${rowAggregation.toLowerCase()}`;
-		// }
+		aggregationSelect = `${rowAggregation.toUpperCase()}(${row}) AS ${rowAggregation.toLowerCase()}`;
 
 		let countSelect: string;
 
@@ -215,8 +211,6 @@ export class MetricRepository {
 		} else {
 			countSelect = `COUNT(DISTINCT ${row}) AS count`;
 		}
-
-		console.log("Aggregation Select: ", aggregationSelect);
 
 		let query = `
         SELECT ${aggregationSelect},
