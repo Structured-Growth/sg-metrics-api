@@ -7,7 +7,9 @@ import {
 	logWriters,
 	Logger,
 	AuthService,
-	PolicyService, eventBusProviders, EventbusService,
+	PolicyService,
+	eventBusProviders,
+	EventbusService,
 } from "@structured-growth/microservice-sdk";
 import { loadEnvironment } from "./load-environment";
 import { MetricTypeService } from "../modules/metric-type/metric-type.service";
