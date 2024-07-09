@@ -223,7 +223,10 @@ export class MetricRepository {
         GROUP BY ${column === "time" || column === "recordedAt" ? `BIN(${column}, ${columnAggregation})` : `${column}`}
 		`;
 
-		if (order && order.length > 0) {
+		if (column === "time" || column === "recordedAt") {
+			const defaultOrder = order && order.length > 0 ? order[0].split(":")[1].toUpperCase() : "ASC";
+			query += ` ORDER BY MIN(time) ${defaultOrder}`;
+		} else if (order && order.length > 0) {
 			let sqlOrder = order
 				.map((item) => {
 					const [field, order] = item.split(":");
@@ -248,11 +251,6 @@ export class MetricRepository {
 
 		this.logger.debug(`Aggregate result: ${JSON.stringify(result)}`);
 
-		// console.log("Result Column Info: ", result.ColumnInfo);
-		// console.log("Result Rows: ", result.Rows[0]);
-
-		console.log(result);
-		console.log(result.Rows[0]);
 		const aggregatedData = result.Rows.map((item: any) => {
 			let data: any = {
 				takenAtOffset: parseInt(item.Data[3].ScalarValue),
