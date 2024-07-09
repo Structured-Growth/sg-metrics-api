@@ -49,6 +49,7 @@ export class MetricCategoryController extends BaseController {
 	) {
 		super();
 	}
+
 	/**
 	 * Search Metric Categories records
 	 */
@@ -56,7 +57,9 @@ export class MetricCategoryController extends BaseController {
 	@Get("/")
 	@SuccessResponse(200, "Returns list of categories")
 	@DescribeAction("metric-category/search")
-	@DescribeResource("Organization", ({ query }) => Number(query.orgId))
+	@DescribeResource("Organization", ({ query }) => ({
+		arn: `-:-:${query.orgId}`,
+	}))
 	@DescribeResource(
 		"CategoryStatus",
 		({ query }) => query.status as string,
@@ -89,7 +92,9 @@ export class MetricCategoryController extends BaseController {
 	@Post("/")
 	@SuccessResponse(201, "Returns created category")
 	@DescribeAction("metric-category/create")
-	@DescribeResource("Organization", ({ body }) => Number(body.orgId))
+	@DescribeResource("Organization", ({ body }) => ({
+		arn: `-:-:${body.orgId}`,
+	}))
 	@ValidateFuncArgs(MetricCategoryCreateParamsValidator)
 	async create(
 		@Queries() query: {},
