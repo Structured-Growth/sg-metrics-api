@@ -53,6 +53,7 @@ export class MetricTypeController extends BaseController {
 	) {
 		super();
 	}
+
 	/**
 	 * Search Metric Types records
 	 */
@@ -60,7 +61,9 @@ export class MetricTypeController extends BaseController {
 	@Get("/")
 	@SuccessResponse(200, "Returns list of metric types")
 	@DescribeAction("metric-type/search")
-	@DescribeResource("Organization", ({ query }) => Number(query.orgId))
+	@DescribeResource("Organization", ({ query }) => ({
+		arn: `-:-:${query.orgId}`,
+	}))
 	@DescribeResource(
 		"MetricTypeStatus",
 		({ query }) => query.status as string,

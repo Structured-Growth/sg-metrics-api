@@ -32,8 +32,12 @@ container.register("isTest", { useValue: process.env.STAGE === "test" });
 container.register("logDbRequests", { useValue: process.env.LOG_DB_REQUESTS === "true" });
 container.register("logRequestBody", { useValue: process.env.LOG_HTTP_REQUEST_BODY === "true" });
 container.register("logResponses", { useValue: process.env.LOG_HTTP_RESPONSES === "true" });
+
 container.register("authenticationEnabled", { useValue: process.env.AUTHENTICATION_ENABLED === "true" });
 container.register("authorizationEnabled", { useValue: process.env.AUTHORIZATION_ENABLED === "true" });
+container.register("internalAuthenticationEnabled", { useValue: process.env.INTERNAL_AUTHENTICATION_ENABLED === "true" });
+container.register("internalRequestsAllowed", { useValue: process.env.INTERNAL_REQUESTS_ALLOWED === "true" });
+container.register("internalAuthenticationJwtSecret", { useValue: process.env.INTERNAL_AUTHENTICATION_JWT_SECRET });
 container.register("oAuthServiceGetUserUrl", { useValue: process.env.OAUTH_USER_URL });
 container.register("policiesServiceUrl", { useValue: process.env.POLICY_SERVICE_URL });
 
