@@ -12,6 +12,7 @@ import {
 } from "@structured-growth/microservice-sdk";
 import { Metric, MetricAttributes } from "../../../database/models/metric";
 import { MetricRepository } from "../../modules/metric/metric.repository";
+import { MetricAuroraRepository } from "../../modules/metric-aurora/metric-aurora.repository";
 import { MetricSearchParamsInterface } from "../../interfaces/metric-search-params.interface";
 import { MetricCreateBodyInterface } from "../../interfaces/metric-create-body.interface";
 import { MetricUpdateBodyInterface } from "../../interfaces/metric-update-body.interface";
@@ -51,7 +52,10 @@ interface MetricCreateBodyWithoutOffset extends Omit<MetricCreateBodyInterface, 
 @Tags("Metric")
 @autoInjectable()
 export class MetricController extends BaseController {
-	constructor(@inject("MetricRepository") private metricRepository: MetricRepository) {
+	constructor(
+		@inject("MetricRepository") private metricRepository: MetricRepository,
+		@inject("MetricAuroraRepository") private metricAuroraRepository: MetricAuroraRepository
+	) {
 		super();
 	}
 

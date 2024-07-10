@@ -16,6 +16,7 @@ import { v4 as uuidv4 } from "uuid";
 import { isDate, parseInt } from "lodash";
 import { WriteRecordsRequest } from "aws-sdk/clients/timestreamwrite";
 import { ColumnInfo, Row } from "aws-sdk/clients/timestreamquery";
+import { MetricAuroraRepository } from "../metric-aurora/metric-aurora.repository";
 
 @autoInjectable()
 export class MetricRepository {
@@ -27,7 +28,11 @@ export class MetricRepository {
 	private writeClient: TimestreamWrite;
 	private timestreamQuery: TimestreamQuery;
 
-	constructor(@inject("region") private region: string, @inject("Logger") private logger: LoggerInterface) {
+	constructor(
+		@inject("region") private region: string,
+		@inject("Logger") private logger: LoggerInterface,
+		@inject("MetricAuroraRepository") private metricAuroraRepository: MetricAuroraRepository
+	) {
 		this.writeClient = new TimestreamWrite({
 			region: this.region,
 		});
@@ -37,14 +42,23 @@ export class MetricRepository {
 	}
 
 	public async create(params: MetricCreateBodyInterface[]): Promise<Metric[]> {
-		const metrics = params.map(
-			(item) =>
-				new Metric({
-					id: uuidv4(),
-					...item,
-					isDeleted: false,
-				})
-		);
+		const metrics: Metric[] = [];
+
+		for (const item of params) {
+			const param = {
+				id: uuidv4(),
+				...item,
+				isDeleted: false,
+			};
+
+			try {
+				await this.metricAuroraRepository.create({ ...param, recordedAt: new Date() });
+			} catch (error) {
+				console.log(`Problem to create Aurora Metric with ${param.id} id`);
+			}
+
+			metrics.push(new Metric(param));
+		}
 
 		return this.writeRecord(metrics);
 	}
@@ -92,6 +106,12 @@ export class MetricRepository {
 		const metric = await this.read(id);
 		if (!metric) {
 			throw new NotFoundError(`Metric ${id} not found`);
+		}
+
+		try {
+			await this.metricAuroraRepository.delete(id);
+		} catch (error) {
+			console.log(`Problem to delete Aurora Metric with ${id} id`);
 		}
 
 		await this.update(id, {
