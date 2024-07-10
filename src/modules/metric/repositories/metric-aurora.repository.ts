@@ -7,31 +7,24 @@ import {
 import MetricAurora, {
 	MetricAuroraCreationAttributes,
 	MetricAuroraUpdateAttributes,
-} from "../../../database/models/metric-aurora.sequelize";
-import { MetricSearchParamsInterface } from "../../interfaces/metric-search-params.interface";
+} from "../../../../database/models/metric-aurora.sequelize";
+import { MetricSearchParamsInterface } from "../../../interfaces/metric-search-params.interface";
 
 @autoInjectable()
-export class MetricAuroraRepository
-	implements RepositoryInterface<MetricAurora, MetricSearchParamsInterface, MetricAuroraCreationAttributes>
-{
+export class MetricAuroraRepository {
 	public async search(params: MetricSearchParamsInterface): Promise<SearchResultInterface<MetricAurora>> {
-		return {
-			data: [],
-			total: 0,
-			limit: params.limit || 20,
-			page: 1,
-		};
+		throw new Error("Not implemented");
 	}
 
-	public async create(params: MetricAuroraCreationAttributes): Promise<MetricAurora> {
-		return await MetricAurora.create(params);
+	public async create(params: MetricAuroraCreationAttributes[]): Promise<MetricAurora[]> {
+		return await MetricAurora.bulkCreate(params);
 	}
 
-	public async read(id: number): Promise<MetricAurora | null> {
-		return null;
+	public async read(id: string): Promise<MetricAurora | null> {
+		throw new Error("Not implemented");
 	}
 
-	public async update(id: number, params: MetricAuroraUpdateAttributes): Promise<MetricAurora> {
+	public async update(id: string, params: MetricAuroraUpdateAttributes): Promise<MetricAurora> {
 		const metricAurora = await this.read(id);
 
 		if (!metricAurora) {

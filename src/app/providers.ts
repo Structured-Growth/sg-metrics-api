@@ -16,10 +16,10 @@ import { MetricTypeService } from "../modules/metric-type/metric-type.service";
 import { MetricTypeRepository } from "../modules/metric-type/metric-type.repository";
 import { MetricCategoryService } from "../modules/metric-category/metric-category.service";
 import { MetricCategoryRepository } from "../modules/metric-category/metric-category.repository";
-import { MetricRepository } from "../modules/metric/metric.repository";
+import { MetricTimestreamRepository } from "../modules/metric/repositories/metric-timestream.repository";
 import { ReportsRepository } from "../modules/reports/reports.repository";
 import { ReportsService } from "../modules/reports/reports.service";
-import { MetricAuroraRepository } from "../modules/metric-aurora/metric-aurora.repository";
+import { MetricAuroraRepository } from "../modules/metric/repositories/metric-aurora.repository";
 
 // load and validate env variables
 loadEnvironment();
@@ -63,6 +63,6 @@ container.register("EventbusService", EventbusService);
 // repositories
 container.register("MetricCategoryRepository", MetricCategoryRepository);
 container.register("MetricTypeRepository", MetricTypeRepository);
-container.register("MetricRepository", MetricRepository);
+container.register("MetricRepository", MetricTimestreamRepository);
 container.register("ReportsRepository", ReportsRepository);
 container.register("MetricAuroraRepository", MetricAuroraRepository);

@@ -10,9 +10,9 @@ import {
 	ValidateFuncArgs,
 	SearchResultInterface,
 } from "@structured-growth/microservice-sdk";
-import { Metric, MetricAttributes } from "../../../database/models/metric";
-import { MetricRepository } from "../../modules/metric/metric.repository";
-import { MetricAuroraRepository } from "../../modules/metric-aurora/metric-aurora.repository";
+import { Metric, MetricAttributes } from "../../modules/metric/models/metric";
+import { MetricTimestreamRepository } from "../../modules/metric/repositories/metric-timestream.repository";
+import { MetricAuroraRepository } from "../../modules/metric/repositories/metric-aurora.repository";
 import { MetricSearchParamsInterface } from "../../interfaces/metric-search-params.interface";
 import { MetricCreateBodyInterface } from "../../interfaces/metric-create-body.interface";
 import { MetricUpdateBodyInterface } from "../../interfaces/metric-update-body.interface";
@@ -24,6 +24,7 @@ import { MetricAggregateParamsInterface } from "../../interfaces/metric-aggregat
 import { MetricAggregateResultInterface } from "../../interfaces/metric-aggregate-result.interface";
 import { getTimezoneOffset } from "../../helpers/get-timezone-offset";
 import { MetricAggregateParamsValidator } from "../../validators/metric-aggregate-params.validator";
+import { MetricService } from "../../modules/metric/metric.service";
 
 const publicMetricAttributes = [
 	"id",
@@ -52,10 +53,7 @@ interface MetricCreateBodyWithoutOffset extends Omit<MetricCreateBodyInterface, 
 @Tags("Metric")
 @autoInjectable()
 export class MetricController extends BaseController {
-	constructor(
-		@inject("MetricRepository") private metricRepository: MetricRepository,
-		@inject("MetricAuroraRepository") private metricAuroraRepository: MetricAuroraRepository
-	) {
+	constructor(@inject("MetricService") private metricRepository: MetricService) {
 		super();
 	}
 

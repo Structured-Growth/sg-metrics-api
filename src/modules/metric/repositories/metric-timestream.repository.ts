@@ -1,4 +1,3 @@
-import { Metric, MetricAttributes } from "../../../database/models/metric";
 import {
 	autoInjectable,
 	inject,
@@ -7,19 +6,20 @@ import {
 	RegionEnum,
 } from "@structured-growth/microservice-sdk";
 import { TimestreamWrite, TimestreamQuery } from "aws-sdk";
-import { MetricCreateBodyInterface } from "../../interfaces/metric-create-body.interface";
-import { MetricSearchParamsInterface } from "../../interfaces/metric-search-params.interface";
-import { MetricAggregateResultInterface } from "../../interfaces/metric-aggregate-result.interface";
-import { MetricAggregateParamsInterface } from "../../interfaces/metric-aggregate-params.interface";
+import { MetricCreateBodyInterface } from "../../../interfaces/metric-create-body.interface";
+import { MetricSearchParamsInterface } from "../../../interfaces/metric-search-params.interface";
+import { MetricAggregateResultInterface } from "../../../interfaces/metric-aggregate-result.interface";
+import { MetricAggregateParamsInterface } from "../../../interfaces/metric-aggregate-params.interface";
 import { SearchResultInterface } from "@structured-growth/microservice-sdk";
 import { v4 as uuidv4 } from "uuid";
 import { isDate, parseInt } from "lodash";
 import { WriteRecordsRequest } from "aws-sdk/clients/timestreamwrite";
 import { ColumnInfo, Row } from "aws-sdk/clients/timestreamquery";
-import { MetricAuroraRepository } from "../metric-aurora/metric-aurora.repository";
+import { MetricAuroraRepository } from "./metric-aurora.repository";
+import MetricTimestream from "../../../../database/models/metric-timestream";
 
 @autoInjectable()
-export class MetricRepository {
+export class MetricTimestreamRepository {
 	private configuration = {
 		DatabaseName: process.env.TIMESTREAM_DB_NAME,
 		TableName: process.env.TIMESTREAM_TABLE_NAME,
@@ -31,7 +31,6 @@ export class MetricRepository {
 	constructor(
 		@inject("region") private region: string,
 		@inject("Logger") private logger: LoggerInterface,
-		@inject("MetricAuroraRepository") private metricAuroraRepository: MetricAuroraRepository
 	) {
 		this.writeClient = new TimestreamWrite({
 			region: this.region,
@@ -41,29 +40,28 @@ export class MetricRepository {
 		});
 	}
 
-	public async create(params: MetricCreateBodyInterface[]): Promise<Metric[]> {
-		const metrics: Metric[] = [];
+	public async create(params: MetricCreateBodyInterface[]): Promise<MetricTimestream[]> {
+		const metrics: MetricTimestream[] = [];
 
 		for (const item of params) {
 			const param = {
-				id: uuidv4(),
 				...item,
 				isDeleted: false,
 			};
+			//
+			// try {
+			// 	await this.metricAuroraRepository.create({ ...param, recordedAt: new Date() });
+			// } catch (error) {
+			// 	console.log(`Problem to create Aurora Metric with ${param.id} id`);
+			// }
 
-			try {
-				await this.metricAuroraRepository.create({ ...param, recordedAt: new Date() });
-			} catch (error) {
-				console.log(`Problem to create Aurora Metric with ${param.id} id`);
-			}
-
-			metrics.push(new Metric(param));
+			metrics.push(new MetricTimestream(param));
 		}
 
 		return this.writeRecord(metrics);
 	}
 
-	public async read(id: string): Promise<Metric | null> {
+	public async read(id: string): Promise<MetricTimestream | null> {
 		const query = `SELECT *
                    FROM "${this.configuration.DatabaseName}"."${this.configuration.TableName}"
                    WHERE id = '${id}'
@@ -81,7 +79,7 @@ export class MetricRepository {
 	public async update(
 		id: string,
 		params: Partial<Pick<MetricAttributes, "value" | "takenAt" | "takenAtOffset" | "isDeleted">>
-	): Promise<Metric> {
+	): Promise<MetricTimestream> {
 		const metric = await this.read(id);
 
 		if (!metric) {

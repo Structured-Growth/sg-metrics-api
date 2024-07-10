@@ -9,7 +9,7 @@ import {
 import * as path from "path";
 import { Sequelize } from "sequelize-typescript";
 import * as dbConfig from "../../database/config/config.js";
-import Metric from "../../database/models/metric";
+import Metric from "../modules/metric/models/metric";
 
 @autoInjectable()
 export class App {
