@@ -4,7 +4,7 @@ import { MetricTypeCreateBodyInterface } from "../../interfaces/metric-type-crea
 import { MetricTypeUpdateBodyInterface } from "../../interfaces/metric-type-update-body.interface";
 import { MetricTypeRepository } from "./metric-type.repository";
 import { MetricCategoryRepository } from "../metric-category/metric-category.repository";
-import { MetricTimestreamRepository } from "../metric/repositories/metric-timestream.repository";
+import { MetricRepository } from "../metric/metric.repository";
 import { isUndefined, omitBy } from "lodash";
 
 @autoInjectable()
@@ -12,7 +12,7 @@ export class MetricTypeService {
 	constructor(
 		@inject("MetricTypeRepository") private metricTypeRepository: MetricTypeRepository,
 		@inject("MetricCategoryRepository") private metricCategoryRepository: MetricCategoryRepository,
-		@inject("MetricRepository") private metricRepository: MetricTimestreamRepository
+		@inject("MetricRepository") private metricRepository: MetricRepository
 	) {}
 
 	public async create(params: MetricTypeCreateBodyInterface): Promise<MetricType> {
