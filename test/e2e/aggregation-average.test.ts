@@ -5,7 +5,7 @@ import { RegionEnum } from "@structured-growth/microservice-sdk";
 import { assert } from "chai";
 import { initTest } from "../common/init-test";
 import { filter, min, uniqBy } from "lodash";
-import { MetricAttributes } from "../../database/models/metric";
+import { MetricAttributes } from "../../src/modules/metric/models/metric";
 
 describe("e2e/aggregation-average", () => {
 	const { server, context } = initTest();
@@ -225,5 +225,22 @@ describe("e2e/aggregation-average", () => {
 		assert.equal(statusCode, 200);
 		assert.isArray(body.data);
 		assert.equal(body.data.length, uniqCount);
+	});
+
+	it("Should find min user id", async () => {
+		const { statusCode, body } = await server.get(`/v1/metrics/aggregate`).query({
+			orgId,
+			column: "time",
+			columnAggregation: "30d",
+			row: "userId",
+			rowAggregation: "min",
+			limit: 100,
+		});
+
+		const uniqCount = uniqBy<MetricAttributes>(context.metrics, m => m.value).length;
+
+		assert.equal(statusCode, 200);
+		assert.isArray(body.data);
+		assert.equal(body.data[0].min, 1);
 	});
 });

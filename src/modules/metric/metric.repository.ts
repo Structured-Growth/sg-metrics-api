@@ -23,7 +23,6 @@ export class MetricRepository {
 		DatabaseName: process.env.TIMESTREAM_DB_NAME,
 		TableName: process.env.TIMESTREAM_TABLE_NAME,
 	};
-
 	private writeClient: TimestreamWrite;
 	private timestreamQuery: TimestreamQuery;
 
@@ -48,7 +47,6 @@ export class MetricRepository {
 
 		return this.writeRecord(metrics);
 	}
-
 	public async read(id: string): Promise<Metric | null> {
 		const query = `SELECT *
                    FROM "${this.configuration.DatabaseName}"."${this.configuration.TableName}"
@@ -56,38 +54,31 @@ export class MetricRepository {
                      AND isDeleted = false
                    LIMIT 1`;
 		const result = await this.executeQuery(query);
-
 		if (result.Rows && result.Rows.length > 0) {
 			return this.parseMetric(result.ColumnInfo, result.Rows[0]);
 		} else {
 			throw new NotFoundError(`Metric ${id} not found`);
 		}
 	}
-
 	public async update(
 		id: string,
 		params: Partial<Pick<MetricAttributes, "value" | "takenAt" | "takenAtOffset" | "isDeleted">>
 	): Promise<Metric> {
 		const metric = await this.read(id);
-
 		if (!metric) {
 			throw new NotFoundError(`Metric ${id} not found`);
 		}
-
 		if (params.takenAt) {
 			if (params.takenAt.getTime() !== metric.takenAt.getTime()) {
 				metric.isDeleted = true;
 				await this.writeRecord([metric]);
 			}
 		}
-
 		metric.isDeleted = false;
 		Object.assign(metric, params);
 		await this.writeRecord([metric]);
-
 		return metric;
 	}
-
 	public async delete(id: string): Promise<void> {
 		const metric = await this.read(id);
 		if (!metric) {
@@ -98,7 +89,6 @@ export class MetricRepository {
 			isDeleted: true,
 		});
 	}
-
 	public async search(params: MetricSearchParamsInterface & {}): Promise<
 		Omit<SearchResultInterface<Metric>, "page" | "total"> & {
 			nextToken?: string;
@@ -106,7 +96,6 @@ export class MetricRepository {
 	> {
 		const limit = params.limit || 20;
 		let order: string[] = [];
-
 		if (params.sort) {
 			order = params.sort.map((sortParam) => {
 				const [field, direction] = sortParam.split(":");
@@ -116,38 +105,31 @@ export class MetricRepository {
 		} else {
 			order = ["time:DESC"];
 		}
-
 		const query = this.buildQuery(params, order);
 		let result;
-
 		if (params.nextToken) {
 			result = await this.executeQuery(query, limit, params.nextToken);
 		} else {
 			const initialResult = await this.executeQuery(query, limit);
 			result = await this.executeQuery(query, limit, initialResult.NextToken);
 		}
-
 		return {
 			data: this.parseResult(result.ColumnInfo, result.Rows),
 			limit: limit,
 			nextToken: result.NextToken,
 		};
 	}
-
 	public async aggregate(
 		params: MetricAggregateParamsInterface & { page?: number; limit?: number; sort?: any }
 	): Promise<MetricAggregateResultInterface> {
 		const limit = params.limit || 20;
-
 		let order;
 		if (params.sort && params.sort[0] === "recordedAt") {
 			order = ["time", params.sort[1]];
 		} else {
 			order = params.sort;
 		}
-
 		let filters: string[] = [`isDeleted = false`, `measure_name = 'metric'`];
-
 		if (params.orgId) filters.push(`orgId = '${params.orgId}'`);
 		if (params.accountId) filters.push(`accountId = '${params.accountId}'`);
 		if (params.userId) filters.push(`userId = '${params.userId}'`);
@@ -156,15 +138,12 @@ export class MetricRepository {
 		if (params.deviceId) filters.push(`deviceId = '${params.deviceId}'`);
 		if (params.batchId) filters.push(`batchId = '${params.batchId}'`);
 		if (params.value) filters.push(`value = ${params.value}`);
-
 		if (params.id && params.id.length > 0) {
 			const idConditions = params.id.map((id) => `id = '${id}'`);
 			filters.push(`(${idConditions.join(" OR ")})`);
 		}
-
 		if (params.valueMin !== undefined) filters.push(`value >= ${params.valueMin}`);
 		if (params.valueMax !== undefined) filters.push(`value <= ${params.valueMax}`);
-
 		if (params.recordedAtMin) {
 			const recordedAtMinDate = new Date(params.recordedAtMin);
 			const recordedAtMinFormatted = this.formatDateToTimestamp(recordedAtMinDate);
@@ -175,7 +154,6 @@ export class MetricRepository {
 			const recordedAtMaxFormatted = this.formatDateToTimestamp(recordedAtMaxDate);
 			filters.push(`recordedAt <= '${recordedAtMaxFormatted}'`);
 		}
-
 		if (params.takenAtMin) {
 			const takenAtMinDate = new Date(params.takenAtMin);
 			const takenAtMinISO = takenAtMinDate
@@ -192,22 +170,13 @@ export class MetricRepository {
 				.replace(/\.\d{3}Z$/, "");
 			filters.push(`time <= '${takenAtMaxISO}'`);
 		}
-
 		const column = params.column;
 		const columnAggregation = params.columnAggregation;
 		const row = params.row;
 		const rowAggregation = params.rowAggregation;
-
 		let aggregationSelect: string;
-
-		if ((column === "time" || column === "recordedAt") && row !== "value") {
-			aggregationSelect = `${rowAggregation.toUpperCase()}(${column}) AS ${rowAggregation.toLowerCase()}`;
-		} else {
-			aggregationSelect = `${rowAggregation.toUpperCase()}(${row}) AS ${rowAggregation.toLowerCase()}`;
-		}
-
+		aggregationSelect = `${rowAggregation.toUpperCase()}(${row}) AS ${rowAggregation.toLowerCase()}`;
 		let countSelect: string;
-
 		if (row === "value") {
 			countSelect = `COUNT(*) AS count`;
 		} else if (row === "time" || row === "recordedAt") {
@@ -215,9 +184,6 @@ export class MetricRepository {
 		} else {
 			countSelect = `COUNT(DISTINCT ${row}) AS count`;
 		}
-
-		console.log("Aggregation Select: ", aggregationSelect);
-
 		let query = `
         SELECT ${aggregationSelect},
                ${countSelect},
@@ -228,8 +194,10 @@ export class MetricRepository {
         WHERE ${filters.join(" AND ")}
         GROUP BY ${column === "time" || column === "recordedAt" ? `BIN(${column}, ${columnAggregation})` : `${column}`}
 		`;
-
-		if (order && order.length > 0) {
+		if (column === "time" || column === "recordedAt") {
+			const defaultOrder = order && order.length > 0 ? order[0].split(":")[1].toUpperCase() : "ASC";
+			query += ` ORDER BY MIN(time) ${defaultOrder}`;
+		} else if (order && order.length > 0) {
 			let sqlOrder = order
 				.map((item) => {
 					const [field, order] = item.split(":");
@@ -240,53 +208,39 @@ export class MetricRepository {
 		} else {
 			query += ` ORDER BY MIN(time) ASC`;
 		}
-
 		this.logger.debug(`Aggregate query: ${query}`);
-
 		let result;
-
 		if (params.nextToken) {
 			result = await this.executeQuery(query, limit, params.nextToken);
 		} else {
 			const initialResult = await this.executeQuery(query, limit);
 			result = await this.executeQuery(query, limit, initialResult.NextToken);
 		}
-
 		this.logger.debug(`Aggregate result: ${JSON.stringify(result)}`);
-
-		// console.log("Result Column Info: ", result.ColumnInfo);
-		// console.log("Result Rows: ", result.Rows[0]);
-
 		const aggregatedData = result.Rows.map((item: any) => {
 			let data: any = {
 				takenAtOffset: parseInt(item.Data[3].ScalarValue),
 				recordedAt: new Date(item.Data[4].ScalarValue),
 			};
-
 			if (row === "time" || row === "recordedAt") {
 				data[rowAggregation.toLowerCase()] = new Date(item.Data[0].ScalarValue + "Z").toISOString();
 			} else {
 				data[rowAggregation.toLowerCase()] = parseFloat(item.Data[0].ScalarValue);
 			}
-
 			data["count"] = parseInt(item.Data[1].ScalarValue);
 			data[column === "time" || column === "createdAt" ? "takenAt" : column] =
 				column === "time" || column === "createdAt"
 					? new Date(item.Data[2].ScalarValue + "Z").toISOString()
 					: parseFloat(item.Data[2].ScalarValue);
-
 			return data;
 		});
-
 		// const aggregatedData = this.parseResult(result.ColumnInfo, result.Rows) as any;
-
 		return {
 			data: aggregatedData,
 			limit,
 			nextToken: result.NextToken,
 		};
 	}
-
 	private async writeRecord(metrics: Metric[]): Promise<Metric[]> {
 		const command: WriteRecordsRequest = {
 			DatabaseName: this.configuration.DatabaseName,
@@ -296,7 +250,6 @@ export class MetricRepository {
 			},
 			Records: metrics.map((metric) => {
 				metric.recordedAt = metric.recordedAt ? new Date(metric.recordedAt) : new Date();
-
 				return {
 					Dimensions: [
 						{ Name: "id", Value: metric.id },
@@ -340,7 +293,6 @@ export class MetricRepository {
 				};
 			}),
 		};
-
 		try {
 			await this.writeClient.writeRecords(command).promise();
 		} catch (error) {
@@ -350,10 +302,8 @@ export class MetricRepository {
 			}
 			throw error;
 		}
-
 		return metrics;
 	}
-
 	private parseTimeInterval(timeRangeFilter: string): number {
 		const match = timeRangeFilter.match(/([0-9]+)([a-zA-Z]+)/);
 		if (!match) throw new Error("Invalid time range format");
@@ -370,24 +320,20 @@ export class MetricRepository {
 				throw new Error(`Invalid time range unit: ${unit}`);
 		}
 	}
-
 	private formatDate(date: Date): string {
 		const year = date.getFullYear();
 		const month = this.padZero(date.getMonth() + 1);
 		const day = this.padZero(date.getDate());
 		return `${year}-${month}-${day}`;
 	}
-
 	private padZero(num: number): string {
 		return num < 10 ? `0${num}` : `${num}`;
 	}
-
 	private parseMetric(columnInfo: ColumnInfo[], row: Row): Metric {
 		const metricData = columnInfo.reduce((acc, item, index) => {
 			if (["measure_name"].includes(item.Name)) {
 				return acc;
 			}
-
 			let name = item.Name;
 			if (name === "time") {
 				row.Data[index].ScalarValue;
@@ -399,15 +345,12 @@ export class MetricRepository {
 			}
 			return acc;
 		}, {});
-
 		return new Metric(metricData as any);
 	}
-
 	private buildQuery(params: MetricSearchParamsInterface, sort: string[]): string {
 		let query = `SELECT *
                  FROM "${this.configuration.DatabaseName}"."${this.configuration.TableName}"`;
 		const filters: string[] = ["isDeleted = false"];
-
 		if (params.orgId) filters.push(`orgId = '${params.orgId}'`);
 		if (params.accountId) filters.push(`accountId = '${params.accountId}'`);
 		if (params.userId) filters.push(`userId = '${params.userId}'`);
@@ -416,15 +359,12 @@ export class MetricRepository {
 		if (params.deviceId) filters.push(`deviceId = '${params.deviceId}'`);
 		if (params.batchId) filters.push(`batchId = '${params.batchId}'`);
 		if (params.value) filters.push(`value = ${params.value}`);
-
 		if (params.id && params.id.length > 0) {
 			const idConditions = params.id.map((id) => `id = '${id}'`);
 			filters.push(`(${idConditions.join(" OR ")})`);
 		}
-
 		if (params.valueMin !== undefined) filters.push(`value >= ${params.valueMin}`);
 		if (params.valueMax !== undefined) filters.push(`value <= ${params.valueMax}`);
-
 		if (params.recordedAtMin) {
 			const recordedAtMinDate = new Date(params.recordedAtMin);
 			const recordedAtMinFormatted = this.formatDateToTimestamp(recordedAtMinDate);
@@ -435,7 +375,6 @@ export class MetricRepository {
 			const recordedAtMaxFormatted = this.formatDateToTimestamp(recordedAtMaxDate);
 			filters.push(`recordedAt <= '${recordedAtMaxFormatted}'`);
 		}
-
 		if (params.takenAtMin) {
 			const takenAtMinDate = new Date(params.takenAtMin);
 			const takenAtMinISO = takenAtMinDate
@@ -452,11 +391,9 @@ export class MetricRepository {
 				.replace(/\.\d{3}Z$/, "");
 			filters.push(`time <= '${takenAtMaxISO}'`);
 		}
-
 		if (filters.length > 0) {
 			query += ` WHERE ${filters.join(" AND ")}`;
 		}
-
 		if (sort && sort.length > 0) {
 			let sqlOrder = sort
 				.map((item) => {
@@ -468,12 +405,9 @@ export class MetricRepository {
 		} else {
 			query += ` ORDER BY time DESC`;
 		}
-
 		this.logger.debug(`Timestream query`, query);
-
 		return query;
 	}
-
 	private formatDateToTimestamp(date) {
 		const pad = (num, size) => ("000" + num).slice(size * -1);
 		const year = date.getUTCFullYear();
@@ -484,31 +418,25 @@ export class MetricRepository {
 		const seconds = pad(date.getUTCSeconds(), 2);
 		const milliseconds = pad(date.getUTCMilliseconds(), 3);
 		const nanoseconds = "000000"; // Nanoseconds part will be fixed to '000000' as we don't have precision beyond milliseconds
-
 		return `${year}-${month}-${day} ${hours}:${minutes}:${seconds}.${milliseconds}${nanoseconds}`;
 	}
-
 	private async executeQuery(query: string, maxRows?: number, nextToken: string = null): Promise<any> {
 		try {
 			const params = {
 				QueryString: query,
 			};
-
 			if (maxRows) {
 				params["MaxRows"] = maxRows;
 			}
-
 			if (nextToken) {
 				params["NextToken"] = nextToken;
 			}
-
 			return await this.timestreamQuery.query(params).promise();
 		} catch (error) {
 			console.error("Error occurred while executing Timestream query:", error, "QueryString:", query);
 			throw error;
 		}
 	}
-
 	private parseResult(columnInfo: ColumnInfo[], result: any): Metric[] {
 		const metrics: Metric[] = [];
 		for (const row of result || []) {

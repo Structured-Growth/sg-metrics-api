@@ -52,6 +52,9 @@ export class ReportsController extends BaseController {
 	@Get("/")
 	@SuccessResponse(200, "Returns list of reports")
 	@DescribeAction("reports/search")
+	@DescribeResource("Organization", ({ query }) => ({
+		arn: `-:-:${query.orgId}`,
+	}))
 	@ValidateFuncArgs(ReportSearchParamsValidator)
 	async search(@Queries() query: ReportSearchParamsInterface): Promise<SearchResultInterface<PublicReportAttributes>> {
 		const { data, ...result } = await this.reportsRepository.search(query);
@@ -73,6 +76,12 @@ export class ReportsController extends BaseController {
 	@SuccessResponse(201, "Returns created report")
 	@DescribeAction("reports/create")
 	@ValidateFuncArgs(ReportCreateParamsValidator)
+	@DescribeResource("Organization", ({ body }) => ({
+		arn: `-:-:${body.orgId}`,
+	}))
+	@DescribeResource("Account", ({ body }) => ({
+		arn: `-:-:${body.orgId}:${body.accountId}`,
+	}))
 	async create(@Queries() query: {}, @Body() body: ReportCreateBodyInterface): Promise<PublicReportAttributes> {
 		const report = await this.reportsRepository.create(body);
 		this.response.status(201);

@@ -12,6 +12,7 @@ import {
 } from "@structured-growth/microservice-sdk";
 import { Metric, MetricAttributes } from "../../../database/models/metric";
 import { MetricRepository } from "../../modules/metric/metric.repository";
+// import { MetricService } from "../../modules/metric/metric.service";
 import { MetricSearchParamsInterface } from "../../interfaces/metric-search-params.interface";
 import { MetricCreateBodyInterface } from "../../interfaces/metric-create-body.interface";
 import { MetricUpdateBodyInterface } from "../../interfaces/metric-update-body.interface";
@@ -62,6 +63,9 @@ export class MetricController extends BaseController {
 	@Get("/")
 	@SuccessResponse(200, "Returns list of metrics")
 	@DescribeAction("metrics/search")
+	@DescribeResource("Organization", ({ query }) => ({
+		arn: `-:-:${query.orgId}`,
+	}))
 	@ValidateFuncArgs(MetricSearchParamsValidator)
 	public async search(@Queries() query: MetricSearchParamsInterface): Promise<
 		Omit<SearchResultInterface<PublicMetricAttributes>, "page" | "total"> & {
@@ -84,6 +88,9 @@ export class MetricController extends BaseController {
 	@SuccessResponse(200, "Returns list of aggregated metrics")
 	@DescribeAction("metrics/aggregate")
 	@ValidateFuncArgs(MetricAggregateParamsValidator)
+	@DescribeResource("Organization", ({ query }) => ({
+		arn: `-:-:${query.orgId}`,
+	}))
 	public async aggregate(@Queries() query: MetricAggregateParamsInterface): Promise<MetricAggregateResultInterface> {
 		const { data, ...result } = await this.metricRepository.aggregate(query);
 		this.response.status(200);
