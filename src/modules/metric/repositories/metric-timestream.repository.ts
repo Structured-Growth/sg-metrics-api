@@ -1,4 +1,3 @@
-import { Metric, MetricAttributes } from "../../../database/models/metric";
 import {
 	autoInjectable,
 	inject,
@@ -7,18 +6,20 @@ import {
 	RegionEnum,
 } from "@structured-growth/microservice-sdk";
 import { TimestreamWrite, TimestreamQuery } from "aws-sdk";
-import { MetricCreateBodyInterface } from "../../interfaces/metric-create-body.interface";
-import { MetricSearchParamsInterface } from "../../interfaces/metric-search-params.interface";
-import { MetricAggregateResultInterface } from "../../interfaces/metric-aggregate-result.interface";
-import { MetricAggregateParamsInterface } from "../../interfaces/metric-aggregate-params.interface";
+import { MetricCreateBodyInterface } from "../../../interfaces/metric-create-body.interface";
+import { MetricSearchParamsInterface } from "../../../interfaces/metric-search-params.interface";
+import { MetricAggregateResultInterface } from "../../../interfaces/metric-aggregate-result.interface";
+import { MetricAggregateParamsInterface } from "../../../interfaces/metric-aggregate-params.interface";
 import { SearchResultInterface } from "@structured-growth/microservice-sdk";
 import { v4 as uuidv4 } from "uuid";
 import { isDate, parseInt } from "lodash";
 import { WriteRecordsRequest } from "aws-sdk/clients/timestreamwrite";
 import { ColumnInfo, Row } from "aws-sdk/clients/timestreamquery";
+import { MetricAuroraRepository } from "./metric-aurora.repository";
+import MetricTimestream from "../../../../database/models/metric-timestream";
 
 @autoInjectable()
-export class MetricRepository {
+export class MetricTimestreamRepository {
 	private configuration = {
 		DatabaseName: process.env.TIMESTREAM_DB_NAME,
 		TableName: process.env.TIMESTREAM_TABLE_NAME,
@@ -27,7 +28,10 @@ export class MetricRepository {
 	private writeClient: TimestreamWrite;
 	private timestreamQuery: TimestreamQuery;
 
-	constructor(@inject("region") private region: string, @inject("Logger") private logger: LoggerInterface) {
+	constructor(
+		@inject("region") private region: string,
+		@inject("Logger") private logger: LoggerInterface,
+	) {
 		this.writeClient = new TimestreamWrite({
 			region: this.region,
 		});
@@ -36,20 +40,28 @@ export class MetricRepository {
 		});
 	}
 
-	public async create(params: MetricCreateBodyInterface[]): Promise<Metric[]> {
-		const metrics = params.map(
-			(item) =>
-				new Metric({
-					id: uuidv4(),
-					...item,
-					isDeleted: false,
-				})
-		);
+	public async create(params: MetricCreateBodyInterface[]): Promise<MetricTimestream[]> {
+		const metrics: MetricTimestream[] = [];
+
+		for (const item of params) {
+			const param = {
+				...item,
+				isDeleted: false,
+			};
+			//
+			// try {
+			// 	await this.metricAuroraRepository.create({ ...param, recordedAt: new Date() });
+			// } catch (error) {
+			// 	console.log(`Problem to create Aurora Metric with ${param.id} id`);
+			// }
+
+			metrics.push(new MetricTimestream(param));
+		}
 
 		return this.writeRecord(metrics);
 	}
 
-	public async read(id: string): Promise<Metric | null> {
+	public async read(id: string): Promise<MetricTimestream | null> {
 		const query = `SELECT *
                    FROM "${this.configuration.DatabaseName}"."${this.configuration.TableName}"
                    WHERE id = '${id}'
@@ -67,7 +79,7 @@ export class MetricRepository {
 	public async update(
 		id: string,
 		params: Partial<Pick<MetricAttributes, "value" | "takenAt" | "takenAtOffset" | "isDeleted">>
-	): Promise<Metric> {
+	): Promise<MetricTimestream> {
 		const metric = await this.read(id);
 
 		if (!metric) {
@@ -92,6 +104,12 @@ export class MetricRepository {
 		const metric = await this.read(id);
 		if (!metric) {
 			throw new NotFoundError(`Metric ${id} not found`);
+		}
+
+		try {
+			await this.metricAuroraRepository.delete(id);
+		} catch (error) {
+			console.log(`Problem to delete Aurora Metric with ${id} id`);
 		}
 
 		await this.update(id, {
@@ -200,11 +218,7 @@ export class MetricRepository {
 
 		let aggregationSelect: string;
 
-		if ((column === "time" || column === "recordedAt") && row !== "value") {
-			aggregationSelect = `${rowAggregation.toUpperCase()}(${column}) AS ${rowAggregation.toLowerCase()}`;
-		} else {
-			aggregationSelect = `${rowAggregation.toUpperCase()}(${row}) AS ${rowAggregation.toLowerCase()}`;
-		}
+		aggregationSelect = `${rowAggregation.toUpperCase()}(${row}) AS ${rowAggregation.toLowerCase()}`;
 
 		let countSelect: string;
 
@@ -215,8 +229,6 @@ export class MetricRepository {
 		} else {
 			countSelect = `COUNT(DISTINCT ${row}) AS count`;
 		}
-
-		console.log("Aggregation Select: ", aggregationSelect);
 
 		let query = `
         SELECT ${aggregationSelect},
@@ -229,7 +241,10 @@ export class MetricRepository {
         GROUP BY ${column === "time" || column === "recordedAt" ? `BIN(${column}, ${columnAggregation})` : `${column}`}
 		`;
 
-		if (order && order.length > 0) {
+		if (column === "time" || column === "recordedAt") {
+			const defaultOrder = order && order.length > 0 ? order[0].split(":")[1].toUpperCase() : "ASC";
+			query += ` ORDER BY MIN(time) ${defaultOrder}`;
+		} else if (order && order.length > 0) {
 			let sqlOrder = order
 				.map((item) => {
 					const [field, order] = item.split(":");
@@ -253,9 +268,6 @@ export class MetricRepository {
 		}
 
 		this.logger.debug(`Aggregate result: ${JSON.stringify(result)}`);
-
-		// console.log("Result Column Info: ", result.ColumnInfo);
-		// console.log("Result Rows: ", result.Rows[0]);
 
 		const aggregatedData = result.Rows.map((item: any) => {
 			let data: any = {

@@ -23,28 +23,7 @@ export const MetricSearchParamsValidator = joi.object({
 		recordedAtMax: joi.date().iso().label("Recorded at maximum"),
 		arn: joi.array().items(joi.string().required()).label("Entity ARNs"),
 		limit: joi.number().positive().label("Limit"),
-		sort: joi
-			.array()
-			.items(
-				joi
-					.string()
-					.required()
-					.valid(
-						"min:asc",
-						"min:desc",
-						"max:asc",
-						"max:desc",
-						"avg:asc",
-						"avg:desc",
-						"count:asc",
-						"count:desc",
-						"sum:asc",
-						"sum:desc",
-						"takenAt:asc",
-						"takenAt:desc"
-					)
-			)
-			.label("Sort"),
+		sort: joi.array().items(joi.string().required()).label("Sort"),
 		nextToken: joi.string().label("Next Token"),
 	}),
 });

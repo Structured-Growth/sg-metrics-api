@@ -7,16 +7,19 @@ import {
 	logWriters,
 	Logger,
 	AuthService,
-	PolicyService, eventBusProviders, EventbusService,
+	PolicyService,
+	eventBusProviders,
+	EventbusService,
 } from "@structured-growth/microservice-sdk";
 import { loadEnvironment } from "./load-environment";
 import { MetricTypeService } from "../modules/metric-type/metric-type.service";
 import { MetricTypeRepository } from "../modules/metric-type/metric-type.repository";
 import { MetricCategoryService } from "../modules/metric-category/metric-category.service";
 import { MetricCategoryRepository } from "../modules/metric-category/metric-category.repository";
-import { MetricRepository } from "../modules/metric/metric.repository";
+import { MetricTimestreamRepository } from "../modules/metric/repositories/metric-timestream.repository";
 import { ReportsRepository } from "../modules/reports/reports.repository";
 import { ReportsService } from "../modules/reports/reports.service";
+import { MetricAuroraRepository } from "../modules/metric/repositories/metric-aurora.repository";
 
 // load and validate env variables
 loadEnvironment();
@@ -33,7 +36,9 @@ container.register("logResponses", { useValue: process.env.LOG_HTTP_RESPONSES ==
 
 container.register("authenticationEnabled", { useValue: process.env.AUTHENTICATION_ENABLED === "true" });
 container.register("authorizationEnabled", { useValue: process.env.AUTHORIZATION_ENABLED === "true" });
-container.register("internalAuthenticationEnabled", { useValue: process.env.INTERNAL_AUTHENTICATION_ENABLED === "true" });
+container.register("internalAuthenticationEnabled", {
+	useValue: process.env.INTERNAL_AUTHENTICATION_ENABLED === "true",
+});
 container.register("internalRequestsAllowed", { useValue: process.env.INTERNAL_REQUESTS_ALLOWED === "true" });
 container.register("internalAuthenticationJwtSecret", { useValue: process.env.INTERNAL_AUTHENTICATION_JWT_SECRET });
 container.register("oAuthServiceGetUserUrl", { useValue: process.env.OAUTH_USER_URL });
@@ -58,5 +63,6 @@ container.register("EventbusService", EventbusService);
 // repositories
 container.register("MetricCategoryRepository", MetricCategoryRepository);
 container.register("MetricTypeRepository", MetricTypeRepository);
-container.register("MetricRepository", MetricRepository);
+container.register("MetricRepository", MetricTimestreamRepository);
 container.register("ReportsRepository", ReportsRepository);
+container.register("MetricAuroraRepository", MetricAuroraRepository);
