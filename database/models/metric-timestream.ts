@@ -1,5 +1,4 @@
 import { container, NotFoundError, RegionEnum } from "@structured-growth/microservice-sdk";
-import { MetricTimestreamRepository } from "../../src/modules/metric/repositories/metric-timestream.repository";
 
 export interface MetricAttributes {
 	id: string;
@@ -122,16 +121,17 @@ export class MetricTimestream implements MetricAttributes {
 			id: string;
 		};
 	}): Promise<MetricTimestream | null> {
-		const repository = container.resolve<MetricTimestreamRepository>("MetricRepository");
-		try {
-			return repository.read(params.where.id);
-		} catch (e) {
-			if (e instanceof NotFoundError) {
-				return null;
-			} else {
-				throw e;
-			}
-		}
+		return null
+		// const repository = container.resolve<MetricTimestreamRepository>("MetricRepository");
+		// try {
+		// 	return repository.read(params.where.id);
+		// } catch (e) {
+		// 	if (e instanceof NotFoundError) {
+		// 		return null;
+		// 	} else {
+		// 		throw e;
+		// 	}
+		// }
 	}
 }
 

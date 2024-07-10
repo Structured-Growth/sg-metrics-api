@@ -19,7 +19,7 @@
 // import MetricTimestream from "../../../../database/models/metric-timestream";
 //
 // @autoInjectable()
-// export class MetricTimestreamRepository {
+export class MetricTimestreamRepository {
 // 	private configuration = {
 // 		DatabaseName: process.env.TIMESTREAM_DB_NAME,
 // 		TableName: process.env.TIMESTREAM_TABLE_NAME,
@@ -525,4 +525,4 @@
 // 		}
 // 		return metrics;
 // 	}
-// }
+}

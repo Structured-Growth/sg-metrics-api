@@ -25,7 +25,9 @@
 //
 // //export interface MetricUpdateAttributes extends Pick<MetricAttributes, "isActive"> {}
 //
-// export class Metric implements MetricAttributes {
+export class Metric {
+
+}
 // 	id: string;
 // 	orgId: number;
 // 	region: RegionEnum;
