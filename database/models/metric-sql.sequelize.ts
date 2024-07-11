@@ -1,6 +1,6 @@
 import { Column, DataType, Model, Table } from "sequelize-typescript";
 import { container, DefaultModelInterface } from "@structured-growth/microservice-sdk";
-import { RegionEnum } from "@structured-growth/microservice-sdk/.dist";
+import { RegionEnum } from "@structured-growth/microservice-sdk";
 import { MetricAttributes, MetricCreationAttributes } from "./metric";
 
 @Table({

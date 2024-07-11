@@ -1,4 +1,4 @@
-import { inject, SearchResultInterface } from "@structured-growth/microservice-sdk/.dist";
+import { inject, SearchResultInterface } from "@structured-growth/microservice-sdk";
 import { MetricTimestreamRepository } from "./repositories/metric-timestream.repository";
 import { MetricSqlRepository } from "./repositories/metric-sql.repository";
 import { v4 } from "uuid";
