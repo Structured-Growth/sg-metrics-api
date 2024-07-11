@@ -13,8 +13,16 @@ export class MetricSqlRepository {
 		return await MetricSQL.bulkCreate(params);
 	}
 
-	public async read(id: string): Promise<MetricSQL | null> {
-		throw new Error("Not implemented");
+	public async read(
+		id: string,
+		params?: {
+			attributes?: string[];
+		}
+	): Promise<MetricSQL | null> {
+		return MetricSQL.findByPk(id, {
+			attributes: params?.attributes,
+			rejectOnEmpty: false,
+		});
 	}
 
 	public async update(id: string, params: MetricUpdateAttributes): Promise<MetricSQL> {
