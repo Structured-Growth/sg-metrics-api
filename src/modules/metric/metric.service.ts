@@ -1,4 +1,4 @@
-import { inject, SearchResultInterface } from "@structured-growth/microservice-sdk";
+import { autoInjectable, inject, SearchResultInterface } from "@structured-growth/microservice-sdk";
 import { MetricTimestreamRepository } from "./repositories/metric-timestream.repository";
 import { MetricSqlRepository } from "./repositories/metric-sql.repository";
 import { v4 } from "uuid";
@@ -6,9 +6,10 @@ import { Metric, MetricAttributes, MetricUpdateAttributes } from "../../../datab
 import { MetricCreateBodyInterface } from "../../interfaces/metric-create-body.interface";
 import { MetricSearchParamsInterface } from "../../interfaces/metric-search-params.interface";
 
+@autoInjectable()
 export class MetricService {
 	constructor(
-		@inject("MetricTimetreamRepository") private metricTimestreamRepository: MetricTimestreamRepository,
+		@inject("MetricTimestreamRepository") private metricTimestreamRepository: MetricTimestreamRepository,
 		@inject("MetricSqlRepository") private metricSqlRepository: MetricSqlRepository
 	) {}
 

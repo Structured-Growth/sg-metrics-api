@@ -1,4 +1,4 @@
-import { Column, DataType, Model, Table } from "sequelize-typescript";
+import { Column, DataType, Model, PrimaryKey, Table } from "sequelize-typescript";
 import { container, DefaultModelInterface } from "@structured-growth/microservice-sdk";
 import { RegionEnum } from "@structured-growth/microservice-sdk";
 import { MetricAttributes, MetricCreationAttributes } from "./metric";
@@ -6,8 +6,13 @@ import { MetricAttributes, MetricCreationAttributes } from "./metric";
 @Table({
 	tableName: "metrics_sql",
 	underscored: true,
+	timestamps: false,
 })
-export class MetricSQL extends Model<MetricAttributes, MetricCreationAttributes> implements MetricAttributes {
+export class MetricSQL
+	extends Model<Omit<MetricAttributes, "id">, MetricCreationAttributes>
+	implements Omit<MetricAttributes, "id">
+{
+	@PrimaryKey
 	@Column
 	id: string;
 

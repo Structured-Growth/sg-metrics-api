@@ -5,7 +5,7 @@ import { RegionEnum } from "@structured-growth/microservice-sdk";
 import { assert } from "chai";
 import { initTest } from "../common/init-test";
 import { filter, min, uniqBy } from "lodash";
-import { MetricAttributes } from "../../src/modules/metric/models/metric";
+import { MetricAttributes } from "../../database/models/metric";
 
 describe("e2e/aggregation-average", () => {
 	const { server, context } = initTest();

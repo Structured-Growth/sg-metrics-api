@@ -4,15 +4,15 @@ import { MetricTypeCreateBodyInterface } from "../../interfaces/metric-type-crea
 import { MetricTypeUpdateBodyInterface } from "../../interfaces/metric-type-update-body.interface";
 import { MetricTypeRepository } from "./metric-type.repository";
 import { MetricCategoryRepository } from "../metric-category/metric-category.repository";
-import { MetricTimestreamRepository } from "../metric/repositories/metric-timestream.repository";
 import { isUndefined, omitBy } from "lodash";
+import { MetricService } from "../metric/metric.service";
 
 @autoInjectable()
 export class MetricTypeService {
 	constructor(
 		@inject("MetricTypeRepository") private metricTypeRepository: MetricTypeRepository,
 		@inject("MetricCategoryRepository") private metricCategoryRepository: MetricCategoryRepository,
-		@inject("MetricRepository") private metricRepository: MetricTimestreamRepository
+		@inject("MetricService") private metricService: MetricService
 	) {}
 
 	public async create(params: MetricTypeCreateBodyInterface): Promise<MetricType> {
@@ -87,7 +87,7 @@ export class MetricTypeService {
 			throw new NotFoundError(`Metric Type ${metricTypeId} not found`);
 		}
 		const orgId = metricType.orgId;
-		const associatedMetric = await this.metricRepository.search({ orgId, metricTypeId });
+		const associatedMetric = await this.metricService.search({ orgId, metricTypeId });
 		if (associatedMetric.data.length > 0) {
 			throw new ValidationError(
 				{ code: `Metric Type ${metricTypeId} cannot be deleted as it has associated Metric` },
