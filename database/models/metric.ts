@@ -21,9 +21,10 @@ export interface MetricAttributes {
 	arn: string;
 }
 
-export interface MetricCreationAttributes extends Omit<MetricAttributes, "arn" | "recordedAt"> {}
+export interface MetricCreationAttributes extends Omit<MetricAttributes, "arn"> {}
 
-//export interface MetricUpdateAttributes extends Pick<MetricAttributes, "isActive"> {}
+export interface MetricUpdateAttributes
+	extends Pick<MetricAttributes, "value" | "takenAt" | "takenAtOffset" | "isDeleted"> {}
 
 export class Metric implements MetricAttributes {
 	id: string;
@@ -74,7 +75,7 @@ export class Metric implements MetricAttributes {
 			":<accountId>",
 			"/metric-category/<metricCategoryId>",
 			"/metric-type/<metricTypeId>",
-			"/metric/<metricId>",
+			"/metric-timestream/<metricId>",
 		].join("");
 	}
 
@@ -86,7 +87,7 @@ export class Metric implements MetricAttributes {
 			`:${this.accountId}` || "-",
 			`/metric-category/${this.metricCategoryId}`,
 			`/metric-type/${this.metricTypeId}`,
-			`/metric/${this.id}`,
+			`/metric-timestream/${this.id}`,
 		].join("");
 	}
 
