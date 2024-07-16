@@ -8,7 +8,7 @@ export interface MetricSearchParamsInterface
 	metricTypeVersion?: number;
 	accountId?: number;
 	userId?: number;
-	relatedTo?: string;
+	relatedToRn?: string;
 	deviceId?: number;
 	batchId?: string;
 	value?: number;

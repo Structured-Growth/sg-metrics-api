@@ -58,7 +58,8 @@ export const MetricAggregateParamsValidator = joi.object({
 				"value",
 				"deviceId",
 				"metricTypeId",
-				"metricTypeVersion"
+				"metricTypeVersion",
+				"relatedToRn"
 			)
 			.required()
 			.label("Column"),
@@ -74,7 +75,8 @@ export const MetricAggregateParamsValidator = joi.object({
 				"value",
 				"deviceId",
 				"metricTypeId",
-				"metricTypeVersion"
+				"metricTypeVersion",
+				"relatedToRn"
 			)
 			.required()
 			.label("Row"),

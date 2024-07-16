@@ -12,15 +12,15 @@ import {
 	EventbusService,
 } from "@structured-growth/microservice-sdk";
 import { loadEnvironment } from "./load-environment";
+import { MetricService } from "../modules/metric/metric.service";
 import { MetricTypeService } from "../modules/metric-type/metric-type.service";
 import { MetricTypeRepository } from "../modules/metric-type/metric-type.repository";
 import { MetricCategoryService } from "../modules/metric-category/metric-category.service";
 import { MetricCategoryRepository } from "../modules/metric-category/metric-category.repository";
-// import { MetricTimestreamRepository } from "../modules/metric/repositories/metric-timestream.repository";
-import { MetricRepository } from "../modules/metric/metric.repository";
+import { MetricTimestreamRepository } from "../modules/metric/repositories/metric-timestream.repository";
 import { ReportsRepository } from "../modules/reports/reports.repository";
 import { ReportsService } from "../modules/reports/reports.service";
-// import { MetricSqlRepository } from "../modules/metric/repositories/metric-sql.repository";
+import { MetricSqlRepository } from "../modules/metric/repositories/metric-sql.repository";
 
 // load and validate env variables
 loadEnvironment();
@@ -53,6 +53,7 @@ container.register("Logger", Logger);
 container.register("App", App, { lifecycle: Lifecycle.Singleton });
 container.register("AuthService", AuthService);
 container.register("PolicyService", PolicyService);
+container.register("MetricService", MetricService);
 container.register("MetricCategoryService", MetricCategoryService);
 container.register("MetricTypeService", MetricTypeService);
 container.register("ReportsService", ReportsService);
@@ -64,7 +65,6 @@ container.register("EventbusService", EventbusService);
 // repositories
 container.register("MetricCategoryRepository", MetricCategoryRepository);
 container.register("MetricTypeRepository", MetricTypeRepository);
-container.register("MetricRepository", MetricRepository);
-// container.register("MetricTimestreamRepository", MetricTimestreamRepository);
+container.register("MetricTimestreamRepository", MetricTimestreamRepository);
 container.register("ReportsRepository", ReportsRepository);
-// container.register("MetricAuroraRepository", MetricSqlRepository);
+container.register("MetricSqlRepository", MetricSqlRepository);

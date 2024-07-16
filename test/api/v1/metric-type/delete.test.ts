@@ -8,7 +8,7 @@ import { App } from "../../../../src/app/app";
 describe("DELETE /api/v1/metric-type/:metricTypeId", () => {
 	const { server, context } = initTest();
 	const code = `code-${Date.now()}`;
-	const userId = Date.now();
+	const userId = parseInt(Date.now().toString().slice(3));
 	const orgId = parseInt(Date.now().toString().slice(0, 3));
 	const factor = parseInt(Date.now().toString().slice(0, 2));
 	const version = orgId - factor;
