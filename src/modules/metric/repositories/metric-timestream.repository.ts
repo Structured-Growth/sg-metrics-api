@@ -12,7 +12,7 @@ import { MetricAggregateParamsInterface } from "../../../interfaces/metric-aggre
 import { SearchResultInterface } from "@structured-growth/microservice-sdk";
 import { isDate, parseInt } from "lodash";
 import { WriteRecordsRequest } from "aws-sdk/clients/timestreamwrite";
-import { ColumnInfo, Row } from "aws-sdk/clients/timestreamquery";
+import { ColumnInfo, Row, ScalarType } from "aws-sdk/clients/timestreamquery";
 import Metric, { MetricAttributes, MetricCreationAttributes } from "../../../../database/models/metric";
 
 @autoInjectable()
@@ -147,6 +147,7 @@ export class MetricTimestreamRepository {
 		if (params.deviceId) filters.push(`deviceId = '${params.deviceId}'`);
 		if (params.batchId) filters.push(`batchId = '${params.batchId}'`);
 		if (params.value) filters.push(`value = ${params.value}`);
+		if (params.relatedToRn) filters.push(`value = '${params.relatedToRn}'`);
 
 		if (params.id && params.id.length > 0) {
 			const idConditions = params.id.map((id) => `id = '${id}'`);
@@ -193,14 +194,14 @@ export class MetricTimestreamRepository {
 
 		aggregationSelect = `${rowAggregation.toUpperCase()}(${row}) AS ${rowAggregation.toLowerCase()}`;
 
-		let countSelect: string;
+		let countSelect;
 
 		if (row === "value") {
-			countSelect = `COUNT(*) AS count`;
+			countSelect = `COUNT(*) AS total`;
 		} else if (row === "time" || row === "recordedAt") {
-			countSelect = `COUNT(${row}) AS count`;
+			countSelect = `COUNT(${row}) AS total`;
 		} else {
-			countSelect = `COUNT(DISTINCT ${row}) AS count`;
+			countSelect = `COUNT(DISTINCT ${row}) AS total`;
 		}
 
 		let query = `
@@ -255,10 +256,15 @@ export class MetricTimestreamRepository {
 			}
 
 			data["count"] = parseInt(item.Data[1].ScalarValue);
+			const value = item.Data[2].ScalarValue;
+			const isNumeric = !isNaN(Number(value)) && !isNaN(parseFloat(value));
+
 			data[column === "time" || column === "createdAt" ? "takenAt" : column] =
 				column === "time" || column === "createdAt"
 					? new Date(item.Data[2].ScalarValue + "Z").toISOString()
-					: parseFloat(item.Data[2].ScalarValue);
+					: isNumeric
+					? parseFloat(value)
+					: value;
 
 			return data;
 		});
@@ -380,7 +386,7 @@ export class MetricTimestreamRepository {
 			} else {
 				const scalarValue = row.Data[index].ScalarValue;
 				const isNumeric = !isNaN(Number(scalarValue)) && !isNaN(parseFloat(scalarValue));
-				acc[name] = isNumeric ? parseInt(scalarValue) : scalarValue;
+				acc[name] = isNumeric && item.Type.ScalarType !== "VARCHAR" ? parseInt(scalarValue) : scalarValue;
 			}
 			return acc;
 		}, {});
@@ -401,6 +407,7 @@ export class MetricTimestreamRepository {
 		if (params.deviceId) filters.push(`deviceId = '${params.deviceId}'`);
 		if (params.batchId) filters.push(`batchId = '${params.batchId}'`);
 		if (params.value) filters.push(`value = ${params.value}`);
+		if (params.relatedToRn) filters.push(`relatedToRn = '${params.relatedToRn}'`);
 
 		if (params.id && params.id.length > 0) {
 			const idConditions = params.id.map((id) => `id = '${id}'`);

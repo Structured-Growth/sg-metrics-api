@@ -8,7 +8,7 @@ import { initTest } from "../../../common/init-test";
 describe("PUT /api/v1/metrics/:metricId", () => {
 	const { server, context } = initTest();
 	const code = `code-${Date.now()}`;
-	const userId = Date.now();
+	const userId = parseInt(Date.now().toString().slice(3));
 	const relatedToRn = `relatedTo-${Date.now()}`;
 	const orgId = parseInt(Date.now().toString().slice(0, 3));
 	const factor = parseInt(Date.now().toString().slice(0, 2));

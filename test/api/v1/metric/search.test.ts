@@ -8,7 +8,7 @@ import { initTest } from "../../../common/init-test";
 describe("GET /api/v1/metrics", () => {
 	const { server, context } = initTest();
 	const code = `code-${Date.now()}`;
-	const userId = Date.now();
+	const userId = parseInt(Date.now().toString().slice(3));
 	const relatedToRn = `relatedTo-${Date.now()}`;
 	const orgId = parseInt(Date.now().toString().slice(0, 3));
 	const factor = parseInt(Date.now().toString().slice(0, 2));
@@ -293,5 +293,16 @@ describe("GET /api/v1/metrics", () => {
 		assert.equal(statusCode, 200);
 		assert.equal(body.data.length, 5);
 		assert.isString(body.nextToken);
+	}).timeout(1800000);
+
+	it("Should search by relatedToRn", async () => {
+
+		const { statusCode, body } = await server.get("/v1/metrics").query({
+			userId,
+			relatedToRn: relatedToRn,
+		});
+		assert.equal(statusCode, 200);
+		assert.equal(body.data[0].userId, userId);
+		assert.equal(body.data[0].relatedToRn, relatedToRn);
 	}).timeout(1800000);
 });

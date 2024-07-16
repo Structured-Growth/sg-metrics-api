@@ -123,7 +123,7 @@ export class Metric implements MetricAttributes {
 			id: string;
 		};
 	}): Promise<Metric | null> {
-		const repository = container.resolve<MetricTimestreamRepository>("MetricRepository");
+		const repository = container.resolve<MetricTimestreamRepository>("MetricTimestreamRepository");
 		try {
 			return repository.read(params.where.id);
 		} catch (e) {
