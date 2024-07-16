@@ -1,5 +1,5 @@
 import { container, NotFoundError, RegionEnum } from "@structured-growth/microservice-sdk";
-import { MetricRepository } from "../../src/modules/metric/metric.repository";
+import { MetricTimestreamRepository } from "../../src/modules/metric/repositories/metric-timestream.repository";
 
 export interface MetricAttributes {
 	id: string;
@@ -21,9 +21,10 @@ export interface MetricAttributes {
 	arn: string;
 }
 
-export interface MetricCreationAttributes extends Omit<MetricAttributes, "arn" | "recordedAt"> {}
+export interface MetricCreationAttributes extends Omit<MetricAttributes, "arn"> {}
 
-//export interface MetricUpdateAttributes extends Pick<MetricAttributes, "isActive"> {}
+export interface MetricUpdateAttributes
+	extends Pick<MetricAttributes, "value" | "takenAt" | "takenAtOffset" | "isDeleted"> {}
 
 export class Metric implements MetricAttributes {
 	id: string;
@@ -74,7 +75,7 @@ export class Metric implements MetricAttributes {
 			":<accountId>",
 			"/metric-category/<metricCategoryId>",
 			"/metric-type/<metricTypeId>",
-			"/metric/<metricId>",
+			"/metric-timestream/<metricId>",
 		].join("");
 	}
 
@@ -86,7 +87,7 @@ export class Metric implements MetricAttributes {
 			`:${this.accountId}` || "-",
 			`/metric-category/${this.metricCategoryId}`,
 			`/metric-type/${this.metricTypeId}`,
-			`/metric/${this.id}`,
+			`/metric-timestream/${this.id}`,
 		].join("");
 	}
 
@@ -122,7 +123,7 @@ export class Metric implements MetricAttributes {
 			id: string;
 		};
 	}): Promise<Metric | null> {
-		const repository = container.resolve<MetricRepository>("MetricRepository");
+		const repository = container.resolve<MetricTimestreamRepository>("MetricRepository");
 		try {
 			return repository.read(params.where.id);
 		} catch (e) {

@@ -10,9 +10,9 @@ import {
 	ValidateFuncArgs,
 	SearchResultInterface,
 } from "@structured-growth/microservice-sdk";
-import { Metric, MetricAttributes } from "../../../database/models/metric";
-import { MetricRepository } from "../../modules/metric/metric.repository";
-// import { MetricService } from "../../modules/metric/metric.service";
+import { MetricAttributes } from "../../../database/models/metric";
+import { MetricService } from "../../modules/metric/metric.service";
+import { MetricTimestreamRepository } from "../../modules/metric/repositories/metric-timestream.repository";
 import { MetricSearchParamsInterface } from "../../interfaces/metric-search-params.interface";
 import { MetricCreateBodyInterface } from "../../interfaces/metric-create-body.interface";
 import { MetricUpdateBodyInterface } from "../../interfaces/metric-update-body.interface";
@@ -52,7 +52,10 @@ interface MetricCreateBodyWithoutOffset extends Omit<MetricCreateBodyInterface, 
 @Tags("Metric")
 @autoInjectable()
 export class MetricController extends BaseController {
-	constructor(@inject("MetricRepository") private metricRepository: MetricRepository) {
+	constructor(
+		@inject("MetricService") private metricService: MetricService,
+		@inject("MetricTimestreamRepository") private metricTimestreamRepository: MetricTimestreamRepository
+	) {
 		super();
 	}
 
@@ -72,7 +75,7 @@ export class MetricController extends BaseController {
 			nextToken?: string;
 		}
 	> {
-		const { data, ...result } = await this.metricRepository.search(query);
+		const { data, ...result } = await this.metricService.search(query);
 		this.response.status(200);
 		return {
 			data: data.map((metric) => ({
@@ -92,7 +95,7 @@ export class MetricController extends BaseController {
 		arn: `-:-:${query.orgId}`,
 	}))
 	public async aggregate(@Queries() query: MetricAggregateParamsInterface): Promise<MetricAggregateResultInterface> {
-		const { data, ...result } = await this.metricRepository.aggregate(query);
+		const { data, ...result } = await this.metricTimestreamRepository.aggregate(query);
 		this.response.status(200);
 		return {
 			data,
@@ -116,7 +119,7 @@ export class MetricController extends BaseController {
 	@DescribeResource("Device", ({ body }) => Number(body[0].deviceId))
 	@ValidateFuncArgs(MetricCreateParamsValidator)
 	async create(@Queries() query: {}, @Body() body: MetricCreateBodyWithoutOffset[]): Promise<PublicMetricAttributes[]> {
-		const metrics = await this.metricRepository.create(
+		const metrics = await this.metricService.create(
 			body.map((item) => {
 				return {
 					...item,
@@ -143,7 +146,7 @@ export class MetricController extends BaseController {
 	@DescribeAction("metrics/read")
 	@DescribeResource("Metric", ({ params }) => params.metricId)
 	public async get(@Path() metricId: string): Promise<PublicMetricAttributes> {
-		const metric = await this.metricRepository.read(metricId);
+		const metric = await this.metricService.read(metricId);
 		this.response.status(200);
 		if (!metric) {
 			throw new NotFoundError(`Metric ${metricId} not found`);
@@ -169,7 +172,7 @@ export class MetricController extends BaseController {
 		@Queries() query: {},
 		@Body() body: MetricUpdateBodyInterface
 	): Promise<PublicMetricAttributes> {
-		const metric = await this.metricRepository.update(
+		const metric = await this.metricService.update(
 			metricId,
 			omitBy(
 				{
@@ -197,7 +200,7 @@ export class MetricController extends BaseController {
 	@DescribeAction("metrics/delete")
 	@DescribeResource("Metric", ({ params }) => params.metricId)
 	public async delete(@Path() metricId: string): Promise<void> {
-		await this.metricRepository.delete(metricId);
+		await this.metricService.delete(metricId);
 		this.response.status(204);
 	}
 }
