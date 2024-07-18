@@ -209,10 +209,15 @@ export class MetricTimestreamRepository {
                ${countSelect},
                MIN(${column})     AS ${column === "time" || column === "recordedAt" ? "takenAt" : column},
                MIN(takenAtOffset) AS takenAtOffset,
-               MIN(recordedAt)    AS recordedAt
+               MIN(recordedAt)    AS recordedAt,
+               metricTypeId             AS metricTypeId
         FROM "${this.configuration.DatabaseName}"."${this.configuration.TableName}"
         WHERE ${filters.join(" AND ")}
-        GROUP BY ${column === "time" || column === "recordedAt" ? `BIN(${column}, ${columnAggregation})` : `${column}`}
+        GROUP BY ${
+					column === "time" || column === "recordedAt"
+						? `BIN(${column}, ${columnAggregation}), metricTypeId`
+						: `${column}, metricTypeId`
+				}
 		`;
 
 		if (column === "time" || column === "recordedAt") {
@@ -247,6 +252,7 @@ export class MetricTimestreamRepository {
 			let data: any = {
 				takenAtOffset: parseInt(item.Data[3].ScalarValue),
 				recordedAt: new Date(item.Data[4].ScalarValue),
+				metricTypeId: item.Data[5].ScalarValue,
 			};
 
 			if (row === "time" || row === "recordedAt") {
