@@ -220,7 +220,7 @@ describe("e2e/aggregation-average", () => {
 			limit: 100,
 		});
 
-		const uniqCount = uniqBy<MetricAttributes>(context.metrics, (m) => m.value + m.metricTypeId).length;
+		const uniqCount = uniqBy<MetricAttributes>(context.metrics, (m) => m.value + "-" + m.metricTypeId).length;
 
 		assert.equal(statusCode, 200);
 		assert.isArray(body.data);

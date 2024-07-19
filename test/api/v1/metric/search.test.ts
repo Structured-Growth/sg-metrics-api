@@ -141,7 +141,7 @@ describe("GET /api/v1/metrics", () => {
 
 	it("Should return created metric by id", async () => {
 		const { statusCode, body } = await server.get("/v1/metrics").query({
-			userId,
+			"userId[0]": userId,
 			"id[0]": context["createdMetricId"],
 		});
 		assert.equal(statusCode, 200);
@@ -165,7 +165,7 @@ describe("GET /api/v1/metrics", () => {
 
 	it("Should return created metrics by ids", async () => {
 		const { statusCode, body } = await server.get("/v1/metrics").query({
-			userId,
+			"userId[0]": userId,
 			"id[0]": context["createdMetricId"],
 			"id[1]": context["createdMetric2Id"],
 		});
@@ -180,7 +180,7 @@ describe("GET /api/v1/metrics", () => {
 		const sortOrder = "DESC";
 
 		const { statusCode, body } = await server.get("/v1/metrics").query({
-			userId,
+			"userId[0]": userId,
 			value: value,
 			"sort[1]": "takenAt:asc",
 		});
@@ -191,7 +191,7 @@ describe("GET /api/v1/metrics", () => {
 
 	it("Should search by deviceId", async () => {
 		const { statusCode, body } = await server.get("/v1/metrics").query({
-			userId,
+			"userId[0]": userId,
 			deviceId: deviceId,
 		});
 		assert.equal(statusCode, 200);
@@ -201,7 +201,7 @@ describe("GET /api/v1/metrics", () => {
 
 	it("Should search by value range", async () => {
 		const { statusCode, body } = await server.get("/v1/metrics").query({
-			userId,
+			"userId[0]": userId,
 			valueMin: valueMin,
 			valueMax: valueMax,
 		});
@@ -212,7 +212,7 @@ describe("GET /api/v1/metrics", () => {
 
 	it("Should search by taken time range", async () => {
 		const { statusCode, body } = await server.get("/v1/metrics").query({
-			userId,
+			"userId[0]": userId,
 			takenAtMin: "2024-04-28 12:29:34",
 			takenAtMax: "2024-05-28 12:29:34",
 		});
@@ -228,7 +228,7 @@ describe("GET /api/v1/metrics", () => {
 		dateMax.setMinutes(dateMax.getMinutes() + 60);
 
 		const { statusCode, body } = await server.get("/v1/metrics").query({
-			userId,
+			"userId[0]": userId,
 			recordedAtMin: dateMin.toISOString(),
 			recordedAtMax: dateMax.toISOString(),
 		});
@@ -265,7 +265,7 @@ describe("GET /api/v1/metrics", () => {
 		}
 
 		let { statusCode, body } = await server.get("/v1/metrics").query({
-			userId,
+			"userId[0]": userId,
 			limit: 5,
 		});
 		assert.equal(statusCode, 200);
@@ -275,7 +275,7 @@ describe("GET /api/v1/metrics", () => {
 		const firstNextToken = body.nextToken;
 
 		({ statusCode, body } = await server.get("/v1/metrics").query({
-			userId,
+			"userId[0]": userId,
 			limit: 5,
 			nextToken: firstNextToken,
 		}));
@@ -286,7 +286,7 @@ describe("GET /api/v1/metrics", () => {
 		const secondNextToken = body.nextToken;
 
 		({ statusCode, body } = await server.get("/v1/metrics").query({
-			userId,
+			"userId[0]": userId,
 			limit: 5,
 			nextToken: secondNextToken,
 		}));
@@ -297,7 +297,7 @@ describe("GET /api/v1/metrics", () => {
 
 	it("Should search by relatedToRn", async () => {
 		const { statusCode, body } = await server.get("/v1/metrics").query({
-			userId,
+			"userId[0]": userId,
 			relatedToRn: relatedToRn,
 		});
 		assert.equal(statusCode, 200);
@@ -316,7 +316,7 @@ describe("GET /api/v1/metrics", () => {
 
 	it("Should search by multiple metric types", async () => {
 		const { statusCode, body } = await server.get("/v1/metrics").query({
-			userId,
+			"userId[0]": userId,
 			"metricTypeId[0]": context.createdMetricTypeId,
 		});
 		assert.equal(statusCode, 200);

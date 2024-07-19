@@ -166,8 +166,8 @@ describe("GET /api/v1/metrics/aggregate", () => {
 			row: "value",
 			rowAggregation: "avg",
 			"metricTypeId[0]": context.createdMetricTypeId,
-			accountId: accountId,
-			userId: userId,
+			"accountId[0]": accountId,
+			"userId[0]": userId,
 		});
 		assert.equal(statusCode, 200);
 	}).timeout(1800000);
