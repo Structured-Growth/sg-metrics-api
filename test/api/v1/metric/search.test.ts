@@ -296,7 +296,6 @@ describe("GET /api/v1/metrics", () => {
 	}).timeout(1800000);
 
 	it("Should search by relatedToRn", async () => {
-
 		const { statusCode, body } = await server.get("/v1/metrics").query({
 			userId,
 			relatedToRn: relatedToRn,
@@ -305,4 +304,23 @@ describe("GET /api/v1/metrics", () => {
 		assert.equal(body.data[0].userId, userId);
 		assert.equal(body.data[0].relatedToRn, relatedToRn);
 	}).timeout(1800000);
+
+	it("Should return error if metricTypeId is not an array", async () => {
+		const { statusCode, body } = await server.get("/v1/metrics").query({
+			userId,
+			metricTypeId: context.createdMetricTypeId,
+		});
+		assert.equal(statusCode, 422);
+		assert.isString(body.validation.query.metricTypeId[0]);
+	});
+
+	it("Should search by multiple metric types", async () => {
+		const { statusCode, body } = await server.get("/v1/metrics").query({
+			userId,
+			"metricTypeId[0]": context.createdMetricTypeId,
+		});
+		assert.equal(statusCode, 200);
+		assert.equal(body.data[0].userId, userId);
+		assert.equal(body.data[0].metricTypeId, context.createdMetricTypeId);
+	});
 });

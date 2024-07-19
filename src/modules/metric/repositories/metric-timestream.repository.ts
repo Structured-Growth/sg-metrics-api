@@ -90,7 +90,7 @@ export class MetricTimestreamRepository {
 		});
 	}
 
-	public async search(params: MetricSearchParamsInterface & {}): Promise<
+	public async search(params: MetricSearchParamsInterface): Promise<
 		Omit<SearchResultInterface<Metric>, "page" | "total"> & {
 			nextToken?: string;
 		}
@@ -142,7 +142,7 @@ export class MetricTimestreamRepository {
 		if (params.orgId) filters.push(`orgId = '${params.orgId}'`);
 		if (params.accountId) filters.push(`accountId = '${params.accountId}'`);
 		if (params.userId) filters.push(`userId = '${params.userId}'`);
-		if (params.metricTypeId) filters.push(`metricTypeId = '${params.metricTypeId}'`);
+		if (params.metricTypeId) filters.push(`metricTypeId IN ('${params.metricTypeId.join("','")}')`);
 		if (params.metricTypeVersion) filters.push(`metricTypeVersion = '${params.metricTypeVersion}'`);
 		if (params.deviceId) filters.push(`deviceId = '${params.deviceId}'`);
 		if (params.batchId) filters.push(`batchId = '${params.batchId}'`);
@@ -209,10 +209,11 @@ export class MetricTimestreamRepository {
                ${countSelect},
                MIN(${column})     AS ${column === "time" || column === "recordedAt" ? "takenAt" : column},
                MIN(takenAtOffset) AS takenAtOffset,
-               MIN(recordedAt)    AS recordedAt
+               MIN(recordedAt)    AS recordedAt,
+               metricTypeId
         FROM "${this.configuration.DatabaseName}"."${this.configuration.TableName}"
         WHERE ${filters.join(" AND ")}
-        GROUP BY ${column === "time" || column === "recordedAt" ? `BIN(${column}, ${columnAggregation})` : `${column}`}
+        GROUP BY metricTypeId, ${column === "time" || column === "recordedAt" ? `BIN(${column}, ${columnAggregation})` : `${column}`}
 		`;
 
 		if (column === "time" || column === "recordedAt") {
@@ -245,6 +246,7 @@ export class MetricTimestreamRepository {
 
 		const aggregatedData = result.Rows.map((item: any) => {
 			let data: any = {
+				metricTypeId: Number(item.Data[5].ScalarValue),
 				takenAtOffset: parseInt(item.Data[3].ScalarValue),
 				recordedAt: new Date(item.Data[4].ScalarValue),
 			};
@@ -402,7 +404,8 @@ export class MetricTimestreamRepository {
 		if (params.orgId) filters.push(`orgId = '${params.orgId}'`);
 		if (params.accountId) filters.push(`accountId = '${params.accountId}'`);
 		if (params.userId) filters.push(`userId = '${params.userId}'`);
-		if (params.metricTypeId) filters.push(`metricTypeId = '${params.metricTypeId}'`);
+		if (params.metricTypeId)
+			filters.push(`metricTypeId IN('${params.metricTypeId.map((i) => Number(i)).join("','")}')`);
 		if (params.metricTypeVersion) filters.push(`metricTypeVersion = '${params.metricTypeVersion}'`);
 		if (params.deviceId) filters.push(`deviceId = '${params.deviceId}'`);
 		if (params.batchId) filters.push(`batchId = '${params.batchId}'`);
