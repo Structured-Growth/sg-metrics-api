@@ -153,7 +153,7 @@ describe("GET /api/v1/metrics/aggregate", () => {
 			columnAggregation: "1d",
 			row: "value",
 			rowAggregation: "avg",
-			metricTypeId: context.createdMetricTypeId,
+			"metricTypeId[0]": context.createdMetricTypeId,
 			deviceId: deviceId,
 		});
 		assert.equal(statusCode, 200);
@@ -165,9 +165,9 @@ describe("GET /api/v1/metrics/aggregate", () => {
 			columnAggregation: "1d",
 			row: "value",
 			rowAggregation: "avg",
-			metricTypeId: context.createdMetricTypeId,
-			accountId: accountId,
-			userId: userId,
+			"metricTypeId[0]": context.createdMetricTypeId,
+			"accountId[0]": accountId,
+			"userId[0]": userId,
 		});
 		assert.equal(statusCode, 200);
 	}).timeout(1800000);

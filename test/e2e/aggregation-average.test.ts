@@ -163,9 +163,9 @@ describe("e2e/aggregation-average", () => {
 		});
 		assert.equal(statusCode, 200);
 		assert.isArray(body.data);
-		assert.equal(body.data.length, 1);
-		assert.equal(body.data[0].count, 2);
-		assert.equal(body.data[0].max, 2);
+		assert.equal(body.data.length, 2); // two bacause of groupping by metric type id
+		assert.equal(body.data[1].count, 1);
+		assert.equal(body.data[1].max, 2);
 	});
 
 	it("Should find min userId value", async () => {
@@ -177,8 +177,8 @@ describe("e2e/aggregation-average", () => {
 		});
 		assert.equal(statusCode, 200);
 		assert.isArray(body.data);
-		assert.equal(body.data.length, 1);
-		assert.equal(body.data[0].count, 2);
+		assert.equal(body.data.length, 2); // two bacause of groupping by metric type id
+		assert.equal(body.data[0].count, 1);
 		assert.equal(body.data[0].min, 1);
 	});
 
@@ -190,15 +190,15 @@ describe("e2e/aggregation-average", () => {
 			rowAggregation: "min",
 		});
 
-		const user1metrics = filter<MetricAttributes>(context.metrics, {userId: 1});
-		const min1Date = min(user1metrics.map(metric => new Date(metric.takenAt).getTime()));
-		const metric1WithMinDate = user1metrics.find(metric => {
+		const user1metrics = filter<MetricAttributes>(context.metrics, { userId: 1 });
+		const min1Date = min(user1metrics.map((metric) => new Date(metric.takenAt).getTime()));
+		const metric1WithMinDate = user1metrics.find((metric) => {
 			return new Date(metric.takenAt).getTime() === min1Date;
 		});
 
-		const user2metrics = filter<MetricAttributes>(context.metrics, {userId: 2});
-		const min2Date = min(user2metrics.map(metric => new Date(metric.takenAt).getTime()));
-		const metric2WithMinDate = user2metrics.find(metric => {
+		const user2metrics = filter<MetricAttributes>(context.metrics, { userId: 2 });
+		const min2Date = min(user2metrics.map((metric) => new Date(metric.takenAt).getTime()));
+		const metric2WithMinDate = user2metrics.find((metric) => {
 			return new Date(metric.takenAt).getTime() === min2Date;
 		});
 
@@ -220,7 +220,7 @@ describe("e2e/aggregation-average", () => {
 			limit: 100,
 		});
 
-		const uniqCount = uniqBy<MetricAttributes>(context.metrics, m => m.value).length;
+		const uniqCount = uniqBy<MetricAttributes>(context.metrics, (m) => m.value + "-" + m.metricTypeId).length;
 
 		assert.equal(statusCode, 200);
 		assert.isArray(body.data);
@@ -237,7 +237,7 @@ describe("e2e/aggregation-average", () => {
 			limit: 100,
 		});
 
-		const uniqCount = uniqBy<MetricAttributes>(context.metrics, m => m.value).length;
+		const uniqCount = uniqBy<MetricAttributes>(context.metrics, (m) => m.value).length;
 
 		assert.equal(statusCode, 200);
 		assert.isArray(body.data);

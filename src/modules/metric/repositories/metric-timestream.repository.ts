@@ -90,7 +90,7 @@ export class MetricTimestreamRepository {
 		});
 	}
 
-	public async search(params: MetricSearchParamsInterface & {}): Promise<
+	public async search(params: MetricSearchParamsInterface): Promise<
 		Omit<SearchResultInterface<Metric>, "page" | "total"> & {
 			nextToken?: string;
 		}
@@ -140,9 +140,10 @@ export class MetricTimestreamRepository {
 		let filters: string[] = [`isDeleted = false`, `measure_name = 'metric'`];
 
 		if (params.orgId) filters.push(`orgId = '${params.orgId}'`);
-		if (params.accountId) filters.push(`accountId = '${params.accountId}'`);
-		if (params.userId) filters.push(`userId = '${params.userId}'`);
-		if (params.metricTypeId) filters.push(`metricTypeId = '${params.metricTypeId}'`);
+		if (params.accountId) filters.push(`accountId IN('${params.accountId.map((i) => Number(i)).join("','")}')`);
+		if (params.userId) filters.push(`userId IN('${params.userId.map((i) => Number(i)).join("','")}')`);
+		if (params.metricTypeId)
+			filters.push(`metricTypeId IN('${params.metricTypeId.map((i) => Number(i)).join("','")}')`);
 		if (params.metricTypeVersion) filters.push(`metricTypeVersion = '${params.metricTypeVersion}'`);
 		if (params.deviceId) filters.push(`deviceId = '${params.deviceId}'`);
 		if (params.batchId) filters.push(`batchId = '${params.batchId}'`);
@@ -210,13 +211,11 @@ export class MetricTimestreamRepository {
                MIN(${column})     AS ${column === "time" || column === "recordedAt" ? "takenAt" : column},
                MIN(takenAtOffset) AS takenAtOffset,
                MIN(recordedAt)    AS recordedAt,
-               metricTypeId             AS metricTypeId
+               metricTypeId
         FROM "${this.configuration.DatabaseName}"."${this.configuration.TableName}"
         WHERE ${filters.join(" AND ")}
-        GROUP BY ${
-					column === "time" || column === "recordedAt"
-						? `BIN(${column}, ${columnAggregation}), metricTypeId`
-						: `${column}, metricTypeId`
+        GROUP BY metricTypeId, ${
+					column === "time" || column === "recordedAt" ? `BIN(${column}, ${columnAggregation})` : `${column}`
 				}
 		`;
 
@@ -250,9 +249,9 @@ export class MetricTimestreamRepository {
 
 		const aggregatedData = result.Rows.map((item: any) => {
 			let data: any = {
+				metricTypeId: Number(item.Data[5].ScalarValue),
 				takenAtOffset: parseInt(item.Data[3].ScalarValue),
 				recordedAt: new Date(item.Data[4].ScalarValue),
-				metricTypeId: item.Data[5].ScalarValue,
 			};
 
 			if (row === "time" || row === "recordedAt") {
@@ -406,9 +405,10 @@ export class MetricTimestreamRepository {
 		const filters: string[] = ["isDeleted = false"];
 
 		if (params.orgId) filters.push(`orgId = '${params.orgId}'`);
-		if (params.accountId) filters.push(`accountId = '${params.accountId}'`);
-		if (params.userId) filters.push(`userId = '${params.userId}'`);
-		if (params.metricTypeId) filters.push(`metricTypeId = '${params.metricTypeId}'`);
+		if (params.accountId) filters.push(`accountId IN('${params.accountId.map((i) => Number(i)).join("','")}')`);
+		if (params.userId) filters.push(`userId IN('${params.userId.map((i) => Number(i)).join("','")}')`);
+		if (params.metricTypeId)
+			filters.push(`metricTypeId IN('${params.metricTypeId.map((i) => Number(i)).join("','")}')`);
 		if (params.metricTypeVersion) filters.push(`metricTypeVersion = '${params.metricTypeVersion}'`);
 		if (params.deviceId) filters.push(`deviceId = '${params.deviceId}'`);
 		if (params.batchId) filters.push(`batchId = '${params.batchId}'`);

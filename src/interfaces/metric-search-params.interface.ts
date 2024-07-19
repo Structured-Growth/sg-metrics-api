@@ -1,13 +1,13 @@
 import { DefaultSearchParamsInterface } from "@structured-growth/microservice-sdk";
 
 export interface MetricSearchParamsInterface
-	extends Omit<DefaultSearchParamsInterface, "id" | "orgId" | "accountId" | "page"> {
+	extends Omit<DefaultSearchParamsInterface, "id" | "orgId" | "accountId" | "page" | "arn"> {
 	id?: string[];
 	orgId?: number;
-	metricTypeId?: number;
+	metricTypeId?: number[];
 	metricTypeVersion?: number;
-	accountId?: number;
-	userId?: number;
+	accountId?: number[];
+	userId?: number[];
 	relatedToRn?: string;
 	deviceId?: number;
 	batchId?: string;
