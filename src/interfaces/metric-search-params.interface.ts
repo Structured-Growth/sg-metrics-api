@@ -6,8 +6,8 @@ export interface MetricSearchParamsInterface
 	orgId?: number;
 	metricTypeId?: number[];
 	metricTypeVersion?: number;
-	accountId?: number;
-	userId?: number;
+	accountId?: number[];
+	userId?: number[];
 	relatedToRn?: string;
 	deviceId?: number;
 	batchId?: string;
