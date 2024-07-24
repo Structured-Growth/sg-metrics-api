@@ -274,7 +274,6 @@ export class MetricTimestreamRepository {
 			return data;
 		});
 
-
 		return {
 			data: aggregatedData,
 			limit,

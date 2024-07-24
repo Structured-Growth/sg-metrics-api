@@ -21,6 +21,7 @@ export const MetricSearchParamsValidator = joi.object({
 		recordedAtMax: joi.date().iso().label("Recorded at maximum"),
 		limit: joi.number().positive().label("Limit"),
 		sort: joi.array().items(joi.string().required()).label("Sort"),
+		page: joi.number().positive().label("Page"),
 		nextToken: joi.string().label("Next Token"),
 	}),
 });

@@ -12,7 +12,6 @@ import {
 } from "@structured-growth/microservice-sdk";
 import { MetricAttributes } from "../../../database/models/metric";
 import { MetricService } from "../../modules/metric/metric.service";
-import { MetricTimestreamRepository } from "../../modules/metric/repositories/metric-timestream.repository";
 import { MetricSearchParamsInterface } from "../../interfaces/metric-search-params.interface";
 import { MetricCreateBodyInterface } from "../../interfaces/metric-create-body.interface";
 import { MetricUpdateBodyInterface } from "../../interfaces/metric-update-body.interface";
@@ -52,10 +51,7 @@ interface MetricCreateBodyWithoutOffset extends Omit<MetricCreateBodyInterface, 
 @Tags("Metric")
 @autoInjectable()
 export class MetricController extends BaseController {
-	constructor(
-		@inject("MetricService") private metricService: MetricService,
-		@inject("MetricTimestreamRepository") private metricTimestreamRepository: MetricTimestreamRepository
-	) {
+	constructor(@inject("MetricService") private metricService: MetricService) {
 		super();
 	}
 
@@ -95,7 +91,7 @@ export class MetricController extends BaseController {
 		arn: `-:-:${query.orgId}`,
 	}))
 	public async aggregate(@Queries() query: MetricAggregateParamsInterface): Promise<MetricAggregateResultInterface> {
-		const { data, ...result } = await this.metricTimestreamRepository.aggregate(query);
+		const { data, ...result } = await this.metricService.aggregate(query);
 		this.response.status(200);
 		return {
 			data,

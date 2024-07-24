@@ -5,7 +5,7 @@ const Sequelize = require("sequelize");
 /** @type {import("sequelize-cli").Migration} */
 module.exports = {
 	async up(queryInterface) {
-		await queryInterface.createTable("metrics_sql", {
+		await queryInterface.createTable("metrics", {
 			id: {
 				type: Sequelize.STRING,
 				primaryKey: true,
@@ -59,6 +59,6 @@ module.exports = {
 	},
 
 	async down(queryInterface) {
-		await queryInterface.dropTable("metrics_sql");
+		await queryInterface.dropTable("metrics");
 	},
 };

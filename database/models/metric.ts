@@ -1,5 +1,6 @@
 import { container, NotFoundError, RegionEnum } from "@structured-growth/microservice-sdk";
 import { MetricTimestreamRepository } from "../../src/modules/metric/repositories/metric-timestream.repository";
+import { MetricService } from "../../src/modules/metric/metric.service";
 
 export interface MetricAttributes {
 	id: string;
@@ -75,7 +76,7 @@ export class Metric implements MetricAttributes {
 			":<accountId>",
 			"/metric-category/<metricCategoryId>",
 			"/metric-type/<metricTypeId>",
-			"/metric-timestream/<metricId>",
+			"/metric/<metricId>",
 		].join("");
 	}
 
@@ -87,7 +88,7 @@ export class Metric implements MetricAttributes {
 			`:${this.accountId}` || "-",
 			`/metric-category/${this.metricCategoryId}`,
 			`/metric-type/${this.metricTypeId}`,
-			`/metric-timestream/${this.id}`,
+			`/metric/${this.id}`,
 		].join("");
 	}
 
@@ -123,9 +124,9 @@ export class Metric implements MetricAttributes {
 			id: string;
 		};
 	}): Promise<Metric | null> {
-		const repository = container.resolve<MetricTimestreamRepository>("MetricTimestreamRepository");
+		const service = container.resolve<MetricService>("MetricService");
 		try {
-			return repository.read(params.where.id);
+			return service.read(params.where.id);
 		} catch (e) {
 			if (e instanceof NotFoundError) {
 				return null;
