@@ -4,14 +4,11 @@ import { RegionEnum } from "@structured-growth/microservice-sdk";
 import { MetricAttributes, MetricCreationAttributes } from "./metric";
 
 @Table({
-	tableName: "metrics_sql",
+	tableName: "metrics",
 	underscored: true,
 	timestamps: false,
 })
-export class MetricSQL
-	extends Model<Omit<MetricAttributes, "id">, MetricCreationAttributes>
-	implements Omit<MetricAttributes, "id">
-{
+export class MetricSQL extends Model<MetricAttributes, MetricCreationAttributes> implements MetricAttributes {
 	@PrimaryKey
 	@Column
 	id: string;
@@ -72,9 +69,7 @@ export class MetricSQL
 			"<region>",
 			"<orgId>",
 			"<accountId>",
-			"/metric-category/<metricCategoryId>",
-			"/metric-type/<metricTypeId>",
-			"/metric-sql/<metricId>",
+			"metric-category/<metricCategoryId>/metric-type/<metricTypeId>/metric/<metricId>",
 		].join(":");
 	}
 
@@ -84,9 +79,7 @@ export class MetricSQL
 			this.region,
 			this.orgId,
 			this.accountId || "-",
-			`/metric-category/${this.metricCategoryId}`,
-			`/metric-type/${this.metricTypeId}`,
-			`/metric-sql/${this.id}`,
+			`metric-category/${this.metricCategoryId}/metric-type/${this.metricTypeId}/metric/${this.id}`,
 		].join(":");
 	}
 }

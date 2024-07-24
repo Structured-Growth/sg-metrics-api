@@ -1,6 +1,7 @@
 import { SearchResultInterface } from "@structured-growth/microservice-sdk";
 
 export interface MetricAggregationInterface {
+	metricTypeId: number;
 	count: number;
 	min?: number;
 	max?: number;
