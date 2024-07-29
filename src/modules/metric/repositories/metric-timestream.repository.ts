@@ -10,7 +10,7 @@ import { MetricSearchParamsInterface } from "../../../interfaces/metric-search-p
 import { MetricAggregateResultInterface } from "../../../interfaces/metric-aggregate-result.interface";
 import { MetricAggregateParamsInterface } from "../../../interfaces/metric-aggregate-params.interface";
 import { SearchResultInterface } from "@structured-growth/microservice-sdk";
-import { isDate, parseInt } from "lodash";
+import { isDate, parseInt, round, sortBy } from "lodash";
 import { WriteRecordsRequest } from "aws-sdk/clients/timestreamwrite";
 import { ColumnInfo, Row, ScalarType } from "aws-sdk/clients/timestreamquery";
 import Metric, { MetricAttributes, MetricCreationAttributes } from "../../../../database/models/metric";
@@ -90,7 +90,7 @@ export class MetricTimestreamRepository {
 		});
 	}
 
-	public async search(params: MetricSearchParamsInterface & {}): Promise<
+	public async search(params: MetricSearchParamsInterface): Promise<
 		Omit<SearchResultInterface<Metric>, "page" | "total"> & {
 			nextToken?: string;
 		}
@@ -140,9 +140,10 @@ export class MetricTimestreamRepository {
 		let filters: string[] = [`isDeleted = false`, `measure_name = 'metric'`];
 
 		if (params.orgId) filters.push(`orgId = '${params.orgId}'`);
-		if (params.accountId) filters.push(`accountId = '${params.accountId}'`);
-		if (params.userId) filters.push(`userId = '${params.userId}'`);
-		if (params.metricTypeId) filters.push(`metricTypeId = '${params.metricTypeId}'`);
+		if (params.accountId) filters.push(`accountId IN('${params.accountId.map((i) => Number(i)).join("','")}')`);
+		if (params.userId) filters.push(`userId IN('${params.userId.map((i) => Number(i)).join("','")}')`);
+		if (params.metricTypeId)
+			filters.push(`metricTypeId IN('${params.metricTypeId.map((i) => Number(i)).join("','")}')`);
 		if (params.metricTypeVersion) filters.push(`metricTypeVersion = '${params.metricTypeVersion}'`);
 		if (params.deviceId) filters.push(`deviceId = '${params.deviceId}'`);
 		if (params.batchId) filters.push(`batchId = '${params.batchId}'`);
@@ -209,10 +210,13 @@ export class MetricTimestreamRepository {
                ${countSelect},
                MIN(${column})     AS ${column === "time" || column === "recordedAt" ? "takenAt" : column},
                MIN(takenAtOffset) AS takenAtOffset,
-               MIN(recordedAt)    AS recordedAt
+               MIN(recordedAt)    AS recordedAt,
+               metricTypeId
         FROM "${this.configuration.DatabaseName}"."${this.configuration.TableName}"
         WHERE ${filters.join(" AND ")}
-        GROUP BY ${column === "time" || column === "recordedAt" ? `BIN(${column}, ${columnAggregation})` : `${column}`}
+        GROUP BY metricTypeId, ${
+					column === "time" || column === "recordedAt" ? `BIN(${column}, ${columnAggregation})` : `${column}`
+				}
 		`;
 
 		if (column === "time" || column === "recordedAt") {
@@ -245,14 +249,15 @@ export class MetricTimestreamRepository {
 
 		const aggregatedData = result.Rows.map((item: any) => {
 			let data: any = {
+				metricTypeId: Number(item.Data[5].ScalarValue),
 				takenAtOffset: parseInt(item.Data[3].ScalarValue),
-				recordedAt: new Date(item.Data[4].ScalarValue),
+				recordedAt: new Date(item.Data[4].ScalarValue).toISOString(),
 			};
 
 			if (row === "time" || row === "recordedAt") {
 				data[rowAggregation.toLowerCase()] = new Date(item.Data[0].ScalarValue + "Z").toISOString();
 			} else {
-				data[rowAggregation.toLowerCase()] = parseFloat(item.Data[0].ScalarValue);
+				data[rowAggregation.toLowerCase()] = round(parseFloat(item.Data[0].ScalarValue), 2);
 			}
 
 			data["count"] = parseInt(item.Data[1].ScalarValue);
@@ -268,8 +273,6 @@ export class MetricTimestreamRepository {
 
 			return data;
 		});
-
-		// const aggregatedData = this.parseResult(result.ColumnInfo, result.Rows) as any;
 
 		return {
 			data: aggregatedData,
@@ -345,18 +348,18 @@ export class MetricTimestreamRepository {
 		return metrics;
 	}
 
-	private parseTimeInterval(timeRangeFilter: string): number {
+	private convertIntervalToSeconds(timeRangeFilter: string): number {
 		const match = timeRangeFilter.match(/([0-9]+)([a-zA-Z]+)/);
 		if (!match) throw new Error("Invalid time range format");
 		const value = parseInt(match[1]);
 		const unit = match[2];
 		switch (unit) {
 			case "m":
-				return value * 60 * 1000; // Convert minutes to milliseconds
+				return value * 60; // Convert minutes to milliseconds
 			case "h":
-				return value * 60 * 60 * 1000; // Convert hours to milliseconds
+				return value * 60 * 60;
 			case "d":
-				return value * 24 * 60 * 60 * 1000; // Convert days to milliseconds
+				return value * 24 * 60 * 60; // Convert days to milliseconds
 			default:
 				throw new Error(`Invalid time range unit: ${unit}`);
 		}
@@ -400,9 +403,10 @@ export class MetricTimestreamRepository {
 		const filters: string[] = ["isDeleted = false"];
 
 		if (params.orgId) filters.push(`orgId = '${params.orgId}'`);
-		if (params.accountId) filters.push(`accountId = '${params.accountId}'`);
-		if (params.userId) filters.push(`userId = '${params.userId}'`);
-		if (params.metricTypeId) filters.push(`metricTypeId = '${params.metricTypeId}'`);
+		if (params.accountId) filters.push(`accountId IN('${params.accountId.map((i) => Number(i)).join("','")}')`);
+		if (params.userId) filters.push(`userId IN('${params.userId.map((i) => Number(i)).join("','")}')`);
+		if (params.metricTypeId)
+			filters.push(`metricTypeId IN('${params.metricTypeId.map((i) => Number(i)).join("','")}')`);
 		if (params.metricTypeVersion) filters.push(`metricTypeVersion = '${params.metricTypeVersion}'`);
 		if (params.deviceId) filters.push(`deviceId = '${params.deviceId}'`);
 		if (params.batchId) filters.push(`batchId = '${params.batchId}'`);

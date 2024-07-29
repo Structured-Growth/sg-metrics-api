@@ -10,7 +10,7 @@ export const MetricCreateParamsValidator = joi.object({
 			joi
 				.object({
 					orgId: joi.number().positive().required().label("Organization Id"),
-					region: joi.string().min(2).required().label("Metric category region"),
+					region: joi.string().min(2).required().label("Metric region"),
 					accountId: joi.number().positive().label("Account Id"),
 					userId: joi.number().positive().required().label("User Id"),
 					metricCategoryId: joi.number().positive().required().label("Metric Category Id"),
