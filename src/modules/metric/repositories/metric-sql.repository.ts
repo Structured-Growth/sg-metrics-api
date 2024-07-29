@@ -13,7 +13,7 @@ export class MetricSqlRepository {
 	public async search(params: MetricSearchParamsInterface): Promise<SearchResultInterface<MetricSQL>> {
 		const { where, offset, limit, page, order } = this.buildQuery(params);
 
-		const data = await MetricSQL.findAll({
+		const { rows, count } = await MetricSQL.findAndCountAll({
 			where,
 			offset,
 			limit,
@@ -21,7 +21,8 @@ export class MetricSqlRepository {
 		});
 
 		return {
-			data,
+			data: rows,
+			total: count,
 			limit,
 			page,
 		};
@@ -66,7 +67,6 @@ export class MetricSqlRepository {
 				avg: item.avg ? round(item.avg, 2) : undefined,
 			})) as any,
 			limit,
-			// page,
 		};
 	}
 
@@ -111,8 +111,8 @@ export class MetricSqlRepository {
 	}
 
 	private buildQuery(params: MetricSearchParamsInterface) {
-		const page = params.page || 1;
-		const limit = params.limit || 20;
+		const page = Number(params.page || 1);
+		const limit = Number(params.limit || 20);
 		const offset = (page - 1) * limit;
 		const where = {
 			isDeleted: false,

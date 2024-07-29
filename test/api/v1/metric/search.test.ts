@@ -8,7 +8,7 @@ import { initTest } from "../../../common/init-test";
 describe("GET /api/v1/metrics", () => {
 	const { server, context } = initTest();
 	const code = `code-${Date.now()}`;
-	const userId = parseInt(Date.now().toString().slice(3));
+	const userId = parseInt(Date.now().toString().slice(4));
 	const relatedToRn = `relatedTo-${Date.now()}`;
 	const orgId = parseInt(Date.now().toString().slice(0, 3));
 	const factor = parseInt(Date.now().toString().slice(0, 2));
@@ -161,6 +161,7 @@ describe("GET /api/v1/metrics", () => {
 		assert.equal(body.data[0].takenAtOffset, 60);
 		assert.isString(body.data[0].recordedAt);
 		assert.equal(body.limit, 20);
+		assert.isNumber(body.total);
 	}).timeout(1800000);
 
 	it("Should return created metrics by ids", async () => {
