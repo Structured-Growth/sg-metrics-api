@@ -67,12 +67,13 @@ export class MetricController extends BaseController {
 	}))
 	@ValidateFuncArgs(MetricSearchParamsValidator)
 	public async search(@Queries() query: MetricSearchParamsInterface): Promise<
-		Omit<SearchResultInterface<PublicMetricAttributes>, "page" | "total"> & {
+		SearchResultInterface<PublicMetricAttributes> & {
 			nextToken?: string;
 		}
 	> {
 		const { data, ...result } = await this.metricService.search(query);
 		this.response.status(200);
+
 		return {
 			data: data.map((metric) => ({
 				...(pick(metric.toJSON(), publicMetricAttributes) as PublicMetricAttributes),

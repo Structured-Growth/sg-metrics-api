@@ -34,7 +34,7 @@ export class MetricService {
 	}
 
 	public async search(params: MetricSearchParamsInterface & {}): Promise<
-		Omit<SearchResultInterface<Metric>, "page" | "total"> & {
+		SearchResultInterface<Metric> & {
 			nextToken?: string;
 		}
 	> {
