@@ -277,6 +277,7 @@ export class MetricTimestreamRepository {
 		return {
 			data: aggregatedData,
 			limit,
+			page: null,
 			nextToken: result.NextToken,
 		};
 	}

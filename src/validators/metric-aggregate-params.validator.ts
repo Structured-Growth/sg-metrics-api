@@ -19,6 +19,7 @@ export const MetricAggregateParamsValidator = joi.object({
 		takenAtOffset: joi.number().label("Taken at Offset"),
 		recordedAtMin: joi.date().iso().label("Recorded at minimum"),
 		recordedAtMax: joi.date().iso().label("Recorded at maximum"),
+		page: joi.number().positive().label("Page"),
 		limit: joi.number().positive().label("Limit"),
 		sort: joi
 			.array()
