@@ -94,8 +94,11 @@ export class MetricController extends BaseController {
 	public async aggregate(@Queries() query: MetricAggregateParamsInterface): Promise<MetricAggregateResultInterface> {
 		const { data, ...result } = await this.metricService.aggregate(query);
 		this.response.status(200);
+
 		return {
 			data,
+			page: result.page,
+			total: result.total,
 			limit: result.limit,
 			nextToken: result.nextToken,
 		};
