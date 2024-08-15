@@ -13,8 +13,9 @@ export const MetricCreateParamsValidator = joi.object({
 					region: joi.string().min(2).required().label("Metric region"),
 					accountId: joi.number().positive().label("Account Id"),
 					userId: joi.number().positive().required().label("User Id"),
-					metricCategoryId: joi.number().positive().required().label("Metric Category Id"),
-					metricTypeId: joi.number().positive().required().label("Metric Type Id"),
+					metricCategoryId: joi.number().positive().label("Metric Category Id"),
+					metricTypeId: joi.number().positive().label("Metric Type Id"),
+					metricTypeCode: joi.string().max(50).label("Metric Type Code"),
 					metricTypeVersion: joi.number().positive().required().label("Metric Type Version"),
 					relatedToRn: joi.string().max(50).label("Related To"),
 					deviceId: joi.number().positive().required().label("Device ID"),
@@ -23,6 +24,7 @@ export const MetricCreateParamsValidator = joi.object({
 					takenAt: joi.string().regex(isoFormatWithTimezone).required().label("Taken at"),
 					takenAtOffset: joi.number().label("Taken at Offset"),
 				})
+				.xor("metricTypeId", "metricTypeCode")
 				.required()
 		)
 		.min(1)
