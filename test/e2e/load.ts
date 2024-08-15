@@ -19,7 +19,7 @@ import { initTest } from "../common/init-test";
 describe("e2e/load", () => {
 	const { server, context } = initTest();
 	const code = `code-${Date.now()}`;
-	const userId = parseInt(Date.now().toString().slice(3));
+	const userId = parseInt(Date.now().toString().slice(5));
 
 	const startDate = "2024-05-04";
 	const endDate = "2024-05-18";
