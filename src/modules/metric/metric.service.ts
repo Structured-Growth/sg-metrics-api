@@ -2,27 +2,44 @@ import { autoInjectable, inject, NotFoundError, SearchResultInterface } from "@s
 import { v4 } from "uuid";
 import { MetricTimestreamRepository } from "./repositories/metric-timestream.repository";
 import { MetricSqlRepository } from "./repositories/metric-sql.repository";
-import { Metric, MetricUpdateAttributes } from "../../../database/models/metric";
+import { Metric, MetricCreationAttributes, MetricUpdateAttributes } from "../../../database/models/metric";
 import { MetricCreateBodyInterface } from "../../interfaces/metric-create-body.interface";
 import { MetricSearchParamsInterface } from "../../interfaces/metric-search-params.interface";
 import { MetricAggregateParamsInterface } from "../../interfaces/metric-aggregate-params.interface";
 import { MetricAggregateResultInterface } from "../../interfaces/metric-aggregate-result.interface";
-import { snakeCase } from "lodash";
+import { keyBy, map, snakeCase, uniq } from "lodash";
+import { MetricTypeRepository } from "../metric-type/metric-type.repository";
+import MetricType from "../../../database/models/metric-type.sequelize";
 
 @autoInjectable()
 export class MetricService {
 	constructor(
 		@inject("MetricTimestreamRepository") private metricTimestreamRepository: MetricTimestreamRepository,
-		@inject("MetricSqlRepository") private metricSqlRepository: MetricSqlRepository
+		@inject("MetricSqlRepository") private metricSqlRepository: MetricSqlRepository,
+		@inject("MetricTypeRepository") private metricTypeRepository: MetricTypeRepository
 	) {}
 
 	public async create(params: MetricCreateBodyInterface[]): Promise<Metric[]> {
-		const data = params.map((param) => ({
-			...param,
-			id: v4(),
-			recordedAt: new Date(),
-			isDeleted: false,
-		}));
+		// check if there are metrics with metricTypeCode and populate them with metricTypeId and metricCategoryId
+		const metricTypeCodes = map(params, "metricTypeCode").filter((i) => !!i);
+		let metricTypesMap: Record<string, MetricType> = {};
+		if (metricTypeCodes.length) {
+			const metricTypes = await this.metricTypeRepository.search({
+				code: metricTypeCodes,
+			});
+			metricTypesMap = keyBy(metricTypes.data, "code");
+		}
+
+		const data: MetricCreationAttributes[] = params.map((param) => {
+			return {
+				...param,
+				metricCategoryId: param.metricCategoryId || metricTypesMap[param.metricTypeCode]?.metricCategoryId,
+				metricTypeId: param.metricTypeId || metricTypesMap[param.metricTypeCode]?.id,
+				id: v4(),
+				recordedAt: new Date(),
+				isDeleted: false,
+			};
+		});
 
 		const result = await this.metricSqlRepository.create(data);
 		// const result = await Promise.all([
@@ -38,6 +55,15 @@ export class MetricService {
 			nextToken?: string;
 		}
 	> {
+		// get metric type ids by theirs codes, if provided
+		if (params.metricTypeCode?.length > 0) {
+			const metricTypes = await this.metricTypeRepository.search({
+				code: params.metricTypeCode,
+			});
+			const metricTypesIds = map(metricTypes.data, "id");
+			params.metricTypeId = uniq([...(params.metricTypeId || []), ...metricTypesIds]);
+		}
+
 		return await this.metricSqlRepository.search(params);
 	}
 
@@ -49,6 +75,15 @@ export class MetricService {
 		}
 		if (params.row === "time") {
 			params.row = "takenAt";
+		}
+
+		// get metric type ids by theirs codes, if provided
+		if (params.metricTypeCode?.length > 0) {
+			const metricTypes = await this.metricTypeRepository.search({
+				code: params.metricTypeCode,
+			});
+			const metricTypesIds = map(metricTypes.data, "id");
+			params.metricTypeId = uniq([...(params.metricTypeId || []), ...metricTypesIds]);
 		}
 
 		return await this.metricSqlRepository.aggregate(params);

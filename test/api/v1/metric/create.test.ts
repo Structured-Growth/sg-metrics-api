@@ -9,7 +9,7 @@ describe("POST /api/v1/metrics", () => {
 	const { server, context } = initTest();
 	const code = `code-${Date.now()}`;
 	const relatedToRn = `relatedToRn-${Date.now()}`;
-	const userId = parseInt(Date.now().toString().slice(3));
+	const userId = parseInt(Date.now().toString().slice(4));
 	const orgId = parseInt(Date.now().toString().slice(0, 3));
 	const factor = parseInt(Date.now().toString().slice(0, 2));
 	const version = orgId - factor;
@@ -70,6 +70,40 @@ describe("POST /api/v1/metrics", () => {
 				relatedToRn: relatedToRn,
 				metricCategoryId: context.createdMetricCategoryId,
 				metricTypeId: context.createdMetricTypeId,
+				metricTypeVersion: metricTypeVersion,
+				deviceId: deviceId,
+				batchId: batchId,
+				value: value,
+				takenAt: "2024-05-16T14:30:00+01:00",
+			},
+		]);
+		assert.equal(statusCode, 201);
+		assert.equal(body[0].orgId, orgId);
+		assert.equal(body[0].region, "us");
+		assert.equal(body[0].accountId, accountId);
+		assert.equal(body[0].userId, userId);
+		assert.equal(body[0].relatedToRn, relatedToRn);
+		assert.equal(body[0].metricCategoryId, context["createdMetricCategoryId"]);
+		assert.equal(body[0].metricTypeId, context["createdMetricTypeId"]);
+		assert.equal(body[0].metricTypeVersion, metricTypeVersion);
+		assert.equal(body[0].deviceId, deviceId);
+		assert.equal(body[0].batchId, batchId);
+		assert.equal(body[0].value, value);
+		assert.isString(body[0].takenAt);
+		assert.equal(body[0].takenAtOffset, 60);
+		assert.isString(body[0].arn);
+		context.createdMetricId = body[0].id;
+	});
+
+	it("Should create metric by metric type code", async () => {
+		const { statusCode, body } = await server.post("/v1/metrics").send([
+			{
+				orgId: orgId,
+				region: RegionEnum.US,
+				accountId: accountId,
+				userId: userId,
+				relatedToRn: relatedToRn,
+				metricTypeCode: code,
 				metricTypeVersion: metricTypeVersion,
 				deviceId: deviceId,
 				batchId: batchId,

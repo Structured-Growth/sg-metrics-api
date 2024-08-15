@@ -9,8 +9,20 @@ export interface MetricCreateBodyInterface {
 	 */
 	userId?: number;
 	relatedToRn?: string;
+	/**
+	 * @deprecated use metricTypeCode instead
+	 */
 	metricCategoryId: number;
+	/**
+	 * @deprecated use metricTypeCode instead
+	 */
 	metricTypeId: number;
+	/**
+	 * Unique code of the metric type like "blood_pressure_high", "glucose", etc.
+	 * It is unique across all organizations. May be prefixed if the same metric type should
+	 * be duplicated in another organization, like "org1_blood_pressure_high".
+	 */
+	metricTypeCode: string;
 	metricTypeVersion: number;
 	deviceId: number;
 	/**

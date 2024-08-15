@@ -324,4 +324,14 @@ describe("GET /api/v1/metrics", () => {
 		assert.equal(body.data[0].userId, userId);
 		assert.equal(body.data[0].metricTypeId, context.createdMetricTypeId);
 	});
+
+	it("Should search by multiple metric type codes", async () => {
+		const { statusCode, body } = await server.get("/v1/metrics").query({
+			"userId[0]": userId,
+			"metricTypeCode[0]": code,
+		});
+		assert.equal(statusCode, 200);
+		assert.equal(body.data[0].userId, userId);
+		assert.equal(body.data[0].metricTypeId, context.createdMetricTypeId);
+	});
 });

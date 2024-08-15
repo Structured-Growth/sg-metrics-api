@@ -3,7 +3,7 @@ import MetricSQL from "../../../../database/models/metric-sql.sequelize";
 import { MetricSearchParamsInterface } from "../../../interfaces/metric-search-params.interface";
 import { MetricCreationAttributes, MetricUpdateAttributes } from "../../../../database/models/metric";
 import { Op } from "sequelize";
-import { isUndefined, omitBy, round, snakeCase } from "lodash";
+import { isUndefined, map, omitBy, round, snakeCase, sum } from "lodash";
 import { MetricAggregateParamsInterface } from "../../../interfaces/metric-aggregate-params.interface";
 import { MetricAggregateResultInterface } from "../../../interfaces/metric-aggregate-result.interface";
 import { Sequelize } from "sequelize-typescript";
@@ -42,9 +42,9 @@ export class MetricSqlRepository {
 				[Sequelize.fn(params.rowAggregation, Sequelize.col(snakeCase(params.row))), params.rowAggregation],
 				params.column === "takenAt"
 					? [
-							Sequelize.literal(`date_bin('${params.columnAggregation}', "taken_at", TIMESTAMP '2001-01-01')`),
-							"takenAt",
-					  ]
+						Sequelize.literal(`date_bin('${params.columnAggregation}', "taken_at", TIMESTAMP '2001-01-01')`),
+						"takenAt",
+					]
 					: [Sequelize.fn("min", Sequelize.col("taken_at")), "takenAt"],
 				params.column !== "takenAt"
 					? [Sequelize.fn("min", Sequelize.col(snakeCase(params.column))), params.column]
@@ -67,6 +67,8 @@ export class MetricSqlRepository {
 				avg: item.avg ? round(item.avg, 2) : undefined,
 			})) as any,
 			limit,
+			page,
+			total: null,
 		};
 	}
 

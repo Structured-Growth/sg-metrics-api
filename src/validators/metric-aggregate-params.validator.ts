@@ -5,6 +5,7 @@ export const MetricAggregateParamsValidator = joi.object({
 		id: joi.array().items(joi.string().required()).label("Metric Id"),
 		orgId: joi.number().positive().label("Organization Id"),
 		metricTypeId: joi.array().items(joi.number().positive()).label("Metric Type Id"),
+		metricTypeCode: joi.array().items(joi.string().max(50).min(1)).label("Metric Type Code"),
 		metricTypeVersion: joi.number().positive().label("Metric Type Version"),
 		accountId: joi.array().items(joi.number().positive()).label("Account Id"),
 		userId: joi.array().items(joi.number().positive()).label("User Id"),
@@ -19,6 +20,7 @@ export const MetricAggregateParamsValidator = joi.object({
 		takenAtOffset: joi.number().label("Taken at Offset"),
 		recordedAtMin: joi.date().iso().label("Recorded at minimum"),
 		recordedAtMax: joi.date().iso().label("Recorded at maximum"),
+		page: joi.number().positive().label("Page"),
 		limit: joi.number().positive().label("Limit"),
 		sort: joi
 			.array()
