@@ -14,6 +14,7 @@ import { isUndefined, map, omit, omitBy } from "lodash";
 import { MetricService } from "../metric/metric.service";
 import { MetricTypeSearchParamsInterface } from "../../interfaces/metric-type-search-params.interface";
 import { SearchResultInterface } from "@structured-growth/microservice-sdk";
+import MetricCategory from "../../../database/models/metric-category.sequelize";
 
 @autoInjectable()
 export class MetricTypeService {
@@ -29,6 +30,14 @@ export class MetricTypeService {
 			metadata?: Record<string, string>;
 		}
 	): Promise<SearchResultInterface<MetricType>> {
+		if (params.metricCategoryCode) {
+			const categories = await this.metricCategoryRepository.search({
+				code: [params.metricCategoryCode],
+				limit: 1,
+			});
+			params.metricCategoryId = categories.data[0]?.id || -1;
+		}
+
 		if (params.includeInherited) {
 			const response = await signedInternalFetch(`${this.accountApiUrl}/v1/organizations/${params.orgId}/parents`);
 			const organizations: object[] = (await response.json()) as any;

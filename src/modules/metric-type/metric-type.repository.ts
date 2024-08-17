@@ -47,6 +47,7 @@ export class MetricTypeRepository
 		if (params.code?.length > 0) {
 			where["code"] = { [Op.in]: params.code };
 		}
+
 		if (params.metadata && Object.keys(params.metadata).length > 0) {
 			const metadataSearchQuery = Object.entries(params.metadata).map(([name, value]) => ({
 				name,
