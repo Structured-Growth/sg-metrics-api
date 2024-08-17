@@ -69,8 +69,12 @@ export class MetricCategoryController extends BaseController {
 	async search(
 		@Queries() query: MetricCategorySearchParamsInterface
 	): Promise<SearchResultInterface<PublicMetricCategoryAttributes>> {
-		const { data, ...result } = await this.metricCategoryRepository.search(query);
+		const { data, ...result } = await this.metricCategoryService.search({
+			...query,
+			includeInherited: query.includeInherited?.toString() !== "false",
+		});
 		this.response.status(200);
+
 		return {
 			data: data.map((metricCategory) => {
 				const attributes = pick(metricCategory.toJSON(), publicMetricCategoryAttributes);

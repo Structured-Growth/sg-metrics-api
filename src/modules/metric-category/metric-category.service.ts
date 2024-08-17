@@ -4,15 +4,40 @@ import { MetricCategoryCreateBodyInterface } from "../../interfaces/metric-categ
 import { MetricCategoryUpdateBodyInterface } from "../../interfaces/metric-category-update-body.interface";
 import { MetricCategoryRepository } from "./metric-category.repository";
 import { MetricTypeRepository } from "../metric-type/metric-type.repository";
-import { isUndefined, omitBy } from "lodash";
+import { isUndefined, omit, omitBy } from "lodash";
 import { ValidationError } from "@structured-growth/microservice-sdk";
+import { SearchResultInterface, signedInternalFetch } from "@structured-growth/microservice-sdk";
+import { MetricCategorySearchParamsInterface } from "../../interfaces/metric-category-search-params.interface";
 
 @autoInjectable()
 export class MetricCategoryService {
 	constructor(
 		@inject("MetricCategoryRepository") private metricCategoryRepository: MetricCategoryRepository,
-		@inject("MetricTypeRepository") private metricTypeRepository: MetricTypeRepository
+		@inject("MetricTypeRepository") private metricTypeRepository: MetricTypeRepository,
+		@inject("accountApiUrl") private accountApiUrl: string
 	) {}
+
+	public async search(
+		params: MetricCategorySearchParamsInterface & {
+			metadata?: Record<string, string>;
+		}
+	): Promise<SearchResultInterface<MetricCategory>> {
+		if (params.includeInherited) {
+			const response = await signedInternalFetch(`${this.accountApiUrl}/v1/organizations/${params.orgId}/parents`);
+			const organizations: object[] = (await response.json()) as any;
+			const orgIds: number[] = organizations.map((org) => org["id"]);
+
+			return this.metricCategoryRepository.search({
+				...omit(params, "includeInherited", "orgId"),
+				orgId: [params.orgId, ...orgIds],
+			});
+		} else {
+			return this.metricCategoryRepository.search({
+				...omit(params, "includeInherited", "orgId"),
+				orgId: [params.orgId],
+			});
+		}
+	}
 
 	public async create(params: MetricCategoryCreateBodyInterface): Promise<MetricCategory> {
 		const existingMetricCategory = await this.metricCategoryRepository.findByCode(params.code);
@@ -61,6 +86,7 @@ export class MetricCategoryService {
 			) as MetricCategoryUpdateAttributes
 		);
 	}
+
 	public async delete(metricCategoryId: number): Promise<void> {
 		const metricCategory = await this.metricCategoryRepository.read(metricCategoryId);
 		if (!metricCategory) {

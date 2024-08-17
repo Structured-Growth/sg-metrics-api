@@ -42,9 +42,9 @@ export class MetricSqlRepository {
 				[Sequelize.fn(params.rowAggregation, Sequelize.col(snakeCase(params.row))), params.rowAggregation],
 				params.column === "takenAt"
 					? [
-						Sequelize.literal(`date_bin('${params.columnAggregation}', "taken_at", TIMESTAMP '2001-01-01')`),
-						"takenAt",
-					]
+							Sequelize.literal(`date_bin('${params.columnAggregation}', "taken_at", TIMESTAMP '2001-01-01')`),
+							"takenAt",
+					  ]
 					: [Sequelize.fn("min", Sequelize.col("taken_at")), "takenAt"],
 				params.column !== "takenAt"
 					? [Sequelize.fn("min", Sequelize.col(snakeCase(params.column))), params.column]
