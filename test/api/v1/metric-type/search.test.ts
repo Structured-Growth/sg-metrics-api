@@ -85,6 +85,7 @@ describe("GET /api/v1/metric-type", () => {
 
 	it("Should return created metric type by id", async () => {
 		const { statusCode, body } = await server.get("/v1/metric-type").query({
+			orgId,
 			"id[0]": context["createdMetricTypeId"],
 		});
 		assert.equal(statusCode, 200);
@@ -111,6 +112,7 @@ describe("GET /api/v1/metric-type", () => {
 	it("Should search by code", async () => {
 		const { statusCode, body } = await server.get("/v1/metric-type").query({
 			"title[0]": code,
+			orgId,
 		});
 		assert.equal(statusCode, 200);
 		assert.equal(body.data[0].id, context["createdMetricTypeId"]);
@@ -133,11 +135,11 @@ describe("GET /api/v1/metric-type", () => {
 		assert.equal(body.total, 1);
 	});
 
-
 	it("Should return error if one status is invalid", async () => {
 		const { statusCode, body } = await server.get("/v1/metric-type").query({
 			"status[0]": "deleted",
 			"status[1]": "active",
+			orgId,
 		});
 		assert.equal(statusCode, 422);
 		assert.isNotEmpty(body.validation.query.status[0]);
@@ -148,6 +150,7 @@ describe("GET /api/v1/metric-type", () => {
 			"status[0]": "inactive",
 			"status[1]": "active",
 			"title[0]": code,
+			orgId,
 		});
 		assert.equal(statusCode, 200);
 		assert.equal(body.data[0].id, context["createdMetricTypeId"]);
@@ -172,7 +175,8 @@ describe("GET /api/v1/metric-type", () => {
 
 	it("Should return created metric type by created Metric Category Id", async () => {
 		const { statusCode, body } = await server.get("/v1/metric-type").query({
-			"metricCategoryId": context.createdMetricCategoryId,
+			metricCategoryId: context.createdMetricCategoryId,
+			orgId,
 		});
 		assert.equal(statusCode, 200);
 		assert.equal(body.data[0].id, context["createdMetricTypeId"]);

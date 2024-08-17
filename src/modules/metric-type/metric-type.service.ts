@@ -1,19 +1,50 @@
-import { autoInjectable, inject, NotFoundError, ValidationError } from "@structured-growth/microservice-sdk";
+import {
+	autoInjectable,
+	inject,
+	NotFoundError,
+	signedInternalFetch,
+	ValidationError,
+} from "@structured-growth/microservice-sdk";
 import MetricType, { MetricTypeUpdateAttributes } from "../../../database/models/metric-type.sequelize";
 import { MetricTypeCreateBodyInterface } from "../../interfaces/metric-type-create-body.interface";
 import { MetricTypeUpdateBodyInterface } from "../../interfaces/metric-type-update-body.interface";
 import { MetricTypeRepository } from "./metric-type.repository";
 import { MetricCategoryRepository } from "../metric-category/metric-category.repository";
-import { isUndefined, omitBy } from "lodash";
+import { isUndefined, map, omit, omitBy } from "lodash";
 import { MetricService } from "../metric/metric.service";
+import { MetricTypeSearchParamsInterface } from "../../interfaces/metric-type-search-params.interface";
+import { SearchResultInterface } from "@structured-growth/microservice-sdk";
 
 @autoInjectable()
 export class MetricTypeService {
 	constructor(
 		@inject("MetricTypeRepository") private metricTypeRepository: MetricTypeRepository,
 		@inject("MetricCategoryRepository") private metricCategoryRepository: MetricCategoryRepository,
-		@inject("MetricService") private metricService: MetricService
+		@inject("MetricService") private metricService: MetricService,
+		@inject("accountApiUrl") private accountApiUrl: string
 	) {}
+
+	public async search(
+		params: MetricTypeSearchParamsInterface & {
+			metadata?: Record<string, string>;
+		}
+	): Promise<SearchResultInterface<MetricType>> {
+		if (params.includeInherited) {
+			const response = await signedInternalFetch(`${this.accountApiUrl}/v1/organizations/${params.orgId}/parents`);
+			const organizations: object[] = (await response.json()) as any;
+			const orgIds: number[] = organizations.map((org) => org["id"]);
+
+			return this.metricTypeRepository.search({
+				...omit(params, "includeInherited", "orgId"),
+				orgId: [params.orgId, ...orgIds],
+			});
+		} else {
+			return this.metricTypeRepository.search({
+				...omit(params, "includeInherited", "orgId"),
+				orgId: [params.orgId],
+			});
+		}
+	}
 
 	public async create(params: MetricTypeCreateBodyInterface): Promise<MetricType> {
 		if (params.metricCategoryId) {

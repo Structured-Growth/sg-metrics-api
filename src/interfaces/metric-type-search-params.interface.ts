@@ -1,8 +1,7 @@
 import { DefaultSearchParamsInterface } from "@structured-growth/microservice-sdk";
 import { MetricCategoryAttributes } from "../../database/models/metric-category.sequelize";
 
-export interface MetricTypeSearchParamsInterface extends Omit<DefaultSearchParamsInterface, "orgId" | "accountId"> {
-	orgId?: number;
+export interface MetricTypeSearchParamsInterface extends Omit<DefaultSearchParamsInterface, "accountId"> {
 	metricCategoryId?: number;
 	status?: MetricCategoryAttributes["status"][];
 	/**
@@ -22,4 +21,10 @@ export interface MetricTypeSearchParamsInterface extends Omit<DefaultSearchParam
 	factor?: number;
 	relatedTo?: string;
 	version?: number;
+	/**
+	 * Include inherited metrics types from parent organizations.
+	 *
+	 * @default true
+	 */
+	includeInherited?: boolean;
 }

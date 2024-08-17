@@ -73,8 +73,12 @@ export class MetricTypeController extends BaseController {
 	async search(
 		@Queries() query: MetricTypeSearchParamsInterface
 	): Promise<SearchResultInterface<PublicMetricTypeAttributes>> {
-		const { data, ...result } = await this.metricTypeRepository.search(query);
+		const { data, ...result } = await this.metricTypeService.search({
+			...query,
+			includeInherited: query.includeInherited?.toString() !== "false",
+		});
 		this.response.status(200);
+
 		return {
 			data: data.map((metricType) => ({
 				...(pick(metricType.toJSON(), publicMetricTypeAttributes) as PublicMetricTypeAttributes),
