@@ -11,9 +11,7 @@ export interface MetricCategorySearchParamsInterface extends Omit<DefaultSearchP
 	 */
 	title?: string[];
 	/**
-	 * Wildcards and exclusions are allowed:
-	 *
-	 * `code: ["Starts*", "-*ends"]`
+	 * Search by exact category code
 	 */
 	code?: string[];
 	// metadata?: Record<string, string>;
