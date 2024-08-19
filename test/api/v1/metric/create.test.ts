@@ -160,4 +160,70 @@ describe("POST /api/v1/metrics", () => {
 		assert.isString(body.validation.body[0].takenAt[0]);
 		assert.isString(body.validation.body[0].takenAtOffset[0]);
 	});
+
+	it("Should create metric with metadata", async () => {
+		const { statusCode, body } = await server.post("/v1/metrics").send([
+			{
+				orgId: orgId,
+				region: RegionEnum.US,
+				accountId: accountId,
+				userId: userId,
+				relatedToRn: relatedToRn,
+				metricTypeCode: code,
+				metricTypeVersion: metricTypeVersion,
+				deviceId: deviceId,
+				batchId: batchId,
+				value: value,
+				takenAt: "2024-05-16T14:30:00+01:00",
+				metadata: {
+					bool: true,
+					string: "string",
+					date: new Date().toISOString(),
+					number: 1
+				}
+			},
+		]);
+		assert.equal(statusCode, 201);
+		assert.equal(body[0].metadata.bool, true);
+		assert.equal(body[0].metadata.string, "string");
+		assert.isString(body[0].metadata.date);
+		assert.equal(body[0].metadata.number, 1);
+	});
+
+
+	it("Should return error if there are to much fields", async () => {
+		const { statusCode, body } = await server.post("/v1/metrics").send([
+			{
+				orgId: orgId,
+				region: RegionEnum.US,
+				accountId: accountId,
+				userId: userId,
+				relatedToRn: relatedToRn,
+				metricTypeCode: code,
+				metricTypeVersion: metricTypeVersion,
+				deviceId: deviceId,
+				batchId: batchId,
+				value: value,
+				takenAt: "2024-05-16T14:30:00+01:00",
+				metadata: {
+					bool: true,
+					string: "string",
+					date: new Date().toISOString(),
+					number: 1,
+					bool1: true,
+					string1: "string",
+					date1: new Date().toISOString(),
+					number1: 1,
+					bool2: true,
+					string2: "string",
+					date2: new Date().toISOString(),
+					number2: 1
+				}
+			},
+		]);
+		assert.equal(statusCode, 422);
+		assert.isDefined(body.validation);
+		assert.isString(body.message);
+	});
+
 });
