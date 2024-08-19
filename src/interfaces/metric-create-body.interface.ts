@@ -8,6 +8,9 @@ export interface MetricCreateBodyInterface {
 	 * User that submitted a metric
 	 */
 	userId?: number;
+	/**
+	 * Resource number could be set if metric is related to particular entity.
+	 */
 	relatedToRn?: string;
 	/**
 	 * @deprecated use metricTypeCode instead
@@ -42,4 +45,8 @@ export interface MetricCreateBodyInterface {
 	 * Timezone offset in minutes.
 	 */
 	takenAtOffset: number;
+	/**
+	 * Custom metadata could be added to a metric
+	 */
+	metadata?: object;
 }

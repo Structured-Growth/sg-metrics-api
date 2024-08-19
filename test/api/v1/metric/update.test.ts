@@ -75,6 +75,9 @@ describe("PUT /api/v1/metrics/:metricId", () => {
 				batchId: batchId,
 				value: value,
 				takenAt: "2024-05-16T14:30:00+00:00",
+				metadata: {
+					a: 1,
+				},
 			},
 		]);
 		assert.equal(statusCode, 201);
@@ -109,12 +112,16 @@ describe("PUT /api/v1/metrics/:metricId", () => {
 		assert.equal(body.id, context["createdMetricId"]);
 	}).timeout(1800000);
 
-	it("Should update metric value", async () => {
+	it("Should update metric value and metadata", async () => {
 		const { statusCode, body } = await server.put(`/v1/metrics/${context.createdMetricId}`).send({
 			value: value + 100,
+			metadata: {
+				a: 2,
+			},
 		});
 		assert.equal(statusCode, 200);
 		assert.equal(body.value, value + 100);
+		assert.equal(body.metadata.a, 2);
 		console.log(body);
 	}).timeout(1800000);
 

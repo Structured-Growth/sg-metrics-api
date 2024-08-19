@@ -23,6 +23,13 @@ export const MetricCreateParamsValidator = joi.object({
 					value: joi.number().required().label("Value"),
 					takenAt: joi.string().regex(isoFormatWithTimezone).required().label("Taken at"),
 					takenAtOffset: joi.number().label("Taken at Offset"),
+					metadata: joi
+						.object()
+						.max(10)
+						.pattern(
+							/^/,
+							joi.alternatives().try(joi.boolean(), joi.number(), joi.string().max(255), joi.string().isoDate())
+						),
 				})
 				.xor("metricTypeId", "metricTypeCode")
 				.required()

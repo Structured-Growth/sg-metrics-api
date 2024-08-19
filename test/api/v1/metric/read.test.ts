@@ -100,6 +100,7 @@ describe("GET /api/v1/metrics:metricId", () => {
 		assert.equal(body.takenAt, "2024-05-16T13:30:00.000Z");
 		assert.equal(body.takenAtOffset, 60);
 		assert.isString(body.recordedAt);
+		assert.isObject(body.metadata);
 	}).timeout(1800000);
 
 	it("Should return error is metric type id is wrong", async () => {
