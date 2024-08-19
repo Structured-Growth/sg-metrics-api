@@ -13,14 +13,22 @@ import { MetricCategorySearchParamsInterface } from "../../interfaces/metric-cat
 import MetricCategoryMetadata from "../../../database/models/metric-category-metadata.sequelize";
 import MetricType from "../../../database/models/metric-type.sequelize";
 
+interface MetricCategoryRepositorySearchParamsInterface extends Omit<MetricCategorySearchParamsInterface, "orgId"> {
+	orgId?: number[];
+	metadata?: Record<string, string>;
+}
+
 @autoInjectable()
 export class MetricCategoryRepository
-	implements RepositoryInterface<MetricCategory, MetricCategorySearchParamsInterface, MetricCategoryCreationAttributes>
+	implements
+		RepositoryInterface<
+			MetricCategory,
+			MetricCategoryRepositorySearchParamsInterface,
+			MetricCategoryCreationAttributes
+		>
 {
 	public async search(
-		params: MetricCategorySearchParamsInterface & {
-			metadata?: Record<string, string>;
-		}
+		params: MetricCategoryRepositorySearchParamsInterface
 	): Promise<SearchResultInterface<MetricCategory>> {
 		const page = params.page || 1;
 		const limit = params.limit || 20;
@@ -28,7 +36,7 @@ export class MetricCategoryRepository
 		const where = {};
 		const order = params.sort ? (params.sort.map((item) => item.split(":")) as any) : [["createdAt", "desc"]];
 
-		params.orgId && (where["orgId"] = params.orgId);
+		params.orgId && (where["orgId"] = { [Op.in]: params.orgId });
 		params.accountId && (where["accountId"] = params.accountId);
 		params.status && (where["status"] = { [Op.in]: params.status });
 		params.id && (where["id"] = { [Op.in]: params.id });
@@ -40,9 +48,7 @@ export class MetricCategoryRepository
 		}
 
 		if (params.code?.length > 0) {
-			where["code"] = {
-				[Op.or]: params.code.map((str) => ({ [Op.iLike]: str.replace(/\*/g, "%") })),
-			};
+			where["code"] = { [Op.in]: params.code };
 		}
 
 		if (params.metadata && Object.keys(params.metadata).length > 0) {

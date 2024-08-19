@@ -19,13 +19,14 @@ export interface MetricAttributes {
 	takenAtOffset: number;
 	recordedAt: Date;
 	isDeleted: boolean;
+	metadata: object;
 	arn: string;
 }
 
 export interface MetricCreationAttributes extends Omit<MetricAttributes, "arn"> {}
 
 export interface MetricUpdateAttributes
-	extends Pick<MetricAttributes, "value" | "takenAt" | "takenAtOffset" | "isDeleted"> {}
+	extends Pick<MetricAttributes, "value" | "takenAt" | "takenAtOffset" | "isDeleted" | "metadata"> {}
 
 export class Metric implements MetricAttributes {
 	id: string;
@@ -43,6 +44,7 @@ export class Metric implements MetricAttributes {
 	takenAt: Date;
 	takenAtOffset: number;
 	recordedAt: Date;
+	metadata: object;
 	isDeleted: boolean;
 
 	constructor(
@@ -66,6 +68,7 @@ export class Metric implements MetricAttributes {
 		this.takenAtOffset = data.takenAtOffset;
 		this.recordedAt = data.recordedAt;
 		this.isDeleted = data.isDeleted;
+		this.metadata = data.metadata;
 	}
 
 	static get arnPattern(): string {
@@ -110,6 +113,7 @@ export class Metric implements MetricAttributes {
 			takenAtOffset: this.takenAtOffset,
 			recordedAt: this.recordedAt,
 			isDeleted: this.isDeleted,
+			metadata: this.metadata,
 			arn: this.arn,
 		};
 	}

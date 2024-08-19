@@ -38,6 +38,7 @@ export class MetricService {
 				id: v4(),
 				recordedAt: new Date(),
 				isDeleted: false,
+				metadata: param.metadata || {},
 			};
 		});
 

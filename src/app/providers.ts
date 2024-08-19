@@ -45,6 +45,8 @@ container.register("internalAuthenticationJwtSecret", { useValue: process.env.IN
 container.register("oAuthServiceGetUserUrl", { useValue: process.env.OAUTH_USER_URL });
 container.register("policiesServiceUrl", { useValue: process.env.POLICY_SERVICE_URL });
 
+container.register("accountApiUrl", { useValue: process.env.ACCOUNT_API_URL });
+
 // services
 container.register("LogWriter", logWriters[process.env.LOG_WRITER] || "ConsoleLogWriter", {
 	lifecycle: Lifecycle.Singleton,

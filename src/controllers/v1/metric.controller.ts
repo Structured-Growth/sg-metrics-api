@@ -40,6 +40,7 @@ const publicMetricAttributes = [
 	"takenAt",
 	"takenAtOffset",
 	"recordedAt",
+	"metadata",
 	"arn",
 ] as const;
 type MetricKeys = (typeof publicMetricAttributes)[number];
@@ -179,6 +180,7 @@ export class MetricController extends BaseController {
 					...body,
 					takenAt: body.takenAt ? new Date(body.takenAt) : undefined,
 					takenAtOffset: body.takenAt ? getTimezoneOffset(body.takenAt.toString()) : undefined,
+					metadata: body.metadata,
 				},
 				isUndefined
 			) as any
