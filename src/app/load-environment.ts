@@ -48,7 +48,9 @@ export function loadEnvironment() {
 		EVENTBUS_NAME: joi.string().required(),
 		AUTHENTICATION_ENABLED: joi.bool().required(),
 		AUTHORIZATION_ENABLED: joi.bool().required(),
+		INTERNAL_AUTHENTICATION_ENABLED: joi.bool().required(),
+		INTERNAL_REQUESTS_ALLOWED: joi.bool().required(),
+		INTERNAL_AUTHENTICATION_JWT_SECRET: joi.string().required(),
 		OAUTH_USER_URL: joi.string().required(),
-		POLICY_SERVICE_URL: joi.string().required(),
 	});
 }
