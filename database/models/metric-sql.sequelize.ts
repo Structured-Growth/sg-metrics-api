@@ -74,7 +74,7 @@ export class MetricSQL extends Model<MetricAttributes, MetricCreationAttributes>
 			"<region>",
 			"<orgId>",
 			"<accountId>",
-			"metric-category/<metricCategoryId>/metric-type/<metricTypeId>/metric/<metricId>",
+			"users/<userId>/devices/<deviceId>/metric-categories/<metricCategoryId>/metric-types/<metricTypeId>/metrics/<metricId>",
 		].join(":");
 	}
 
@@ -84,7 +84,9 @@ export class MetricSQL extends Model<MetricAttributes, MetricCreationAttributes>
 			this.region,
 			this.orgId,
 			this.accountId || "-",
-			`metric-category/${this.metricCategoryId}/metric-type/${this.metricTypeId}/metric/${this.id}`,
+			`users/${this.userId}/devices/${this.deviceId || "-"}/metric-categories/${this.metricCategoryId}/metric-types/${
+				this.metricTypeId
+			}/metrics/${this.id}`,
 		].join(":");
 	}
 }
