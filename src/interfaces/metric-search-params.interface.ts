@@ -4,11 +4,11 @@ export interface MetricSearchParamsInterface
 	extends Omit<DefaultSearchParamsInterface, "id" | "orgId" | "accountId" | "arn"> {
 	id?: string[];
 	orgId?: number;
+	accountId?: number[];
+	userId?: number[];
 	metricTypeCode?: string[];
 	metricTypeId?: number[];
 	metricTypeVersion?: number;
-	accountId?: number[];
-	userId?: number[];
 	relatedToRn?: string;
 	deviceId?: number;
 	batchId?: string;
