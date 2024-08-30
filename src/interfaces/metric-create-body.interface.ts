@@ -27,7 +27,7 @@ export interface MetricCreateBodyInterface {
 	 */
 	metricTypeCode: string;
 	metricTypeVersion: number;
-	deviceId: number;
+	deviceId?: number;
 	/**
 	 * UUID. Should be generated on client side in order to group metrics into a single batch.
 	 */

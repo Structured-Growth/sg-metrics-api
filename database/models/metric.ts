@@ -12,7 +12,7 @@ export interface MetricAttributes {
 	metricCategoryId: number;
 	metricTypeId: number;
 	metricTypeVersion: number;
-	deviceId: number;
+	deviceId?: number;
 	batchId: string;
 	value: number;
 	takenAt: Date;
