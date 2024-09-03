@@ -46,6 +46,7 @@ describe("GET /api/v1/metric-category", () => {
 		const { statusCode, body } = await server.get("/v1/metric-category").query({
 			"id[0]": context["createdMetricCategoryId"],
 			orgId: orgId,
+			includeInherited: false,
 		});
 		assert.equal(statusCode, 200);
 		assert.equal(body.data[0].id, context["createdMetricCategoryId"]);
@@ -65,6 +66,7 @@ describe("GET /api/v1/metric-category", () => {
 		const { statusCode, body } = await server.get("/v1/metric-category").query({
 			"title[0]": code,
 			orgId: orgId,
+			includeInherited: false,
 		});
 		assert.equal(statusCode, 200);
 		assert.equal(body.total, 1);
@@ -85,6 +87,7 @@ describe("GET /api/v1/metric-category", () => {
 			"status[0]": "inactive",
 			"status[1]": "active",
 			orgId: orgId,
+			includeInherited: false,
 		});
 		assert.equal(statusCode, 200);
 	});
