@@ -1,4 +1,10 @@
-import { autoInjectable, inject, NotFoundError, SearchResultInterface } from "@structured-growth/microservice-sdk";
+import {
+	autoInjectable,
+	EventbusService,
+	inject,
+	NotFoundError,
+	SearchResultInterface,
+} from "@structured-growth/microservice-sdk";
 import { v4 } from "uuid";
 import { MetricTimestreamRepository } from "./repositories/metric-timestream.repository";
 import { MetricSqlRepository } from "./repositories/metric-sql.repository";
@@ -16,7 +22,9 @@ export class MetricService {
 	constructor(
 		@inject("MetricTimestreamRepository") private metricTimestreamRepository: MetricTimestreamRepository,
 		@inject("MetricSqlRepository") private metricSqlRepository: MetricSqlRepository,
-		@inject("MetricTypeRepository") private metricTypeRepository: MetricTypeRepository
+		@inject("MetricTypeRepository") private metricTypeRepository: MetricTypeRepository,
+		@inject("EventbusService") private eventBus: EventbusService,
+		@inject("appPrefix") private appPrefix: string
 	) {}
 
 	public async create(params: MetricCreateBodyInterface[]): Promise<Metric[]> {
@@ -42,11 +50,20 @@ export class MetricService {
 			};
 		});
 
+		if (!data.length) {
+			return [];
+		}
+
 		const result = await this.metricSqlRepository.create(data);
 		// const result = await Promise.all([
 		// 	this.metricTimestreamRepository.create(data),
 		// 	this.metricSqlRepository.create(data),
 		// ]);
+
+		await this.eventBus.publish({
+			arn: `${this.appPrefix}:${data[0].region}:${data[0].orgId}:${data[0].accountId}:events/metrics/created`,
+			data: result.map((metric) => metric.toJSON()),
+		});
 
 		return result.map((item) => new Metric(item.toJSON()));
 	}
