@@ -62,7 +62,9 @@ export class MetricService {
 
 		await this.eventBus.publish({
 			arn: `${this.appPrefix}:${data[0].region}:${data[0].orgId}:${data[0].accountId}:events/metrics/created`,
-			data: result.map((metric) => metric.toJSON()),
+			data: {
+				metrics: result.map((metric) => metric.toJSON()),
+			},
 		});
 
 		return result.map((item) => new Metric(item.toJSON()));
