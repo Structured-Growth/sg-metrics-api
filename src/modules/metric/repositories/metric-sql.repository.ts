@@ -124,6 +124,7 @@ export class MetricSqlRepository {
 		params.id && (where["id"] = { [Op.in]: params.id });
 		params.orgId && (where["orgId"] = params.orgId);
 		params.accountId && (where["accountId"] = { [Op.in]: params.accountId });
+		params.metricCategoryId && (where["metricCategoryId"] = params.metricCategoryId);
 		params.metricTypeId && (where["metricTypeId"] = { [Op.in]: params.metricTypeId });
 		params.metricTypeVersion && (where["metricTypeVersion"] = params.metricTypeVersion);
 		params.userId && (where["userId"] = { [Op.in]: params.userId });
