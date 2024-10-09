@@ -16,12 +16,14 @@ import { MetricAggregateResultInterface } from "../../interfaces/metric-aggregat
 import { keyBy, map, snakeCase, uniq } from "lodash";
 import { MetricTypeRepository } from "../metric-type/metric-type.repository";
 import MetricType from "../../../database/models/metric-type.sequelize";
+import { MetricCategoryRepository } from "../metric-category/metric-category.repository";
 
 @autoInjectable()
 export class MetricService {
 	constructor(
 		@inject("MetricTimestreamRepository") private metricTimestreamRepository: MetricTimestreamRepository,
 		@inject("MetricSqlRepository") private metricSqlRepository: MetricSqlRepository,
+		@inject("MetricCategoryRepository") private metricCategoryRepository: MetricCategoryRepository,
 		@inject("MetricTypeRepository") private metricTypeRepository: MetricTypeRepository,
 		@inject("EventbusService") private eventBus: EventbusService,
 		@inject("appPrefix") private appPrefix: string
@@ -75,6 +77,15 @@ export class MetricService {
 			nextToken?: string;
 		}
 	> {
+		// get metric category id by its code, if provided
+		if (params.metricCategoryCode) {
+			const metricCategory = await this.metricCategoryRepository.findByCode(params.metricCategoryCode);
+			if (metricCategory) {
+				console.log(metricCategory, metricCategory.id);
+				params.metricCategoryId = metricCategory.id;
+			}
+		}
+
 		// get metric type ids by theirs codes, if provided
 		if (params.metricTypeCode?.length > 0) {
 			const metricTypes = await this.metricTypeRepository.search({
@@ -95,6 +106,14 @@ export class MetricService {
 		}
 		if (params.row === "time") {
 			params.row = "takenAt";
+		}
+
+		// get metric category id by its code, if provided
+		if (params.metricCategoryCode) {
+			const metricCategory = await this.metricCategoryRepository.findByCode(params.metricCategoryCode);
+			if (metricCategory) {
+				params.metricCategoryId = metricCategory.id;
+			}
 		}
 
 		// get metric type ids by theirs codes, if provided

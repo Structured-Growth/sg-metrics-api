@@ -4,6 +4,8 @@ export const MetricSearchParamsValidator = joi.object({
 	query: joi.object({
 		id: joi.array().items(joi.string().required()).label("Metric Id"),
 		orgId: joi.number().positive().label("Organization Id"),
+		metricCategoryId: joi.number().positive().label("Metric Type Id"),
+		metricCategoryCode: joi.string().max(50).min(1).label("Metric Type Code"),
 		metricTypeId: joi.array().items(joi.number().positive()).label("Metric Type Id"),
 		metricTypeCode: joi.array().items(joi.string().max(50).min(1)).label("Metric Type Code"),
 		metricTypeVersion: joi.number().positive().label("Metric Type Version"),
