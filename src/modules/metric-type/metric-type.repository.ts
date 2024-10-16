@@ -45,7 +45,9 @@ export class MetricTypeRepository
 		}
 
 		if (params.code?.length > 0) {
-			where["code"] = { [Op.in]: params.code };
+			where["code"] = {
+				[Op.or]: params.code.map((str) => ({ [Op.iLike]: str.replace(/\*/g, "%") })),
+			};
 		}
 
 		if (params.metadata && Object.keys(params.metadata).length > 0) {
