@@ -22,6 +22,7 @@ import { MetricAggregateParamsInterface } from "../../interfaces/metric-aggregat
 import { MetricAggregateResultInterface } from "../../interfaces/metric-aggregate-result.interface";
 import { getTimezoneOffset } from "../../helpers/get-timezone-offset";
 import { MetricAggregateParamsValidator } from "../../validators/metric-aggregate-params.validator";
+import { EventMutation } from "@structured-growth/microservice-sdk";
 
 const publicMetricAttributes = [
 	"id",
@@ -144,6 +145,10 @@ export class MetricController extends BaseController {
 		);
 
 		this.response.status(201);
+
+		// await this.eventBus.publish(
+		// 	new EventMutation(this.principal.arn, metrics.arn, `${this.appPrefix}:metrics/create`, JSON.stringify(body))
+		// );
 
 		return metrics.map((metric) => ({
 			...(pick(metric.toJSON(), publicMetricAttributes) as PublicMetricAttributes),
