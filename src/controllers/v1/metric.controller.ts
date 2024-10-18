@@ -146,10 +146,6 @@ export class MetricController extends BaseController {
 
 		this.response.status(201);
 
-		// await this.eventBus.publish(
-		// 	new EventMutation(this.principal.arn, metrics.arn, `${this.appPrefix}:metrics/create`, JSON.stringify(body))
-		// );
-
 		return metrics.map((metric) => ({
 			...(pick(metric.toJSON(), publicMetricAttributes) as PublicMetricAttributes),
 			arn: metric.arn,
@@ -204,6 +200,10 @@ export class MetricController extends BaseController {
 			) as any
 		);
 
+		await this.eventBus.publish(
+			new EventMutation(this.principal.arn, metric.arn, `${this.appPrefix}:metrics/update`, JSON.stringify(body))
+		);
+
 		return {
 			...(pick(metric.toJSON(), publicMetricAttributes) as PublicMetricAttributes),
 			arn: metric.arn,
@@ -220,7 +220,18 @@ export class MetricController extends BaseController {
 	@DescribeAction("metrics/delete")
 	@DescribeResource("Metric", ({ params }) => params.metricId)
 	public async delete(@Path() metricId: string): Promise<void> {
+		const metric = await this.metricService.read(metricId);
+
+		if (!metric) {
+			throw new NotFoundError(`Metric ${metricId} not found`);
+		}
+
 		await this.metricService.delete(metricId);
+
+		await this.eventBus.publish(
+			new EventMutation(this.principal.arn, metric.arn, `${this.appPrefix}:metrics/delete`, JSON.stringify({}))
+		);
+
 		this.response.status(204);
 	}
 }
