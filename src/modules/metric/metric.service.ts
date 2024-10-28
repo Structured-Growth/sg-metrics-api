@@ -101,7 +101,6 @@ export class MetricService {
 	public async aggregate(
 		params: MetricAggregateParamsInterface & { page?: number; limit?: number; sort?: any }
 	): Promise<MetricAggregateResultInterface> {
-		console.log("PARAMS: ", params);
 		if (params.column === "time") {
 			params.column = "takenAt";
 		}
