@@ -20,6 +20,7 @@ import { MetricTypeUpdateParamsValidator } from "../../validators/metric-type-up
 import { MetricTypeService } from "../../modules/metric-type/metric-type.service";
 import { MetricTypeRepository } from "../../modules/metric-type/metric-type.repository";
 import { pick } from "lodash";
+import { EventMutation } from "@structured-growth/microservice-sdk";
 
 const publicMetricTypeAttributes = [
 	"id",
@@ -103,6 +104,15 @@ export class MetricTypeController extends BaseController {
 		const metricType = await this.metricTypeService.create(body);
 		this.response.status(201);
 
+		await this.eventBus.publish(
+			new EventMutation(
+				this.principal.arn,
+				metricType.arn,
+				`${this.appPrefix}:metric-type/create`,
+				JSON.stringify(body)
+			)
+		);
+
 		return {
 			...(pick(metricType.toJSON(), publicMetricTypeAttributes) as PublicMetricTypeAttributes),
 			metadata: metricType.metadata,
@@ -149,6 +159,15 @@ export class MetricTypeController extends BaseController {
 		const metricType = await this.metricTypeService.update(metricTypeId, body);
 		this.response.status(200);
 
+		await this.eventBus.publish(
+			new EventMutation(
+				this.principal.arn,
+				metricType.arn,
+				`${this.appPrefix}:metric-type/update`,
+				JSON.stringify(body)
+			)
+		);
+
 		return {
 			...(pick(metricType.toJSON(), publicMetricTypeAttributes) as PublicMetricTypeAttributes),
 			metadata: metricType.metadata,
@@ -171,6 +190,11 @@ export class MetricTypeController extends BaseController {
 			throw new NotFoundError(`Metric Type ${metricTypeId} not found`);
 		}
 		await this.metricTypeService.delete(metricTypeId);
+
+		await this.eventBus.publish(
+			new EventMutation(this.principal.arn, metricType.arn, `${this.appPrefix}:metric-type/delete`, JSON.stringify({}))
+		);
+
 		this.response.status(204);
 	}
 }

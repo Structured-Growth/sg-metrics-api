@@ -121,7 +121,11 @@ export class MetricSqlRepository {
 		};
 		const order = params.sort ? (params.sort.map((item) => item.split(":")) as any) : [["takenAt", "desc"]];
 
-		params.id && (where["id"] = { [Op.in]: params.id });
+		if (params.id?.length > 0) {
+			where["id"] = {
+				[Op.or]: params.id.map((str) => ({ [Op.iLike]: str.replace(/\*/g, "%") })),
+			};
+		}
 		params.orgId && (where["orgId"] = params.orgId);
 		params.accountId && (where["accountId"] = { [Op.in]: params.accountId });
 		params.metricCategoryId && (where["metricCategoryId"] = params.metricCategoryId);

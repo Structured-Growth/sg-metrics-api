@@ -22,6 +22,7 @@ import { MetricAggregateParamsInterface } from "../../interfaces/metric-aggregat
 import { MetricAggregateResultInterface } from "../../interfaces/metric-aggregate-result.interface";
 import { getTimezoneOffset } from "../../helpers/get-timezone-offset";
 import { MetricAggregateParamsValidator } from "../../validators/metric-aggregate-params.validator";
+import { EventMutation } from "@structured-growth/microservice-sdk";
 
 const publicMetricAttributes = [
 	"id",
@@ -199,6 +200,10 @@ export class MetricController extends BaseController {
 			) as any
 		);
 
+		await this.eventBus.publish(
+			new EventMutation(this.principal.arn, metric.arn, `${this.appPrefix}:metrics/update`, JSON.stringify(body))
+		);
+
 		return {
 			...(pick(metric.toJSON(), publicMetricAttributes) as PublicMetricAttributes),
 			arn: metric.arn,
@@ -215,7 +220,18 @@ export class MetricController extends BaseController {
 	@DescribeAction("metrics/delete")
 	@DescribeResource("Metric", ({ params }) => params.metricId)
 	public async delete(@Path() metricId: string): Promise<void> {
+		const metric = await this.metricService.read(metricId);
+
+		if (!metric) {
+			throw new NotFoundError(`Metric ${metricId} not found`);
+		}
+
 		await this.metricService.delete(metricId);
+
+		await this.eventBus.publish(
+			new EventMutation(this.principal.arn, metric.arn, `${this.appPrefix}:metrics/delete`, JSON.stringify({}))
+		);
+
 		this.response.status(204);
 	}
 }

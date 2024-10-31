@@ -20,6 +20,7 @@ import { MetricCategoryCreateParamsValidator } from "../../validators/metric-cat
 import { MetricCategoryUpdateSearchParamsValidator } from "../../validators/metric-category-update-params.validator";
 import { MetricCategoryService } from "../../modules/metric-category/metric-category.service";
 import { MetricCategoryRepository } from "../../modules/metric-category/metric-category.repository";
+import { EventMutation } from "@structured-growth/microservice-sdk";
 
 const publicMetricCategoryAttributes = [
 	"id",
@@ -107,6 +108,15 @@ export class MetricCategoryController extends BaseController {
 		const metricCategory = await this.metricCategoryService.create(body);
 		this.response.status(201);
 
+		await this.eventBus.publish(
+			new EventMutation(
+				this.principal.arn,
+				metricCategory.arn,
+				`${this.appPrefix}:metric-category/create`,
+				JSON.stringify(body)
+			)
+		);
+
 		return {
 			...(pick(metricCategory.toJSON(), publicMetricCategoryAttributes) as PublicMetricCategoryAttributes),
 			metadata: metricCategory.metadata,
@@ -153,6 +163,15 @@ export class MetricCategoryController extends BaseController {
 		const metricCategory = await this.metricCategoryService.update(metricCategoryId, body);
 		this.response.status(200);
 
+		await this.eventBus.publish(
+			new EventMutation(
+				this.principal.arn,
+				metricCategory.arn,
+				`${this.appPrefix}:metric-category/update`,
+				JSON.stringify(body)
+			)
+		);
+
 		return {
 			...(pick(metricCategory.toJSON(), publicMetricCategoryAttributes) as PublicMetricCategoryAttributes),
 			metadata: metricCategory.metadata,
@@ -175,6 +194,16 @@ export class MetricCategoryController extends BaseController {
 			throw new NotFoundError(`Metric Category ${metricCategoryId} not found`);
 		}
 		await this.metricCategoryService.delete(metricCategoryId);
+
+		await this.eventBus.publish(
+			new EventMutation(
+				this.principal.arn,
+				metricCategory.arn,
+				`${this.appPrefix}:metric-category/delete`,
+				JSON.stringify({})
+			)
+		);
+
 		this.response.status(204);
 	}
 }
