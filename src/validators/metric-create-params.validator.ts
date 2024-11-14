@@ -1,6 +1,6 @@
 import { joi } from "@structured-growth/microservice-sdk";
 
-const isoFormatWithTimezone = /^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}\+[0-9]{2}:00$/;
+const isoFormatWithTimezone = /^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}[+-][0-9]{2}:00$/;
 
 export const MetricCreateParamsValidator = joi.object({
 	query: joi.object(),
