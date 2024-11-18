@@ -66,20 +66,9 @@ export class MetricController extends BaseController {
 	@DescribeResource("Organization", ({ query }) => Number(query.orgId))
 	@DescribeResource("Account", ({ query }) => query.accountId?.map(Number))
 	@DescribeResource("User", ({ query }) => query.userId?.map(Number))
-	@DescribeResource("MetricType", ({ query }) => query.metricTypeId?.map(Number))
-	@DescribeResource<void, void, MetricSearchParamsInterface>("MetricTypeCode", function ({ query }) {
-		return query.metricTypeCode?.map((code) => ({
-			arn: `${this.appPrefix}:-:-:-:metric-type-codes/${code}`,
-		}));
-	})
-	@DescribeResource<void, void, MetricSearchParamsInterface>("MetricTypeVersion", function ({ query }) {
-		return query.metricTypeVersion
-			? {
-					arn: `${this.appPrefix}:-:-:-:metric-type-versions/${query.metricTypeVersion}`,
-			  }
-			: null;
-	})
 	@DescribeResource("Device", ({ query }) => Number(query.deviceId))
+	@DescribeResource("MetricCategory", ({ query }) => query.metricCategoryId?.map(Number))
+	@DescribeResource("MetricType", ({ query }) => query.metricTypeId?.map(Number))
 	@ValidateFuncArgs(MetricSearchParamsValidator)
 	public async search(@Queries() query: MetricSearchParamsInterface): Promise<
 		SearchResultInterface<PublicMetricAttributes> & {
