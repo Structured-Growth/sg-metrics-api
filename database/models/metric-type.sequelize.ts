@@ -79,7 +79,7 @@ export class MetricType
 			"<region>",
 			"<orgId>",
 			"<accountId>",
-			"metric-category/<metricCategoryId>/metric-type/<metricTypeId>",
+			"metric-categories/<metricCategoryId>/metric-types/<metricTypeId>",
 		].join(":");
 	}
 
@@ -89,7 +89,7 @@ export class MetricType
 			this.region,
 			this.orgId,
 			this.accountId || "-",
-			`metric-category/${this.metricCategoryId}/metric-type/${this.id}`,
+			`metric-categories/${this.metricCategoryId}/metric-types/${this.id}`,
 		].join(":");
 	}
 }

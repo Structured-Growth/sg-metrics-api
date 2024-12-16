@@ -67,8 +67,9 @@ export class MetricController extends BaseController {
 	@DescribeResource("Account", ({ query }) => query.accountId?.map(Number))
 	@DescribeResource("User", ({ query }) => query.userId?.map(Number))
 	@DescribeResource("Device", ({ query }) => Number(query.deviceId))
-	@DescribeResource("MetricCategory", ({ query }) => query.metricCategoryId?.map(Number))
+	@DescribeResource("MetricCategory", ({ query }) => Number(query.metricCategoryId))
 	@DescribeResource("MetricType", ({ query }) => query.metricTypeId?.map(Number))
+	@DescribeResource("Metric", ({ query }) => query.id?.map(Number))
 	@ValidateFuncArgs(MetricSearchParamsValidator)
 	public async search(@Queries() query: MetricSearchParamsInterface): Promise<
 		SearchResultInterface<PublicMetricAttributes> & {
@@ -92,9 +93,13 @@ export class MetricController extends BaseController {
 	@SuccessResponse(200, "Returns list of aggregated metrics")
 	@DescribeAction("metrics/aggregate")
 	@ValidateFuncArgs(MetricAggregateParamsValidator)
-	@DescribeResource("Organization", ({ query }) => ({
-		arn: `-:-:${query.orgId}`,
-	}))
+	@DescribeResource("Organization", ({ query }) => Number(query.orgId))
+	@DescribeResource("Account", ({ query }) => query.accountId?.map(Number))
+	@DescribeResource("User", ({ query }) => query.userId?.map(Number))
+	@DescribeResource("Device", ({ query }) => Number(query.deviceId))
+	@DescribeResource("MetricCategory", ({ query }) => Number(query.metricCategoryId))
+	@DescribeResource("MetricType", ({ query }) => query.metricTypeId?.map(Number))
+	@DescribeResource("Metric", ({ query }) => query.id?.map(Number))
 	public async aggregate(@Queries() query: MetricAggregateParamsInterface): Promise<MetricAggregateResultInterface> {
 		const { data, ...result } = await this.metricService.aggregate(query);
 		this.response.status(200);
@@ -115,12 +120,12 @@ export class MetricController extends BaseController {
 	@Post("/")
 	@SuccessResponse(201, "Returns created metric")
 	@DescribeAction("metrics/create")
-	@DescribeResource("Organization", ({ body }) => Number(body[0].orgId))
-	@DescribeResource("Account", ({ body }) => Number(body[0].accountId))
-	@DescribeResource("User", ({ body }) => Number(body[0].userId))
-	@DescribeResource("MetricCategory", ({ body }) => Number(body[0].metricCategoryId))
-	@DescribeResource("MetricType", ({ body }) => Number(body[0].metricTypeId))
-	@DescribeResource("Device", ({ body }) => Number(body[0].deviceId))
+	@DescribeResource("Organization", ({ body }) => body.map((i) => i.orgId))
+	@DescribeResource("Account", ({ body }) => body.map((i) => i.accountId))
+	@DescribeResource("User", ({ body }) => body.map((i) => i.userId))
+	@DescribeResource("MetricCategory", ({ body }) => body.map((i) => i.metricCategoryId))
+	@DescribeResource("MetricType", ({ body }) => body.map((i) => i.metricTypeId))
+	@DescribeResource("Device", ({ body }) => body.map((i) => i.deviceId))
 	@ValidateFuncArgs(MetricCreateParamsValidator)
 	async create(@Queries() query: {}, @Body() body: MetricCreateBodyWithoutOffset[]): Promise<PublicMetricAttributes[]> {
 		const metrics = await this.metricService.create(

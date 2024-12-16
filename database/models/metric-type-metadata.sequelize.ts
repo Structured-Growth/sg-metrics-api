@@ -64,11 +64,11 @@ export class MetricTypeMetadata
 	value: string;
 
 	static get arnPattern(): string {
-		return [container.resolve("appPrefix"), "<region>", "<orgId>", '<accountId>', "metric-category/<metricCategoryId>/metric-type/<metricTypeId>/metadata/<metricTypeMetadataId>"].join(":");
+		return [container.resolve("appPrefix"), "<region>", "<orgId>", '<accountId>', "metric-categories/<metricCategoryId>/metric-types/<metricTypeId>/metadata/<metricTypeMetadataId>"].join(":");
 	}
 
 	get arn(): string {
-		return [container.resolve("appPrefix"), this.region, this.orgId, this.accountId || '-', `metric-category/${this.metricCategoryId}/metric-type/${this.metricTypeId}/metadata/${this.id}`].join(":");
+		return [container.resolve("appPrefix"), this.region, this.orgId, this.accountId || '-', `metric-categories/${this.metricCategoryId}/metric-types/${this.metricTypeId}/metadata/${this.id}`].join(":");
 	}
 }
 

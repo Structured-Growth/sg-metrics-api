@@ -58,14 +58,9 @@ export class MetricCategoryController extends BaseController {
 	@Get("/")
 	@SuccessResponse(200, "Returns list of categories")
 	@DescribeAction("metric-category/search")
-	@DescribeResource("Organization", ({ query }) => ({
-		arn: `-:-:${query.orgId}`,
-	}))
-	@DescribeResource(
-		"CategoryStatus",
-		({ query }) => query.status as string,
-		`${container.resolve("appPrefix")}:<region>:<orgId>:metric-category-status/<metricCategoryStatus>`
-	)
+	@DescribeResource("Organization", ({ query }) => Number(query.orgId))
+	@DescribeResource("Account", ({ query }) => Number(query.accountId))
+	@DescribeResource("MetricCategory", ({ query }) => query.id?.map(Number))
 	@ValidateFuncArgs(MetricCategorySearchParamsValidator)
 	async search(
 		@Queries() query: MetricCategorySearchParamsInterface
@@ -97,9 +92,7 @@ export class MetricCategoryController extends BaseController {
 	@Post("/")
 	@SuccessResponse(201, "Returns created category")
 	@DescribeAction("metric-category/create")
-	@DescribeResource("Organization", ({ body }) => ({
-		arn: `-:-:${body.orgId}`,
-	}))
+	@DescribeResource("Organization", ({ body }) => Number(body.orgId))
 	@ValidateFuncArgs(MetricCategoryCreateParamsValidator)
 	async create(
 		@Queries() query: {},
