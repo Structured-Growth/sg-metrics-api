@@ -77,9 +77,7 @@ export class Metric implements MetricAttributes {
 			":<region>",
 			":<orgId>",
 			":<accountId>",
-			"/metric-category/<metricCategoryId>",
-			"/metric-type/<metricTypeId>",
-			"/metric/<metricId>",
+			"/metrics/<metricId>",
 		].join("");
 	}
 
@@ -89,9 +87,7 @@ export class Metric implements MetricAttributes {
 			`:${this.region}`,
 			`:${this.orgId}`,
 			`:${this.accountId}` || "-",
-			`/metric-category/${this.metricCategoryId}`,
-			`/metric-type/${this.metricTypeId}`,
-			`/metric/${this.id}`,
+			`/metrics/${this.id}`,
 		].join("");
 	}
 

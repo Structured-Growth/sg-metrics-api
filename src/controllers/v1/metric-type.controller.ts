@@ -62,14 +62,9 @@ export class MetricTypeController extends BaseController {
 	@Get("/")
 	@SuccessResponse(200, "Returns list of metric types")
 	@DescribeAction("metric-type/search")
-	@DescribeResource("Organization", ({ query }) => ({
-		arn: `-:-:${query.orgId}`,
-	}))
-	@DescribeResource(
-		"MetricTypeStatus",
-		({ query }) => query.status as string,
-		`${container.resolve("appPrefix")}:<region>:<orgId>:metric-type-status/<metricTypeStatus>`
-	)
+	@DescribeResource("Organization", ({ query }) => Number(query.orgId))
+	@DescribeResource("Account", ({ query }) => Number(query.accountId))
+	@DescribeResource("MetricType", ({ query }) => query.id?.map(Number))
 	@ValidateFuncArgs(MetricTypeSearchParamsValidator)
 	async search(
 		@Queries() query: MetricTypeSearchParamsInterface
@@ -98,6 +93,7 @@ export class MetricTypeController extends BaseController {
 	@SuccessResponse(201, "Returns created model")
 	@DescribeAction("metric-type/create")
 	@DescribeResource("Organization", ({ body }) => Number(body.orgId))
+	@DescribeResource("Account", ({ body }) => Number(body.accountId))
 	@DescribeResource("MetricCategory", ({ body }) => Number(body.metricCategoryId))
 	@ValidateFuncArgs(MetricTypeCreateParamsValidator)
 	async create(@Queries() query: {}, @Body() body: MetricTypeCreateBodyInterface): Promise<PublicMetricTypeAttributes> {
