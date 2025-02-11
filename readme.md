@@ -7,7 +7,7 @@ TODO readme.
 - Automatic versioning with [semantic-release](https://semantic-release.gitbook.io/semantic-release/);
 - Automatic creating NPM package and Docker image;
 - Generate routes from controllers (using [tsoa](https://tsoa-community.github.io/docs/introduction.html));
-- Generate  API docs (json, html) from controllers (
+- Generate API docs (json, html) from controllers (
   using [tsoa](https://tsoa-community.github.io/docs/introduction.html));
 - Different operating modes:
     - Standalone web server powered by [express.js](https://expressjs.com/);
