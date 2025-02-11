@@ -1,0 +1,81 @@
+name: Convert Readme to PDF
+
+on: workflow_call
+
+jobs:
+  generate-dependencies:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install Pandoc and LaTeX
+        run: |
+          sudo apt update
+          sudo apt install -y -q pandoc texlive-xetex texlive-fonts-recommended
+
+      - name: Add timestamp at the beginning of readme.md
+        run: |
+          TIMESTAMP=$(date +"%Y-%m-%d %H:%M:%S")
+          sed -i "1s|^|# Report generated on: $TIMESTAMP\n\n|" readme.md
+
+      - name: Convert README.md to PDF
+        run: |
+          FILE=$(ls | grep -i '^readme\.md$')
+          if [ -z "$FILE" ]; then
+            echo "Error: README.md file not found!"
+            exit 1
+          fi
+          pandoc "$FILE" -o README.pdf --pdf-engine=xelatex \
+            -V geometry:a4paper \
+            -V geometry:top=15mm \
+            -V geometry:bottom=20mm \
+            -V geometry:left=20mm \
+            -V geometry:right=20mm
+
+      - name: Upload PDF as artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: readme
+          path: README.pdf
+
+  documentation:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v2
+        with:
+          node-version: '20'
+
+      - name: Install dependencies
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: npm i
+
+      - name: Create docs
+        run: npm run docs
+
+      - name: Wait for .docs/openapi.v1 directory
+        run: |
+          TIMEOUT=30
+          while [ ! -d ".docs/openapi.v1" ]; do
+          echo "Waiting for .docs/openapi.v1 to be created..."
+          sleep 2
+          TIMEOUT=$((TIMEOUT - 2))
+          if [ $TIMEOUT -le 0 ]; then
+           echo "Error: .docs/openapi.v1 directory not created!"
+           exit 1
+          fi
+          done
+
+      - name: Upload generated docs as artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: generated-docs
+          path: .docs/openapi.v1

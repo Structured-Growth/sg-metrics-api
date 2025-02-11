@@ -1,0 +1,109 @@
+name: Generate list of software dependencies
+
+on:
+  workflow_call:
+    secrets:
+      NPM_AUTH_TOKEN:
+        required: true
+
+jobs:
+  generate-dependencies:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install dependencies
+        run: |
+          echo "📦 Installing dependencies..."
+          npm cache clean --force
+          GITHUB_TOKEN=${{ secrets.NPM_AUTH_TOKEN }} npm install
+
+      - name: Generate dependencies HTML report
+        run: |
+          echo "📂 Creating reports directory..."
+          mkdir -p reports
+          
+          echo "📄 Generating HTML report for dependencies..."
+          node -e "
+          const fs = require('fs');
+          const path = require('path');
+
+          console.log('🔍 Reading main package.json...');
+          const pkg = require('./package.json');
+          const dependencies = { ...pkg.dependencies, ...pkg.devDependencies };
+
+          let sdkDependencies = {};
+          try {
+            console.log('🔍 Reading microservice-sdk package.json...');
+            const sdkPkg = require('./node_modules/@structured-growth/microservice-sdk/package.json');
+            sdkDependencies = sdkPkg.dependencies || {};
+          } catch (error) {
+            console.warn('⚠️ microservice-sdk package.json not found or cannot be read.');
+          }
+          
+          const reportDate = new Date().toISOString().replace('T', ' ').slice(0, 19);
+
+          let htmlContent = \`
+          <!DOCTYPE html>
+          <html lang='en'>
+          <head>
+            <meta charset='UTF-8'>
+            <meta name='viewport' content='width=device-width, initial-scale=1.0'>
+            <title>Dependencies Report</title>
+            <style>
+              body { font-family: Arial, sans-serif; margin: 20px; }
+              table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+              th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+              th { background-color: #f4f4f4; }
+              .report-header { text-align: center; font-size: 20px; font-weight: bold; margin-bottom: 20px; }
+            </style>
+          </head>
+          <body>
+            <div class='report-header'>Report generated on: \${reportDate}</div>
+            <h2>List of Dependencies</h2>
+            <table>
+              <tr><th>Package</th><th>Version</th><th>Type</th></tr>
+          \`;
+
+          console.log('📌 Adding project dependencies...');
+          for (const [name, version] of Object.entries(dependencies)) {
+            console.log(\`📦 \${name}: \${version} (Dependency)\`);
+            htmlContent += \`<tr><td>\${name}</td><td>\${version}</td><td>Project Dependency</td></tr>\`;
+          }
+
+          console.log('📌 Adding microservice-sdk dependencies...');
+          for (const [name, version] of Object.entries(sdkDependencies)) {
+            console.log(\`📦 \${name}: \${version} (microservice-sdk Dependency)\`);
+            htmlContent += \`<tr><td>\${name}</td><td>\${version}</td><td>microservice-sdk Dependency</td></tr>\`;
+          }
+
+          htmlContent += \`
+            </table>
+          </body>
+          </html>
+          \`;
+
+          console.log('💾 Saving HTML report to reports/report.html...');
+          fs.writeFileSync(path.join('reports', 'report.html'), htmlContent);
+          console.log('✅ HTML report successfully created.');
+          "
+
+      - name: Convert HTML to PDF
+        id: generate_pdf
+        uses: fifsky/html-to-pdf-action@master
+        with:
+          htmlFile: reports/report.html
+          outputFile: reports/dependencies-report.pdf
+          pdfOptions: '{"format": "A4", "margin": {"top": "10mm", "left": "10mm", "right": "10mm", "bottom": "10mm"}}'
+        continue-on-error: false
+
+      - name: Debug PDF Report
+        run: ls -lh reports/
+
+      - name: Upload PDF as artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: dependencies-pdf-report
+          path: reports/dependencies-report.pdf

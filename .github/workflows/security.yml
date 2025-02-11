@@ -1,0 +1,96 @@
+name: Generate security report
+
+on:
+  workflow_call:
+    secrets:
+      NPM_AUTH_TOKEN:
+        required: true
+
+jobs:
+  generate-security-report:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install dependencies
+        run: |
+          echo "📦 Installing dependencies..."
+          npm cache clean --force
+          GITHUB_TOKEN=${{ secrets.NPM_AUTH_TOKEN }} npm install
+
+      - name: Run security audit
+        run: |
+          mkdir -p reports
+          npm audit --json > reports/security-report.json || true
+
+      - name: Convert security report to HTML
+        run: |
+          mkdir -p reports
+          REPORT_DATE=$(date +"%Y-%m-%d %H:%M:%S")
+          echo '<html><head><title>Security Report</title>' > reports/security-report.html
+          echo '<style>' >> reports/security-report.html
+          echo 'body { font-family: Arial, sans-serif; padding: 20px; color: #333; }' >> reports/security-report.html
+          echo 'table { width: 100%; border-collapse: collapse; margin-top: 20px; }' >> reports/security-report.html
+          echo 'th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }' >> reports/security-report.html
+          echo 'th { background-color: #f2f2f2; }' >> reports/security-report.html
+          echo '</style></head><body>' >> reports/security-report.html
+          
+          echo "<div style='text-align: center; font-size: 20px; font-weight: bold; margin-bottom: 20px;'>
+            Report generated on: $REPORT_DATE
+          </div>" >> reports/security-report.html
+          echo '<h1>Security Report</h1>' >> reports/security-report.html
+
+          if [ -s reports/security-report.json ]; then
+            echo '<h2>Summary</h2>' >> reports/security-report.html
+            echo '<ul>' >> reports/security-report.html
+            jq -r '.metadata.vulnerabilities | to_entries[] | "<li><b>\(.key | ascii_upcase)</b>: \(.value)</li>"' reports/security-report.json >> reports/security-report.html
+            echo '</ul>' >> reports/security-report.html
+
+            echo '<h2>Vulnerabilities</h2>' >> reports/security-report.html
+            echo '<table>' >> reports/security-report.html
+            echo '<tr><th>Package</th><th>Severity</th><th>Description</th><th>URL</th><th>Affected (CWE)</th></tr>' >> reports/security-report.html
+
+            jq -r '.vulnerabilities | to_entries[] |
+              .value.via[] |
+              select(type == "object") | 
+              "<tr>
+                <td>\(.dependency)</td>
+                <td>\(.severity)</td>
+                <td>\(.title)</td>
+                <td><a href=\"\(.url)\">Details</a></td>
+                <td>\(
+                  if has("cwe") then 
+                    (if (.cwe | type) == "array" then .cwe | join(", ") elif (.cwe | type) == "string" then .cwe else "N/A" end) 
+                  else 
+                    "N/A" 
+                  end
+                )</td>
+              </tr>"' reports/security-report.json >> reports/security-report.html
+
+            echo '</table>' >> reports/security-report.html
+          else
+            echo '<p>No vulnerabilities found 🎉</p>' >> reports/security-report.html
+          fi
+
+          echo '</body></html>' >> reports/security-report.html
+
+      - name: Convert HTML to PDF
+        id: generate_pdf
+        uses: fifsky/html-to-pdf-action@master
+        with:
+          htmlFile: reports/security-report.html
+          outputFile: reports/security-report.pdf
+          pdfOptions: '{"format": "A4", "margin": {"top": "10mm", "left": "10mm", "right": "10mm", "bottom": "10mm"}}'
+
+      - name: Upload security report as PDF
+        uses: actions/upload-artifact@v4
+        with:
+          name: security-report
+          path: reports/security-report.pdf

@@ -12,7 +12,63 @@ permissions:
   issues: read
 
 jobs:
+  # 1. run unit test
+  unit-tests:
+    name: Unit tests
+    uses: ./.github/workflows/unit-tests.yml
+    secrets:
+      EC2_PUBLIC_IP: ${{ secrets.EC2_PUBLIC_IP }}
+      EC2_SSH_PRIVATE_KEY: ${{ secrets.EC2_SSH_PRIVATE_KEY }}
+      NPM_AUTH_TOKEN: ${{ secrets.NPM_AUTH_TOKEN }}
+      DB_ENDPOINT: ${{ secrets.DB_ENDPOINT }}
+      DB_PORT: ${{ secrets.DB_PORT }}
+      DB_NAME: ${{ secrets.DB_NAME }}
+      DB_MASTER_USERNAME: ${{ secrets.DB_MASTER_USERNAME }}
+      DB_MASTER_PASSWORD: ${{ secrets.DB_MASTER_PASSWORD }}
+      DB_SCHEMA: ${{ secrets.DB_SCHEMA }}
+
+  # 2. lint commit messages
+  #    lint-commit:
+  #      needs: [unit-tests]
+  #      name: Commit lint
+  #      uses: ./.github/workflows/commitlint.yml
+  #      if: success()
+
+  # 3. prettier check
+  prettier-check:
+    needs: [ unit-tests ]
+    name: Prettier check
+    uses: ./.github/workflows/prettier.yml
+    if: success()
+
+  # 4. security test and generate report
+  security:
+    needs: [ unit-tests, prettier-check ]
+    name: Security check
+    uses: ./.github/workflows/security.yml
+    secrets:
+      NPM_AUTH_TOKEN: ${{ secrets.NPM_AUTH_TOKEN }}
+    if: success()
+
+  # 5. dependencies generate report
+  dependencies:
+    needs: [ unit-tests, prettier-check, security ]
+    name: Security check
+    uses: ./.github/workflows/software-dependencies.yml
+    secrets:
+      NPM_AUTH_TOKEN: ${{ secrets.NPM_AUTH_TOKEN }}
+    if: success()
+
+  # 6. documentation generate reports
+  documentation:
+    needs: [ unit-tests, prettier-check, security, dependencies ]
+    name: Security check
+    uses: ./.github/workflows/documentation.yml
+    if: success()
+
+  #   7. release create
   release:
+    needs: [ unit-tests, prettier-check, security, dependencies, documentation ]
     name: Release
     runs-on: ubuntu-latest
     env:
@@ -36,9 +92,6 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: npm i
 
-      - name: Generate API docs
-        run: npm run docs
-
       - name: Update routes
         run: npm run routes
 
@@ -53,3 +106,16 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           NPM_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: node_modules/.bin/semantic-release --dockerRegistry=$REGISTRY_URI
+    if: success()
+
+  # 8. slack notification about created release
+  notify-slack:
+    needs: [ unit-tests, prettier-check, security, dependencies, documentation, release ]
+    name: Notify Slack
+    uses: ./.github/workflows/slack-notification-rel.yml
+    with:
+      env: "Create Release"
+      workflow_run_id: ${{ github.run_id }}
+    secrets:
+      SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+    if: success()
