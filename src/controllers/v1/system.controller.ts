@@ -20,6 +20,18 @@ export class SystemController extends BaseController {
 		this.logger.info("Applying latest migrations...");
 		const config = await dbConfig();
 		const sequelize = new Sequelize(config as Options);
+
+		try {
+			await sequelize.createSchema(process.env.DB_MIGRATION_TABLE_SCHEMA, {});
+			await sequelize.createSchema(process.env.DB_SCHEMA, {});
+		} catch (e) {
+			if (e.message.includes("already exists")) {
+				this.logger.info("Schema already exists, continue...");
+			} else {
+				throw e;
+			}
+		}
+
 		const umzug = new Umzug({
 			migrations: {
 				glob: "database/migrations/*.js",
