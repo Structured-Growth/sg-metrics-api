@@ -26,7 +26,12 @@ export interface MetricAttributes {
 export interface MetricCreationAttributes extends Omit<MetricAttributes, "arn"> {}
 
 export interface MetricUpdateAttributes
-	extends Pick<MetricAttributes, "value" | "takenAt" | "takenAtOffset" | "isDeleted" | "metadata"> {}
+	extends Partial<
+		Pick<
+			MetricAttributes,
+			"value" | "takenAt" | "takenAtOffset" | "isDeleted" | "metadata" | "metricTypeId" | "metricTypeVersion"
+		>
+	> {}
 
 export class Metric implements MetricAttributes {
 	id: string;
@@ -72,13 +77,7 @@ export class Metric implements MetricAttributes {
 	}
 
 	static get arnPattern(): string {
-		return [
-			container.resolve("appPrefix"),
-			":<region>",
-			":<orgId>",
-			":<accountId>",
-			"/metrics/<metricId>",
-		].join("");
+		return [container.resolve("appPrefix"), ":<region>", ":<orgId>", ":<accountId>", "/metrics/<metricId>"].join("");
 	}
 
 	get arn(): string {
