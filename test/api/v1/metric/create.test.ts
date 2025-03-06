@@ -179,8 +179,8 @@ describe("POST /api/v1/metrics", () => {
 					bool: true,
 					string: "string",
 					date: new Date().toISOString(),
-					number: 1
-				}
+					number: 1,
+				},
 			},
 		]);
 		assert.equal(statusCode, 201);
@@ -189,7 +189,6 @@ describe("POST /api/v1/metrics", () => {
 		assert.isString(body[0].metadata.date);
 		assert.equal(body[0].metadata.number, 1);
 	});
-
 
 	it("Should return error if there are to much fields", async () => {
 		const { statusCode, body } = await server.post("/v1/metrics").send([
@@ -217,13 +216,12 @@ describe("POST /api/v1/metrics", () => {
 					bool2: true,
 					string2: "string",
 					date2: new Date().toISOString(),
-					number2: 1
-				}
+					number2: 1,
+				},
 			},
 		]);
 		assert.equal(statusCode, 422);
 		assert.isDefined(body.validation);
 		assert.isString(body.message);
 	});
-
 });

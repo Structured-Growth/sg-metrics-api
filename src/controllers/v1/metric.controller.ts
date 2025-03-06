@@ -189,6 +189,8 @@ export class MetricController extends BaseController {
 					takenAt: body.takenAt ? new Date(body.takenAt) : undefined,
 					takenAtOffset: body.takenAt ? getTimezoneOffset(body.takenAt.toString()) : undefined,
 					metadata: body.metadata,
+					metricTypeCode: body.metricTypeCode,
+					metricTypeVersion: body.metricTypeVersion,
 				},
 				isUndefined
 			) as any

@@ -45,7 +45,7 @@ export class MetricService {
 				...param,
 				metricCategoryId: param.metricCategoryId || metricTypesMap[param.metricTypeCode]?.metricCategoryId,
 				metricTypeId: param.metricTypeId || metricTypesMap[param.metricTypeCode]?.id,
-				id: v4(),
+				id: param.id || v4(),
 				recordedAt: new Date(),
 				isDeleted: false,
 				metadata: param.metadata || {},
@@ -137,13 +137,29 @@ export class MetricService {
 		return new Metric(metric.toJSON());
 	}
 
-	public async update(id: string, params: MetricUpdateAttributes): Promise<Metric> {
-		const result = await Promise.all([
-			// this.metricTimestreamRepository.update(id, params),
-			this.metricSqlRepository.update(id, params),
-		]);
+	public async update(
+		id: string,
+		params: MetricUpdateAttributes & { metricTypeCode?: string; metricTypeVersion?: number }
+	): Promise<Metric> {
+		const { metricTypeCode, metricTypeVersion, ...updateParams } = params;
+		let metricTypeId;
 
-		return new Metric(result[0].toJSON());
+		if (metricTypeCode && metricTypeVersion) {
+			const metricType = await this.metricTypeRepository.search({ code: [metricTypeCode] });
+
+			metricTypeId = metricType?.data?.[0]?.id;
+			if (!metricTypeId) {
+				throw new NotFoundError(`Metric type ${metricTypeCode} not found`);
+			}
+		}
+
+		const updatedMetric = await this.metricSqlRepository.update(id, {
+			...updateParams,
+			...(metricTypeId && { metricTypeId }),
+			...(metricTypeVersion && { metricTypeVersion }),
+		});
+
+		return new Metric(updatedMetric.toJSON());
 	}
 
 	public async delete(id: string): Promise<void> {
