@@ -16,7 +16,7 @@ export const MetricCreateParamsValidator = joi.object({
 					userId: joi.number().positive().required().label("User Id"),
 					metricCategoryId: joi.number().positive().label("Metric Category Id"),
 					metricTypeId: joi.number().positive().label("Metric Type Id"),
-					metricTypeCode: joi.string().max(50).required().label("Metric Type Code"),
+					metricTypeCode: joi.string().max(50).label("Metric Type Code"),
 					metricTypeVersion: joi.number().positive().required().label("Metric Type Version"),
 					relatedToRn: joi.string().max(50).label("Related To"),
 					deviceId: joi.number().positive().label("Device ID"),
