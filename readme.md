@@ -26,7 +26,9 @@ TODO readme.
 
 2. Clone created repository.
 
-3. Make sure you have access to the [Microservice SDK repository](https://github.com/Structured-Growth/microservice-sdk-ts). It's the main dependency.
+3. Make sure you have access to
+   the [Microservice SDK repository](https://github.com/Structured-Growth/microservice-sdk-ts). It's the main
+   dependency.
 
 4. Create a personal GitHub access token in order to be able to install dependencies from private npm registries. Go to
    the [Developer Settings](https://github.com/settings/tokens) and generate classic access token.
@@ -76,16 +78,28 @@ for automated build and push an image to a private docker registry.
 
 ### Configure GitHub workflow
 
-Firstly create a docker repository with the same name as package. For example `<aws_account_id>.dkr.ecr.<region>.amazonaws.com/api-service-starter-kit` 
+Firstly create a docker repository with the same name as package. For example
+`<aws_account_id>.dkr.ecr.<region>.amazonaws.com/api-service-starter-kit`
 
 In order to create and push new image you have to set GitHub Actions Secrets that provides access to a private registry.
 
 1. Go to the Repository Settings > Secrets & Variables > Actions;
 2. Create these secrets:
-    - `REGISTRY_URI` - URI of a private Docker registry (like <aws_account_id>.dkr.ecr.<region>.amazonaws.com, without repository name);
+    - `REGISTRY_URI` - URI of a private Docker registry (like <aws_account_id>.dkr.ecr.<region>.amazonaws.com, without
+      repository name);
     - `AWS_ACCESS_KEY_ID` - IAM access token with write permissions on ECR;
-    - `AWS_SECRET_ACCESS_KEY`
-    - `AWS_DEFAULT_REGION`
+    - `AWS_SECRET_ACCESS_KEY` – The secret access key associated with the IAM user.
+    - `AWS_DEFAULT_REGION` – The AWS region where the ECR repository is hosted.
+    - `DB_ENDPOINT` – The hostname or IP address of the database server.
+    - `DB_PORT` – The port number for connecting to the database.
+    - `DB_NAME` – The name of the database to connect to.
+    - `DB_SCHEMA` – The specific schema within the database.
+    - `DB_MASTER_USERNAME` – The username for database authentication.
+    - `DB_MASTER_PASSWORD` – The password for database authentication.
+    - `EC2_PUBLIC_IP` – The public IP address of the EC2 instance.
+    - `EC2_SSH_PRIVATE_KEY` – The private SSH key used for connecting to the EC2 instance.
+    - `NPM_AUTH_TOKEN` – The authentication token for accessing private NPM packages.
+    - `SLACK_WEBHOOK_URL` – The webhook URL for sending deployment notifications to Slack.
 3. Push to the `main` branch to run Release workflow;
 
 ### Build and test docker image locally

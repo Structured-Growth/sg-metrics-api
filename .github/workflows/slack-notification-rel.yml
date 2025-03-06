@@ -1,0 +1,131 @@
+name: Slack notification
+on:
+  workflow_call:
+    inputs:
+      env:
+        required: true
+        type: string
+      workflow_run_id:
+        required: true
+        type: string
+    secrets:
+      SLACK_WEBHOOK_URL:
+        required: true
+jobs:
+  notification:
+    name: Slack notification
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Generate URLs for artifacts
+        id: urls
+        run: |
+          echo "run_link=https://github.com/${{ github.repository }}/actions/runs/${{ inputs.workflow_run_id }}" >> $GITHUB_ENV
+          echo "pr_link=https://github.com/${{ github.repository }}/pulls" >> $GITHUB_ENV
+
+      - name: Generate Metadata
+        id: message
+        run: |
+          FULL_MESSAGE="${{ github.event.head_commit.message }}"
+          SOURCE_BRANCH=$(echo "$FULL_MESSAGE" | grep -oP '(?<=/)[^/\n]+' || true)
+          if [ -z "$SOURCE_BRANCH" ]; then
+            SOURCE_BRANCH="Unknown branch"
+          fi
+          echo "source_branch=$SOURCE_BRANCH" >> $GITHUB_ENV
+          
+          echo "target_branch=${{ github.ref_name }}" >> $GITHUB_ENV
+          
+          EXTRACTED_MESSAGE=$(echo "$FULL_MESSAGE" | awk 'NR>1 { print }' | sed ':a;N;$!ba;s/\n/ /g' || true)
+          if [ -z "$EXTRACTED_MESSAGE" ]; then
+          EXTRACTED_MESSAGE="No message available."
+          fi
+          echo "pr_title=$EXTRACTED_MESSAGE" >> $GITHUB_ENV
+
+      - name: Send Slack Notification
+        uses: slackapi/slack-github-action@v1.18.0
+        with:
+          payload: |
+            {
+                "text": "${{ inputs.env }}",
+                "blocks": [
+                    {
+                        "type": "header",
+                        "text": {
+                            "type": "plain_text",
+                            "text": "Create Release ${{ github.repository }}",
+                            "emoji": true
+                        }
+                    },
+                    {
+                        "type": "section",
+                        "fields": [
+                            {
+                                "type": "mrkdwn",
+                                "text": "*Source branch:*"
+                            },
+                            {
+                                "type": "plain_text",
+                                "text": "${{ env.source_branch }}"
+                            }
+                        ]
+                    },
+                    {
+                        "type": "section",
+                        "fields": [
+                            {
+                                "type": "mrkdwn",
+                                "text": "*Target branch:*"
+                            },
+                            {
+                                "type": "plain_text",
+                                "text": "${{ env.target_branch }}"
+                            }
+                        ]
+                    },
+                    {
+                        "type": "section",
+                        "fields": [
+                            {
+                                "type": "mrkdwn",
+                                "text": "*Sender:*"
+                            },
+                            {
+                                "type": "mrkdwn",
+                                "text": "<${{ github.event.sender.html_url }}|${{ github.event.sender.login }}>"
+                            }
+            
+                        ]
+                    },
+                    {
+                        "type": "section",
+                        "fields": [
+                            {
+                                "type": "mrkdwn",
+                                "text": "*Artifacts:*"
+                            },
+                            {
+                                "type": "mrkdwn",
+                                "text": "<${{ env.run_link }}|View Artifacts>"
+                            }
+                        ]
+                    },
+                    {
+                        "type": "section",
+                        "fields": [
+                            {
+                                "type": "mrkdwn",
+                                "text": "*Message:*"
+                            },
+                            {
+                                "type": "mrkdwn",
+                                "text": "<${{ env.pr_link }}|${{ env.pr_title }}>"
+                            }
+                        ]
+                    }
+                ]
+            }
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+          SLACK_WEBHOOK_TYPE: INCOMING_WEBHOOK

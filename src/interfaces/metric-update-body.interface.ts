@@ -5,5 +5,7 @@ export interface MetricUpdateBodyInterface {
 	 */
 	takenAt?: string;
 	takenAtOffset?: number;
+	metricTypeCode?: string;
+	metricTypeVersion?: number;
 	metadata?: object;
 }

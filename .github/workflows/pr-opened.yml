@@ -1,0 +1,52 @@
+name: Pull request validation
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+
+permissions:
+  contents: read
+  issues: read
+  pull-requests: read
+
+jobs:
+  # 1. run unit test
+  unit-tests:
+    name: Unit tests
+    uses: ./.github/workflows/unit-tests.yml
+    secrets:
+      EC2_PUBLIC_IP: ${{ secrets.EC2_PUBLIC_IP }}
+      EC2_SSH_PRIVATE_KEY: ${{ secrets.EC2_SSH_PRIVATE_KEY }}
+      NPM_AUTH_TOKEN: ${{ secrets.NPM_AUTH_TOKEN }}
+      DB_ENDPOINT: ${{ secrets.DB_ENDPOINT }}
+      DB_PORT: ${{ secrets.DB_PORT }}
+      DB_NAME: ${{ secrets.DB_NAME }}
+      DB_MASTER_USERNAME: ${{ secrets.DB_MASTER_USERNAME }}
+      DB_MASTER_PASSWORD: ${{ secrets.DB_MASTER_PASSWORD }}
+      DB_SCHEMA: ${{ secrets.DB_SCHEMA }}
+
+  # 2. lint commit messages
+  #  lint-commit:
+  #    needs: [unit-tests]
+  #    name: Commit lint
+  #    uses: ./.github/workflows/commitlint.yml
+  #    if: success()
+
+  # 3. prettier check
+  prettier-check:
+    needs: [unit-tests]
+    name: Prettier check
+    uses: ./.github/workflows/prettier.yml
+    if: success()
+
+  # 4. slack notification about PR is opened
+  notify-slack:
+    needs: [unit-tests, prettier-check]
+    name: Notify Slack
+    uses: ./.github/workflows/slack-notification-pr.yml
+    with:
+      env: "Pull Request Validation Completed"
+      workflow_run_id: ${{ github.run_id }}
+    secrets:
+      SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+    if: success()

@@ -38,7 +38,7 @@
     "readme.md"
   ],
   "dependencies": {
-    "@structured-growth/microservice-sdk": "1.17.16",
+    "@structured-growth/microservice-sdk": "1.17.18",
     "aws-sdk": "^2.1534.0",
     "commander": "^11.1.0",
     "dotenv": "^16.3.1",

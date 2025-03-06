@@ -1,0 +1,199 @@
+name: Deploy API to EC2
+
+on:
+  workflow_call:
+    secrets:
+      EC2_PUBLIC_IP:
+        required: true
+      EC2_SSH_PRIVATE_KEY:
+        required: true
+      NPM_AUTH_TOKEN:
+        required: true
+      DB_ENDPOINT:
+        required: true
+      DB_PORT:
+        required: true
+      DB_NAME:
+        required: true
+      DB_MASTER_USERNAME:
+        required: true
+      DB_MASTER_PASSWORD:
+        required: true
+      DB_SCHEMA:
+        required: true
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    env:
+      FOLDER_NAME: my-api-metrics
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up SSH key
+        run: |
+          echo "${{ secrets.EC2_SSH_PRIVATE_KEY }}" > private_key.pem
+          chmod 600 private_key.pem
+
+      - name: Run tests
+        run: |
+          ssh -o StrictHostKeyChecking=no -i private_key.pem ubuntu@${{ secrets.EC2_PUBLIC_IP }} << 'EOF'
+            echo "✅ Connected to EC2 instance."
+
+            echo "🔄 Updating system..."
+            sudo apt update -y -q && sudo apt upgrade -y -q || echo "⚠️ Update failed!"
+          
+            echo "🔄 Removing old Node.js, npm and conflicting dependencies..."
+            sudo apt remove -y -q --purge nodejs npm
+            sudo apt autoremove -y -q
+            sudo apt clean
+            sudo rm -rf /usr/local/lib/node_modules
+            sudo rm -rf ~/.npm
+            sudo rm -rf /usr/lib/node_modules
+            sudo rm -rf /var/cache/apt/archives/*
+
+            echo "🔄 Installing Node.js 20..."
+            curl -fsSL https://deb.nodesource.com/setup_20.x | sudo -E bash -
+            sudo apt install -y -q nodejs
+            sudo apt install -y -q npm
+          
+            echo "✅ Node.js installed successfully:"
+            node -v
+            npm -v
+
+            cd /home/ubuntu
+
+            echo "🗑 Cleaning up old API..."
+            sudo rm -rf ${{ env.FOLDER_NAME }}
+
+            echo "⬇️ Cloning repository..."
+            git clone https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/Structured-Growth/sg-metrics-api.git ${{ env.FOLDER_NAME }}
+            cd ${{ env.FOLDER_NAME }}
+          
+            git checkout ${{ github.head_ref }} && git pull
+          
+            if git rev-parse --is-inside-work-tree >/dev/null 2>&1; then
+              echo "✅ Repository cloned successfully!"
+          
+              echo "📂 Root structure of the repository:"
+              ls -lah
+            else
+              echo "❌ Repository clone failed!" >&2
+              exit 1
+            fi
+          
+            echo "📦 Installing API dependencies..."
+            npm cache clean --force
+            GITHUB_TOKEN=${{ secrets.NPM_AUTH_TOKEN }} npm install
+          
+            echo "🛠 Installing Mochawesome..."
+            npm install --save-dev mochawesome mochawesome-merge mochawesome-report-generator
+          
+            echo "📝 Updating .env file..."
+            sed -i 's/^AUTHENTICATION_ENABLED=true/AUTHENTICATION_ENABLED=false/' .env
+            sed -i 's/^AUTHORIZATION_ENABLED=true/AUTHORIZATION_ENABLED=false/' .env
+            sed -i 's/^INTERNAL_AUTHENTICATION_ENABLED=true/INTERNAL_AUTHENTICATION_ENABLED=false/' .env
+            sed -i 's/^INTERNAL_REQUESTS_ALLOWED=true/INTERNAL_REQUESTS_ALLOWED=false/' .env
+
+            sed -i 's/^DB_HOST=.*/DB_HOST=${{ secrets.DB_ENDPOINT }}/' .env
+            sed -i 's/^DB_PORT=.*/DB_PORT=${{ secrets.DB_PORT }}/' .env
+            sed -i 's/^DB_DATABASE=.*/DB_DATABASE=${{ secrets.DB_NAME }}/' .env
+            sed -i 's/^DB_USERNAME=.*/DB_USERNAME=${{ secrets.DB_MASTER_USERNAME }}/' .env
+            sed -i 's/^DB_PASSWORD=.*/DB_PASSWORD=${{ secrets.DB_MASTER_PASSWORD }}/' .env
+            sed -i 's/^DB_SCHEMA=.*/DB_SCHEMA=${{ secrets.DB_SCHEMA }}/' .env
+            sed -i 's/^DB_MIGRATION_TABLE_SCHEMA=.*/DB_MIGRATION_TABLE_SCHEMA=${{ secrets.DB_SCHEMA }}/' .env
+
+            echo "✅ .env file updated successfully."
+
+            echo "🛠 Building the API..."
+            npm run build
+
+            if [ $? -eq 0 ]; then
+              echo "✅ Build completed successfully."
+            else
+              echo "❌ Build failed!" >&2
+              exit 1
+            fi
+
+            echo "🧪 Running tests..."
+            mkdir -p mochawesome-report
+            npx mocha --exit --bail=false --reporter mochawesome \
+              --reporter-options reportDir=mochawesome-report,reportFilename=report,quiet=false,inline=true
+          
+            TEST_EXIT_CODE=$?
+            echo "$TEST_EXIT_CODE" | tee /home/ubuntu/test_exit_code.txt
+
+            echo "✅ Tests completed."
+          
+            chmod 644 mochawesome-report/report.html
+            mv mochawesome-report/report.html /home/ubuntu/report.html
+          
+            echo "✅ Report is ready to be downloaded."
+          EOF
+
+      - name: Fetch HTML Report from EC2
+        run: |
+          mkdir -p reports
+          scp -o StrictHostKeyChecking=no -i private_key.pem ubuntu@${{ secrets.EC2_PUBLIC_IP }}:/home/ubuntu/report.html reports/report.html
+
+      - name: Fetch test exit code from EC2
+        run: |
+          scp -o StrictHostKeyChecking=no -i private_key.pem ubuntu@${{ secrets.EC2_PUBLIC_IP }}:/home/ubuntu/test_exit_code.txt .
+          echo "TEST_EXIT_CODE=$(cat test_exit_code.txt | tr -d '\n\r')" >> $GITHUB_ENV
+
+      - name: Check if report is saved
+        run: ls -lah reports/
+
+      - name: Modify HTML before PDF conversion
+        run: |
+          REPORT_DATE=$(date +"%Y-%m-%d %H:%M:%S")
+          echo "<div style='text-align: center; font-size: 20px; font-weight: bold; margin-bottom: 20px;'>
+            Report generated on: $REPORT_DATE
+          </div>" | cat - reports/report.html > temp && mv temp reports/report.html
+
+          echo '<style> 
+            [role=navigation] { display: none !important; } 
+            #details { padding: 0 !important; } 
+            section { box-shadow: none !important; } 
+            footer { display: none !important; } 
+          </style>' >> reports/report.html
+
+      - name: Convert HTML to PDF
+        id: generate_pdf
+        uses: fifsky/html-to-pdf-action@master
+        with:
+          htmlFile: reports/report.html
+          outputFile: reports/unit-tests-report.pdf
+          pdfOptions: '{"format": "A4", "margin": {"top": "10mm", "left": "10mm", "right": "10mm", "bottom": "10mm"}}'
+
+      - name: Debug PDF Report
+        run: ls -lh reports/
+
+      - name: Upload PDF Report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: unit-reports
+          path: reports/unit-tests-report.pdf
+
+      - name: Cleanup EC2 instance
+        run: |
+          ssh -o StrictHostKeyChecking=no -i private_key.pem ubuntu@${{ secrets.EC2_PUBLIC_IP }} << 'EOF'
+            echo "🗑 Cleaning up the server..."
+          
+            rm -f /home/ubuntu/report.html
+            rm -f /home/ubuntu/test_exit_code.txt
+          
+            sudo rm -rf /home/ubuntu/${{ env.FOLDER_NAME }}
+          
+            echo "✅ Server is restored to original state."
+          EOF
+
+      - name: Fail workflow if tests failed
+        run: |
+          if [ "$TEST_EXIT_CODE" -gt 0 ]; then
+            echo "❌ Tests failed! Failing workflow..."
+            exit $TEST_EXIT_CODE
+          fi
