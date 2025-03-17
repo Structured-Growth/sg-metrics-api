@@ -69,7 +69,7 @@ export class MetricSqlRepository {
 			data: data.map((item: any) => ({
 				...item,
 				count: Number(item.count),
-				avg: item.avg ? round(item.avg, 2) : undefined,
+				avg: item.avg !== undefined && item.avg !== null ? round(item.avg, 2) : undefined,
 			})) as any,
 			limit,
 			page,
