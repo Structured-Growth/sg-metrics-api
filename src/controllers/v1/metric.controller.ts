@@ -24,6 +24,7 @@ import { getTimezoneOffset } from "../../helpers/get-timezone-offset";
 import { MetricAggregateParamsValidator } from "../../validators/metric-aggregate-params.validator";
 import { EventMutation } from "@structured-growth/microservice-sdk";
 import { MetricsBulkRequestInterface } from "../../interfaces/metrics-bulk.request.interface";
+import { MetricBulkRequestValidator } from "../../validators/metric-bulk-request.validator";
 
 const publicMetricAttributes = [
 	"id",
@@ -239,9 +240,11 @@ export class MetricController extends BaseController {
 	@Post("/bulk")
 	@SuccessResponse(204, "Operations success")
 	@DescribeAction("metrics/bulk")
-	public async bulk(@Queries() query: {}, @Body() body: MetricsBulkRequestInterface): Promise<void> {
-		await this.metricService.bulk(body, this.principal.arn);
-
-		this.response.status(204);
+	@ValidateFuncArgs(MetricBulkRequestValidator)
+	public async bulk(
+		@Queries() query: {},
+		@Body() body: MetricsBulkRequestInterface
+	): Promise<(PublicMetricAttributes | null)[]> {
+		return this.metricService.bulk(body);
 	}
 }

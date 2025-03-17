@@ -173,21 +173,26 @@ export class MetricService {
 		await this.metricSqlRepository.delete(id, transaction);
 	}
 
-	public async bulk(data: MetricsBulkRequestInterface, principalArn: string): Promise<void> {
+	public async bulk(data: MetricsBulkRequestInterface): Promise<(Metric | null)[]> {
+		const result = [];
 		await MetricSQL.sequelize.transaction(async (transaction) => {
 			for (let operation of data) {
 				switch (operation.op) {
 					case "create":
-						await this.create([operation.data] as any, transaction);
+						const createResult = await this.create([operation.data] as any, transaction);
+						result.push(createResult[0]);
 						break;
 					case "update":
-						await this.update(operation.data.id, omit(operation.data, "id") as any, transaction);
+						const updateResult = await this.update(operation.data.id, omit(operation.data, "id") as any, transaction);
+						result.push(updateResult);
 						break;
 					case "delete":
 						await this.delete(operation.data as string, transaction);
+						result.push(null);
 						break;
 				}
 			}
 		});
+		return result;
 	}
 }

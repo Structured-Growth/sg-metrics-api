@@ -91,10 +91,9 @@ describe("POST /api/v1/metrics/bulk", () => {
 			},
 			{
 				op: "delete",
-				data: metricUuid
+				data: metricUuid,
 			},
 		]);
-		assert.equal(statusCode, 204);
+		assert.equal(statusCode, 200);
 	});
-
 });
