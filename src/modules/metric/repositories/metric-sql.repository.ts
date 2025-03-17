@@ -1,14 +1,14 @@
 import {
 	autoInjectable,
-	SearchResultInterface,
 	NotFoundError,
+	SearchResultInterface,
 	ValidationError,
 } from "@structured-growth/microservice-sdk";
 import MetricSQL from "../../../../database/models/metric-sql.sequelize";
 import { MetricSearchParamsInterface } from "../../../interfaces/metric-search-params.interface";
 import { MetricCreationAttributes, MetricUpdateAttributes } from "../../../../database/models/metric";
-import { Op } from "sequelize";
-import { isUndefined, map, omitBy, round, snakeCase, sum } from "lodash";
+import { Op, Transaction } from "sequelize";
+import { isUndefined, omitBy, round, snakeCase } from "lodash";
 import { MetricAggregateParamsInterface } from "../../../interfaces/metric-aggregate-params.interface";
 import { MetricAggregateResultInterface } from "../../../interfaces/metric-aggregate-result.interface";
 import { Sequelize } from "sequelize-typescript";
@@ -77,11 +77,10 @@ export class MetricSqlRepository {
 		};
 	}
 
-	public async create(params: MetricCreationAttributes[]): Promise<MetricSQL[]> {
+	public async create(params: MetricCreationAttributes[], transaction?: Transaction): Promise<MetricSQL[]> {
 		try {
-			return await MetricSQL.bulkCreate(params);
+			return await MetricSQL.bulkCreate(params, { transaction });
 		} catch (e) {
-			console.log(1, e.name, e.message, e.code);
 			if (e.name === "SequelizeUniqueConstraintError") {
 				throw new ValidationError({}, "Metric with given ID already exists");
 			} else {
@@ -94,6 +93,7 @@ export class MetricSqlRepository {
 		id: string,
 		params?: {
 			attributes?: string[];
+			transaction?: Transaction;
 		}
 	): Promise<MetricSQL | null> {
 		return MetricSQL.findOne({
@@ -103,27 +103,28 @@ export class MetricSqlRepository {
 				isDeleted: false,
 			},
 			rejectOnEmpty: false,
+			transaction: params?.transaction,
 		});
 	}
 
-	public async update(id: string, params: MetricUpdateAttributes): Promise<MetricSQL> {
-		const metricAurora = await this.read(id);
+	public async update(id: string, params: MetricUpdateAttributes, transaction?: Transaction): Promise<MetricSQL> {
+		const metricAurora = await this.read(id, { transaction });
 		if (!metricAurora) {
-			throw new NotFoundError(`Metric SQL ${id} not found`);
+			throw new NotFoundError(`Metric ${id} not found`);
 		}
 		metricAurora.setAttributes(params);
 
-		return metricAurora.save();
+		return metricAurora.save({ transaction });
 	}
 
-	public async delete(id: string): Promise<void> {
-		const metricAurora = await this.read(id);
+	public async delete(id: string, transaction?: Transaction): Promise<void> {
+		const metricAurora = await this.read(id, { transaction });
 		if (!metricAurora) {
-			throw new NotFoundError(`Metric SQL ${id} not found`);
+			throw new NotFoundError(`Metric ${id} not found`);
 		}
 		metricAurora.isDeleted = true;
 
-		await metricAurora.save();
+		await metricAurora.save({ transaction });
 	}
 
 	private buildQuery(params: MetricSearchParamsInterface) {

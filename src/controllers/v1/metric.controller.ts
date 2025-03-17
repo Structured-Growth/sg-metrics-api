@@ -23,6 +23,7 @@ import { MetricAggregateResultInterface } from "../../interfaces/metric-aggregat
 import { getTimezoneOffset } from "../../helpers/get-timezone-offset";
 import { MetricAggregateParamsValidator } from "../../validators/metric-aggregate-params.validator";
 import { EventMutation } from "@structured-growth/microservice-sdk";
+import { MetricsBulkRequestInterface } from "../../interfaces/metrics-bulk.request.interface";
 
 const publicMetricAttributes = [
 	"id",
@@ -227,6 +228,19 @@ export class MetricController extends BaseController {
 		await this.eventBus.publish(
 			new EventMutation(this.principal.arn, metric.arn, `${this.appPrefix}:metrics/delete`, JSON.stringify({}))
 		);
+
+		this.response.status(204);
+	}
+
+	/**
+	 * Run operations in a single transaction
+	 */
+	@OperationId("Bulk")
+	@Post("/bulk")
+	@SuccessResponse(204, "Operations success")
+	@DescribeAction("metrics/bulk")
+	public async bulk(@Queries() query: {}, @Body() body: MetricsBulkRequestInterface): Promise<void> {
+		await this.metricService.bulk(body, this.principal.arn);
 
 		this.response.status(204);
 	}

@@ -13,10 +13,13 @@ import { MetricCreateBodyInterface } from "../../interfaces/metric-create-body.i
 import { MetricSearchParamsInterface } from "../../interfaces/metric-search-params.interface";
 import { MetricAggregateParamsInterface } from "../../interfaces/metric-aggregate-params.interface";
 import { MetricAggregateResultInterface } from "../../interfaces/metric-aggregate-result.interface";
-import { keyBy, map, snakeCase, uniq } from "lodash";
+import { keyBy, map, omit, snakeCase, uniq } from "lodash";
 import { MetricTypeRepository } from "../metric-type/metric-type.repository";
 import MetricType from "../../../database/models/metric-type.sequelize";
 import { MetricCategoryRepository } from "../metric-category/metric-category.repository";
+import { MetricsBulkRequestInterface } from "../../interfaces/metrics-bulk.request.interface";
+import MetricSQL from "../../../database/models/metric-sql.sequelize";
+import { Transaction } from "sequelize";
 
 @autoInjectable()
 export class MetricService {
@@ -29,14 +32,17 @@ export class MetricService {
 		@inject("appPrefix") private appPrefix: string
 	) {}
 
-	public async create(params: MetricCreateBodyInterface[]): Promise<Metric[]> {
+	public async create(params: MetricCreateBodyInterface[], transaction?: Transaction): Promise<Metric[]> {
 		// check if there are metrics with metricTypeCode and populate them with metricTypeId and metricCategoryId
 		const metricTypeCodes = map(params, "metricTypeCode").filter((i) => !!i);
 		let metricTypesMap: Record<string, MetricType> = {};
 		if (metricTypeCodes.length) {
-			const metricTypes = await this.metricTypeRepository.search({
-				code: metricTypeCodes,
-			});
+			const metricTypes = await this.metricTypeRepository.search(
+				{
+					code: metricTypeCodes,
+				},
+				transaction
+			);
 			metricTypesMap = keyBy(metricTypes.data, "code");
 		}
 
@@ -56,11 +62,7 @@ export class MetricService {
 			return [];
 		}
 
-		const result = await this.metricSqlRepository.create(data);
-		// const result = await Promise.all([
-		// 	this.metricTimestreamRepository.create(data),
-		// 	this.metricSqlRepository.create(data),
-		// ]);
+		const result = await this.metricSqlRepository.create(data, transaction);
 
 		await this.eventBus.publish({
 			arn: `${this.appPrefix}:${data[0].region}:${data[0].orgId}:${data[0].accountId}:events/metrics/created`,
@@ -128,8 +130,8 @@ export class MetricService {
 		return await this.metricSqlRepository.aggregate(params);
 	}
 
-	public async read(id: string): Promise<Metric | null> {
-		const metric = await this.metricSqlRepository.read(id);
+	public async read(id: string, transaction?: Transaction): Promise<Metric | null> {
+		const metric = await this.metricSqlRepository.read(id, { transaction });
 		if (!metric) {
 			throw new NotFoundError(`Metric ${id} not found`);
 		}
@@ -139,13 +141,14 @@ export class MetricService {
 
 	public async update(
 		id: string,
-		params: MetricUpdateAttributes & { metricTypeCode?: string; metricTypeVersion?: number }
+		params: MetricUpdateAttributes & { metricTypeCode?: string; metricTypeVersion?: number },
+		transaction?: Transaction
 	): Promise<Metric> {
 		const { metricTypeCode, metricTypeVersion, ...updateParams } = params;
 		let metricTypeId;
 
 		if (metricTypeCode && metricTypeVersion) {
-			const metricType = await this.metricTypeRepository.search({ code: [metricTypeCode] });
+			const metricType = await this.metricTypeRepository.search({ code: [metricTypeCode] }, transaction);
 
 			metricTypeId = metricType?.data?.[0]?.id;
 			if (!metricTypeId) {
@@ -153,17 +156,38 @@ export class MetricService {
 			}
 		}
 
-		const updatedMetric = await this.metricSqlRepository.update(id, {
-			...updateParams,
-			...(metricTypeId && { metricTypeId }),
-			...(metricTypeVersion && { metricTypeVersion }),
-		});
+		const updatedMetric = await this.metricSqlRepository.update(
+			id,
+			{
+				...updateParams,
+				...(metricTypeId && { metricTypeId }),
+				...(metricTypeVersion && { metricTypeVersion }),
+			},
+			transaction
+		);
 
 		return new Metric(updatedMetric.toJSON());
 	}
 
-	public async delete(id: string): Promise<void> {
-		// await Promise.all([this.metricTimestreamRepository.delete(id), this.metricSqlRepository.delete(id)]);
-		await this.metricSqlRepository.delete(id);
+	public async delete(id: string, transaction?: Transaction): Promise<void> {
+		await this.metricSqlRepository.delete(id, transaction);
+	}
+
+	public async bulk(data: MetricsBulkRequestInterface, principalArn: string): Promise<void> {
+		await MetricSQL.sequelize.transaction(async (transaction) => {
+			for (let operation of data) {
+				switch (operation.op) {
+					case "create":
+						await this.create([operation.data] as any, transaction);
+						break;
+					case "update":
+						await this.update(operation.data.id, omit(operation.data, "id") as any, transaction);
+						break;
+					case "delete":
+						await this.delete(operation.data as string, transaction);
+						break;
+				}
+			}
+		});
 	}
 }
