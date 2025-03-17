@@ -16,7 +16,10 @@ export const MetricUpdateParamsValidator = joi.object({
 				.max(10)
 				.pattern(
 					/^/,
-					joi.alternatives().try(joi.boolean(), joi.number(), joi.string().max(255), joi.string().isoDate())
+					joi
+						.alternatives()
+						.try(joi.boolean(), joi.number(), joi.string().max(255), joi.string().isoDate())
+						.allow("", null)
 				),
 		})
 		.with("metricTypeCode", "metricTypeVersion")

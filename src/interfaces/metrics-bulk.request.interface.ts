@@ -14,9 +14,16 @@ type Update = {
 	data: UpdateMetricRequestBodyInterface;
 };
 
-type Delete = {
-	op: "delete";
-	data: string;
+type Upsert = {
+	op: "upsert";
+	data: CreateMetricRequestBodyInterface;
 };
 
-export type MetricsBulkRequestInterface = (Create | Update | Delete)[];
+type Delete = {
+	op: "delete";
+	data: {
+		id: string;
+	};
+};
+
+export type MetricsBulkRequestInterface = (Create | Update | Upsert | Delete)[];

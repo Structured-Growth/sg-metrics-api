@@ -32,7 +32,10 @@ export const MetricBulkRequestValidator = joi.object({
 								.max(10)
 								.pattern(
 									/^/,
-									joi.alternatives().try(joi.boolean(), joi.number(), joi.string().max(255), joi.string().isoDate())
+									joi
+										.alternatives()
+										.try(joi.boolean(), joi.number(), joi.string().max(255), joi.string().isoDate())
+										.allow("", null)
 								),
 						})
 						.xor("metricTypeId", "metricTypeCode")
@@ -52,15 +55,55 @@ export const MetricBulkRequestValidator = joi.object({
 								.max(10)
 								.pattern(
 									/^/,
-									joi.alternatives().try(joi.boolean(), joi.number(), joi.string().max(255), joi.string().isoDate())
+									joi
+										.alternatives()
+										.try(joi.boolean(), joi.number(), joi.string().max(255), joi.string().isoDate())
+										.allow("", null)
 								),
 						})
 						.with("metricTypeCode", "metricTypeVersion")
 						.with("metricTypeVersion", "metricTypeCode"),
 				}),
 				joi.object({
+					op: joi.string().valid("upsert").required(),
+					data: joi
+						.object({
+							id: joi.string().uuid({ version: "uuidv4" }).label("Metric Id"),
+							orgId: joi.number().positive().required().label("Organization Id"),
+							region: joi.string().min(2).required().label("Metric region"),
+							accountId: joi.number().positive().label("Account Id"),
+							userId: joi.number().positive().required().label("User Id"),
+							metricCategoryId: joi.number().positive().label("Metric Category Id"),
+							metricTypeId: joi.number().positive().label("Metric Type Id"),
+							metricTypeCode: joi.string().max(50).label("Metric Type Code"),
+							metricTypeVersion: joi.number().positive().required().label("Metric Type Version"),
+							relatedToRn: joi.string().max(50).label("Related To"),
+							deviceId: joi.number().positive().label("Device ID"),
+							batchId: joi.string().max(50).required().label("Batch id"),
+							value: joi.number().required().label("Value"),
+							takenAt: joi.string().regex(isoFormatWithTimezone).required().label("Taken at"),
+							takenAtOffset: joi.number().label("Taken at Offset"),
+							metadata: joi
+								.object()
+								.max(10)
+								.pattern(
+									/^/,
+									joi
+										.alternatives()
+										.try(joi.boolean(), joi.number(), joi.string().max(255), joi.string().isoDate())
+										.allow("", null)
+								),
+						})
+						.xor("metricTypeId", "metricTypeCode")
+						.required(),
+				}),
+				joi.object({
 					op: joi.string().valid("delete").required(),
-					data: joi.string().uuid(),
+					data: joi
+						.object({
+							id: joi.string().uuid().required(),
+						})
+						.required(),
 				})
 			)
 		)

@@ -28,6 +28,7 @@ router.get(pathPrefix + '/v1/metrics/aggregate', handleRequest(Controllers.Metri
 router.post(pathPrefix + '/v1/metrics', handleRequest(Controllers.MetricController, "create", handlerOpts));
 router.get(pathPrefix + '/v1/metrics/:metricId', handleRequest(Controllers.MetricController, "get", handlerOpts));
 router.put(pathPrefix + '/v1/metrics/:metricId', handleRequest(Controllers.MetricController, "update", handlerOpts));
+router.post(pathPrefix + '/v1/metrics/upsert', handleRequest(Controllers.MetricController, "upsert", handlerOpts));
 router.delete(pathPrefix + '/v1/metrics/:metricId', handleRequest(Controllers.MetricController, "delete", handlerOpts));
 router.post(pathPrefix + '/v1/metrics/bulk', handleRequest(Controllers.MetricController, "bulk", handlerOpts));
 
@@ -66,6 +67,7 @@ export const actionToRouteMap = {
 	"MetricController.create": 'post /v1/metrics',
 	"MetricController.get": 'get /v1/metrics/:metricId',
 	"MetricController.update": 'put /v1/metrics/:metricId',
+	"MetricController.upsert": 'post /v1/metrics/upsert',
 	"MetricController.delete": 'delete /v1/metrics/:metricId',
 	"MetricController.bulk": 'post /v1/metrics/bulk',
 	"MetricCategoryController.search": 'get /v1/metric-category',

@@ -10,6 +10,7 @@ describe("POST /api/v1/metrics/bulk", () => {
 	const { server, context } = initTest();
 	const code = `code-${Date.now()}`;
 	const metricUuid = v4();
+	const metricUuid2 = v4();
 	const relatedToRn = `relatedToRn-${Date.now()}`;
 	const userId = parseInt(Date.now().toString().slice(4));
 	const orgId = parseInt(Date.now().toString().slice(0, 3));
@@ -80,6 +81,9 @@ describe("POST /api/v1/metrics/bulk", () => {
 					batchId: batchId,
 					value: value,
 					takenAt: "2024-05-16T14:30:00+01:00",
+					metadata: {
+						notes: "",
+					},
 				},
 			},
 			{
@@ -91,7 +95,45 @@ describe("POST /api/v1/metrics/bulk", () => {
 			},
 			{
 				op: "delete",
-				data: metricUuid,
+				data: {
+					id: metricUuid,
+				},
+			},
+			{
+				op: "upsert",
+				data: {
+					id: metricUuid2,
+					orgId: orgId,
+					region: RegionEnum.US,
+					accountId: accountId,
+					userId: userId,
+					relatedToRn: relatedToRn,
+					metricCategoryId: context.createdMetricCategoryId,
+					metricTypeId: context.createdMetricTypeId,
+					metricTypeVersion: metricTypeVersion,
+					deviceId: deviceId,
+					batchId: batchId,
+					value: value,
+					takenAt: "2024-05-16T14:30:00+01:00",
+				},
+			},
+			{
+				op: "upsert",
+				data: {
+					id: metricUuid2,
+					orgId: orgId,
+					region: RegionEnum.US,
+					accountId: accountId,
+					userId: userId,
+					relatedToRn: relatedToRn,
+					metricCategoryId: context.createdMetricCategoryId,
+					metricTypeId: context.createdMetricTypeId,
+					metricTypeVersion: metricTypeVersion,
+					deviceId: deviceId,
+					batchId: batchId,
+					value: value + 1,
+					takenAt: "2024-05-16T14:30:00+01:00",
+				},
 			},
 		]);
 		assert.equal(statusCode, 200);
