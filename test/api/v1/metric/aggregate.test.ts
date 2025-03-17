@@ -323,6 +323,9 @@ describe("GET /api/v1/metrics/aggregate", () => {
 			rowAggregation: "avg",
 			limit: 5,
 		});
+
+		console.log("body.data: ", body.data);
+
 		assert.equal(statusCode, 200);
 		assert.isArray(body.data);
 		body.data.forEach((item) => {
