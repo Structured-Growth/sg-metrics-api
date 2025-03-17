@@ -1,4 +1,9 @@
-import { autoInjectable, SearchResultInterface, NotFoundError } from "@structured-growth/microservice-sdk";
+import {
+	autoInjectable,
+	SearchResultInterface,
+	NotFoundError,
+	ValidationError,
+} from "@structured-growth/microservice-sdk";
 import MetricSQL from "../../../../database/models/metric-sql.sequelize";
 import { MetricSearchParamsInterface } from "../../../interfaces/metric-search-params.interface";
 import { MetricCreationAttributes, MetricUpdateAttributes } from "../../../../database/models/metric";
@@ -73,7 +78,16 @@ export class MetricSqlRepository {
 	}
 
 	public async create(params: MetricCreationAttributes[]): Promise<MetricSQL[]> {
-		return MetricSQL.bulkCreate(params);
+		try {
+			return await MetricSQL.bulkCreate(params);
+		} catch (e) {
+			console.log(1, e.name, e.message, e.code);
+			if (e.name === "SequelizeUniqueConstraintError") {
+				throw new ValidationError({}, "Metric with given ID already exists");
+			} else {
+				throw e;
+			}
+		}
 	}
 
 	public async read(
