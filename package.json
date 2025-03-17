@@ -18,7 +18,8 @@
     "routes.v1": "tsoa routes -c tsoa.v1.json",
     "docs": "npm run apidocs.v1 && npm run redoc.v1",
     "apidocs.v1": "npm run dev-cli docs",
-    "redoc.v1": "redocly build-docs -o .docs/openapi.v1/index.html .docs/openapi.v1/swagger.json"
+    "redoc.v1": "redocly build-docs -o .docs/openapi.v1/index.html .docs/openapi.v1/swagger.json",
+    "prettier": "prettier --check src"
   },
   "engines": {
     "node": "~20"
