@@ -7,7 +7,7 @@ export const MetricUpdateParamsValidator = joi.object({
 	query: joi.object(),
 	body: joi
 		.object({
-			value: joi.number().positive().label("Value"),
+			value: joi.number().label("Value"),
 			takenAt: joi.string().regex(isoFormatWithTimezone).label("Taken at"),
 			metricTypeCode: joi.string().max(50).label("Metric Type Code"),
 			metricTypeVersion: joi.number().positive().label("Metric Type Version"),
@@ -16,7 +16,10 @@ export const MetricUpdateParamsValidator = joi.object({
 				.max(10)
 				.pattern(
 					/^/,
-					joi.alternatives().try(joi.boolean(), joi.number(), joi.string().max(255), joi.string().isoDate())
+					joi
+						.alternatives()
+						.try(joi.boolean(), joi.number(), joi.string().max(255), joi.string().isoDate())
+						.allow("", null)
 				),
 		})
 		.with("metricTypeCode", "metricTypeVersion")

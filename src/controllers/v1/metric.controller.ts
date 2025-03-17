@@ -23,6 +23,9 @@ import { MetricAggregateResultInterface } from "../../interfaces/metric-aggregat
 import { getTimezoneOffset } from "../../helpers/get-timezone-offset";
 import { MetricAggregateParamsValidator } from "../../validators/metric-aggregate-params.validator";
 import { EventMutation } from "@structured-growth/microservice-sdk";
+import { MetricsBulkRequestInterface } from "../../interfaces/metrics-bulk.request.interface";
+import { MetricBulkRequestValidator } from "../../validators/metric-bulk-request.validator";
+import { MetricsBulkResponseInterface } from "../../interfaces/metrics-bulk-response.interface";
 
 const publicMetricAttributes = [
 	"id",
@@ -44,7 +47,7 @@ const publicMetricAttributes = [
 	"arn",
 ] as const;
 type MetricKeys = (typeof publicMetricAttributes)[number];
-type PublicMetricAttributes = Pick<Omit<MetricAttributes, "deletedAt">, MetricKeys> & {};
+export type PublicMetricAttributes = Pick<Omit<MetricAttributes, "deletedAt">, MetricKeys> & {};
 
 interface MetricCreateBodyWithoutOffset extends Omit<MetricCreateBodyInterface, "takenAtOffset"> {}
 
@@ -207,6 +210,36 @@ export class MetricController extends BaseController {
 	}
 
 	/**
+	 * Create metric or update if it already exists
+	 */
+	@OperationId("Upsert")
+	@Post("/upsert")
+	@SuccessResponse(200, "Returns created or updated metric")
+	@DescribeAction("metrics/upsert")
+	@ValidateFuncArgs(MetricCreateParamsValidator)
+	public async upsert(
+		@Queries() query: {},
+		@Body() body: MetricCreateBodyWithoutOffset[]
+	): Promise<PublicMetricAttributes[]> {
+		const metrics = await this.metricService.upsert(
+			body.map((item) => {
+				return {
+					...item,
+					takenAt: new Date(item.takenAt),
+					takenAtOffset: getTimezoneOffset(item.takenAt.toString()),
+				};
+			})
+		);
+
+		this.response.status(200);
+
+		return metrics.map((metric) => ({
+			...(pick(metric.toJSON(), publicMetricAttributes) as PublicMetricAttributes),
+			arn: metric.arn,
+		}));
+	}
+
+	/**
 	 * Mark Metric as deleted. Will be permanently deleted in 90 days.
 	 */
 
@@ -229,5 +262,37 @@ export class MetricController extends BaseController {
 		);
 
 		this.response.status(204);
+	}
+
+	/**
+	 * Run operations in a single transaction
+	 */
+	@OperationId("Bulk")
+	@Post("/bulk")
+	@SuccessResponse(204, "Operations success")
+	@DescribeAction("metrics/bulk")
+	@ValidateFuncArgs(MetricBulkRequestValidator)
+	public async bulk(
+		@Queries() query: {},
+		@Body() body: MetricsBulkRequestInterface
+	): Promise<MetricsBulkResponseInterface> {
+		const result = await this.metricService.bulk(body);
+
+		return result.map(({ op, data }) => {
+			switch (op) {
+				case "create":
+				case "update":
+				case "upsert":
+					return {
+						op,
+						data: {
+							...(pick(data.toJSON(), publicMetricAttributes) as PublicMetricAttributes),
+							arn: data.arn,
+						},
+					};
+				default:
+					return { op, data };
+			}
+		});
 	}
 }
