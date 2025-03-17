@@ -21,7 +21,10 @@ interface MetricTypeRepositorySearchParamsInterface extends Omit<MetricTypeSearc
 export class MetricTypeRepository
 	implements RepositoryInterface<MetricType, MetricTypeRepositorySearchParamsInterface, MetricTypeCreationAttributes>
 {
-	public async search(params: MetricTypeRepositorySearchParamsInterface): Promise<SearchResultInterface<MetricType>> {
+	public async search(
+		params: MetricTypeRepositorySearchParamsInterface,
+		transaction?: Transaction
+	): Promise<SearchResultInterface<MetricType>> {
 		const page = params.page || 1;
 		const limit = params.limit || 20;
 		const offset = (page - 1) * limit;
@@ -62,6 +65,7 @@ export class MetricTypeRepository
 				},
 				attributes: ["metricTypeId"],
 				raw: true,
+				transaction,
 			});
 
 			const metricTypeIds = metadataTypes.map((metadata) => metadata.metricTypeId);
@@ -75,6 +79,7 @@ export class MetricTypeRepository
 			offset,
 			limit,
 			order,
+			transaction,
 		});
 
 		await Promise.all(
@@ -84,6 +89,7 @@ export class MetricTypeRepository
 						metricTypeId: type.id,
 					},
 					raw: true,
+					transaction,
 				});
 
 				type.metadata = metadata.reduce((acc, item) => {

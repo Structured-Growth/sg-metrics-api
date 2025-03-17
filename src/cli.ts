@@ -28,6 +28,12 @@ program
 			...specConfig,
 			outputDirectory: ".docs/openapi.v1",
 			entryFile: "src/controllers/v1/index.ts",
+			name: process.env.APP_PREFIX,
+			version: process.env.APP_VERSION || "0.0.0",
+			spec: {
+				...specConfig.spec,
+				servers: (process.env.API_DOCS_HOST_LIST || "").split(",").map((url) => ({ url })),
+			},
 		} as any);
 		process.exit();
 	});
