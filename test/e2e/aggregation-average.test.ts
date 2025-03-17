@@ -129,11 +129,6 @@ describe("e2e/aggregation-average", () => {
 		assert.equal(body.data[0].count, 3);
 		assert.equal(body.data[1].count, 2);
 
-		console.log("Daily Metrics: ", context.metrics);
-		console.log("Daily Metrics Length: ", context.metrics.length);
-		console.log("Body: ", body.data);
-		console.log("Body length: ", body.data.length);
-
 		const expectedResults = [];
 		for (let i = 0; i < 12; i++) {
 			const takenAtTime = new Date(startDate);
