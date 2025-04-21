@@ -4,6 +4,7 @@ import {
 	LoggerInterface,
 	NotFoundError,
 	RegionEnum,
+	I18nType,
 } from "@structured-growth/microservice-sdk";
 import { TimestreamWrite, TimestreamQuery } from "aws-sdk";
 import { MetricSearchParamsInterface } from "../../../interfaces/metric-search-params.interface";
@@ -24,14 +25,20 @@ export class MetricTimestreamRepository {
 
 	private writeClient: TimestreamWrite;
 	private timestreamQuery: TimestreamQuery;
+	private i18n: I18nType;
 
-	constructor(@inject("region") private region: string, @inject("Logger") private logger: LoggerInterface) {
+	constructor(
+		@inject("region") private region: string,
+		@inject("Logger") private logger: LoggerInterface,
+		@inject("i18n") private getI18n: () => I18nType
+	) {
 		this.writeClient = new TimestreamWrite({
 			region: this.region,
 		});
 		this.timestreamQuery = new TimestreamQuery({
 			region: this.region,
 		});
+		this.i18n = this.getI18n();
 	}
 
 	public async create(params: MetricCreationAttributes[]): Promise<Metric[]> {
@@ -51,7 +58,7 @@ export class MetricTimestreamRepository {
 		if (result.Rows && result.Rows.length > 0) {
 			return this.parseMetric(result.ColumnInfo, result.Rows[0]);
 		} else {
-			throw new NotFoundError(`Metric ${id} not found`);
+			throw new NotFoundError(`${this.i18n.__("error.metric.name")} ${id} ${this.i18n.__("error.common.not_found")}`);
 		}
 	}
 
@@ -62,7 +69,7 @@ export class MetricTimestreamRepository {
 		const metric = await this.read(id);
 
 		if (!metric) {
-			throw new NotFoundError(`Metric ${id} not found`);
+			throw new NotFoundError(`${this.i18n.__("error.metric.name")} ${id} ${this.i18n.__("error.common.not_found")}`);
 		}
 
 		if (params.takenAt) {
@@ -82,7 +89,7 @@ export class MetricTimestreamRepository {
 	public async delete(id: string): Promise<void> {
 		const metric = await this.read(id);
 		if (!metric) {
-			throw new NotFoundError(`Metric ${id} not found`);
+			throw new NotFoundError(`${this.i18n.__("error.metric.name")} ${id} ${this.i18n.__("error.common.not_found")}`);
 		}
 
 		await this.update(id, {
@@ -362,7 +369,7 @@ export class MetricTimestreamRepository {
 			case "d":
 				return value * 24 * 60 * 60; // Convert days to milliseconds
 			default:
-				throw new Error(`Invalid time range unit: ${unit}`);
+				throw new Error(`${this.i18n.__("error.metric.invalid_time")} ${unit}`);
 		}
 	}
 

@@ -53,5 +53,11 @@ export function loadEnvironment() {
 		INTERNAL_AUTHENTICATION_JWT_SECRET: joi.string().required(),
 		OAUTH_USER_URL: joi.string().required(),
 		API_DOCS_HOST_LIST: joi.string().required(),
+		DEFAULT_LANGUAGE: joi.string().required(),
+		DEFAULT_AVAILABLE_LANGUAGES: joi.string().required(),
+		DEFAULT_TRANSLATION_CACHE_EXPIRATION: joi.number().required(),
+		DEFAULT_TRANSLATE_DIRECTORY_PATH: joi.string().required(),
+		TRANSLATE_API_URL: joi.string().allow(""),
+		TRANSLATE_API_CLIENT_ID: joi.number().required(),
 	});
 }

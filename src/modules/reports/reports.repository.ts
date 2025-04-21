@@ -4,6 +4,8 @@ import {
 	RepositoryInterface,
 	SearchResultInterface,
 	NotFoundError,
+	I18nType,
+	inject,
 } from "@structured-growth/microservice-sdk";
 import ReportSequelize, {
 	ReportCreationAttributes,
@@ -15,6 +17,10 @@ import { ReportSearchParamsInterface } from "../../interfaces/report-search-para
 export class ReportsRepository
 	implements RepositoryInterface<ReportSequelize, ReportSearchParamsInterface, ReportCreationAttributes>
 {
+	private i18n: I18nType;
+	constructor(@inject("i18n") private getI18n: () => I18nType) {
+		this.i18n = this.getI18n();
+	}
 	public async search(params: ReportSearchParamsInterface): Promise<SearchResultInterface<ReportSequelize>> {
 		const page = params.page || 1;
 		const limit = params.limit || 20;
@@ -67,7 +73,7 @@ export class ReportsRepository
 	public async update(id: number, params: ReportUpdateAttributes): Promise<ReportSequelize> {
 		const report = await this.read(id);
 		if (!report) {
-			throw new NotFoundError(`Report ${id} not found`);
+			throw new NotFoundError(`${this.i18n.__("error.report.name")} ${id} ${this.i18n.__("error.common.not_found")}`);
 		}
 		report.setAttributes(params);
 
@@ -78,7 +84,7 @@ export class ReportsRepository
 		const n = await ReportSequelize.destroy({ where: { id } });
 
 		if (n === 0) {
-			throw new NotFoundError(`Report ${id} not found`);
+			throw new NotFoundError(`${this.i18n.__("error.report.name")} ${id} ${this.i18n.__("error.common.not_found")}`);
 		}
 	}
 }

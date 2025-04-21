@@ -104,6 +104,7 @@ jobs:
             sed -i 's/^DB_PASSWORD=.*/DB_PASSWORD=${{ secrets.DB_MASTER_PASSWORD }}/' .env
             sed -i 's/^DB_SCHEMA=.*/DB_SCHEMA=${{ secrets.DB_SCHEMA }}/' .env
             sed -i 's/^DB_MIGRATION_TABLE_SCHEMA=.*/DB_MIGRATION_TABLE_SCHEMA=${{ secrets.DB_SCHEMA }}/' .env
+            sed -i 's/^TRANSLATE_API_URL=.*/TRANSLATE_API_URL=/' .env
 
             echo "✅ .env file updated successfully."
 

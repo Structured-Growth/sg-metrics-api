@@ -4,6 +4,8 @@ import {
 	RepositoryInterface,
 	SearchResultInterface,
 	NotFoundError,
+	I18nType,
+	inject,
 } from "@structured-growth/microservice-sdk";
 import MetricCategory, {
 	MetricCategoryCreationAttributes,
@@ -27,6 +29,10 @@ export class MetricCategoryRepository
 			MetricCategoryCreationAttributes
 		>
 {
+	private i18n: I18nType;
+	constructor(@inject("i18n") private getI18n: () => I18nType) {
+		this.i18n = this.getI18n();
+	}
 	public async search(
 		params: MetricCategoryRepositorySearchParamsInterface
 	): Promise<SearchResultInterface<MetricCategory>> {
@@ -157,7 +163,9 @@ export class MetricCategoryRepository
 		});
 
 		if (!metricCategory) {
-			throw new NotFoundError(`Metric Category ${id} not found`);
+			throw new NotFoundError(
+				`${this.i18n.__("error.metric_category.name")} ${id} ${this.i18n.__("error.common.not_found")}`
+			);
 		}
 
 		const metadata = await MetricCategoryMetadata.findAll({
