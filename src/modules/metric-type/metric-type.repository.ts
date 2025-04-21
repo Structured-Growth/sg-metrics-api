@@ -4,6 +4,8 @@ import {
 	RepositoryInterface,
 	SearchResultInterface,
 	NotFoundError,
+	I18nType,
+	inject,
 } from "@structured-growth/microservice-sdk";
 import MetricType, {
 	MetricTypeCreationAttributes,
@@ -21,6 +23,10 @@ interface MetricTypeRepositorySearchParamsInterface extends Omit<MetricTypeSearc
 export class MetricTypeRepository
 	implements RepositoryInterface<MetricType, MetricTypeRepositorySearchParamsInterface, MetricTypeCreationAttributes>
 {
+	private i18n: I18nType;
+	constructor(@inject("i18n") private getI18n: () => I18nType) {
+		this.i18n = this.getI18n();
+	}
 	public async search(
 		params: MetricTypeRepositorySearchParamsInterface,
 		transaction?: Transaction
@@ -162,7 +168,9 @@ export class MetricTypeRepository
 		});
 
 		if (!metricType) {
-			throw new NotFoundError(`Metric Type ${id} not found`);
+			throw new NotFoundError(
+				`${this.i18n.__("error.metric_type.name")} ${id} ${this.i18n.__("error.common.not_found")}`
+			);
 		}
 
 		const metadata = await MetricTypeMetadata.findAll({

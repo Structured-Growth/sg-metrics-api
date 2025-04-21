@@ -4,6 +4,7 @@ import {
 	inject,
 	NotFoundError,
 	SearchResultInterface,
+	I18nType,
 } from "@structured-growth/microservice-sdk";
 import { v4 } from "uuid";
 import { MetricTimestreamRepository } from "./repositories/metric-timestream.repository";
@@ -24,14 +25,18 @@ import { MetricsBulkResultInterface } from "./interfaces/metrics-bulk-result.int
 
 @autoInjectable()
 export class MetricService {
+	private i18n: I18nType;
 	constructor(
 		@inject("MetricTimestreamRepository") private metricTimestreamRepository: MetricTimestreamRepository,
 		@inject("MetricSqlRepository") private metricSqlRepository: MetricSqlRepository,
 		@inject("MetricCategoryRepository") private metricCategoryRepository: MetricCategoryRepository,
 		@inject("MetricTypeRepository") private metricTypeRepository: MetricTypeRepository,
 		@inject("EventbusService") private eventBus: EventbusService,
-		@inject("appPrefix") private appPrefix: string
-	) {}
+		@inject("appPrefix") private appPrefix: string,
+		@inject("i18n") private getI18n: () => I18nType
+	) {
+		this.i18n = this.getI18n();
+	}
 
 	public async create(params: MetricCreateBodyInterface[], transaction?: Transaction): Promise<Metric[]> {
 		// check if there are metrics with metricTypeCode and populate them with metricTypeId and metricCategoryId
@@ -202,7 +207,7 @@ export class MetricService {
 	public async read(id: string, transaction?: Transaction): Promise<Metric | null> {
 		const metric = await this.metricSqlRepository.read(id, { transaction });
 		if (!metric) {
-			throw new NotFoundError(`Metric ${id} not found`);
+			throw new NotFoundError(`${this.i18n.__("error.metric.name")} ${id} ${this.i18n.__("error.common.not_found")}`);
 		}
 
 		return new Metric(metric.toJSON());
@@ -221,7 +226,9 @@ export class MetricService {
 
 			metricTypeId = metricType?.data?.[0]?.id;
 			if (!metricTypeId) {
-				throw new NotFoundError(`Metric type ${metricTypeCode} not found`);
+				throw new NotFoundError(
+					`${this.i18n.__("error.metric.metric_type")} ${metricTypeCode} ${this.i18n.__("error.common.not_found")}`
+				);
 			}
 		}
 

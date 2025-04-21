@@ -3,14 +3,14 @@ import { joi } from "@structured-growth/microservice-sdk";
 const isoFormatWithTimezone = /^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}\+[0-9]{2}:00$/;
 
 export const MetricUpdateParamsValidator = joi.object({
-	metricId: joi.string().required().label("Metric Id"),
+	metricId: joi.string().required().label("validator.common.id"),
 	query: joi.object(),
 	body: joi
 		.object({
-			value: joi.number().label("Value"),
-			takenAt: joi.string().regex(isoFormatWithTimezone).label("Taken at"),
-			metricTypeCode: joi.string().max(50).label("Metric Type Code"),
-			metricTypeVersion: joi.number().positive().label("Metric Type Version"),
+			value: joi.number().label("validator.metrics.value"),
+			takenAt: joi.string().regex(isoFormatWithTimezone).label("validator.metrics.takenAt"),
+			metricTypeCode: joi.string().max(50).label("validator.metrics.metricTypeCode"),
+			metricTypeVersion: joi.number().positive().label("validator.metrics.metricTypeVersion"),
 			metadata: joi
 				.object()
 				.max(10)
