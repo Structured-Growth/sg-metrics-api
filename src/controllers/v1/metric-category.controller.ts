@@ -9,6 +9,7 @@ import {
 	SearchResultInterface,
 	ValidateFuncArgs,
 	NotFoundError,
+	I18nType,
 } from "@structured-growth/microservice-sdk";
 import { pick } from "lodash";
 import { MetricCategory, MetricCategoryAttributes } from "../../../database/models/metric-category.sequelize";
@@ -44,11 +45,14 @@ type SearchMetricCategoryAttributes = Omit<PublicMetricCategoryAttributes, "acco
 @Tags("Metric Category")
 @autoInjectable()
 export class MetricCategoryController extends BaseController {
+	private i18n: I18nType;
 	constructor(
 		@inject("MetricCategoryRepository") private metricCategoryRepository: MetricCategoryRepository,
-		@inject("MetricCategoryService") private metricCategoryService: MetricCategoryService
+		@inject("MetricCategoryService") private metricCategoryService: MetricCategoryService,
+		@inject("i18n") private getI18n: () => I18nType
 	) {
 		super();
+		this.i18n = this.getI18n();
 	}
 
 	/**
@@ -129,7 +133,9 @@ export class MetricCategoryController extends BaseController {
 		const metricCategory = await this.metricCategoryRepository.read(metricCategoryId);
 		this.response.status(200);
 		if (!metricCategory) {
-			throw new NotFoundError(`Metric Category ${metricCategoryId} not found`);
+			throw new NotFoundError(
+				`${this.i18n.__("error.metric_category.name")} ${metricCategoryId} ${this.i18n.__("error.common.not_found")}`
+			);
 		}
 
 		return {
@@ -184,7 +190,9 @@ export class MetricCategoryController extends BaseController {
 		const metricCategory = await this.metricCategoryRepository.read(metricCategoryId);
 
 		if (!metricCategory) {
-			throw new NotFoundError(`Metric Category ${metricCategoryId} not found`);
+			throw new NotFoundError(
+				`${this.i18n.__("error.metric_category.name")} ${metricCategoryId} ${this.i18n.__("error.common.not_found")}`
+			);
 		}
 		await this.metricCategoryService.delete(metricCategoryId);
 

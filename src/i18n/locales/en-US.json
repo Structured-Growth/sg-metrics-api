@@ -1,0 +1,107 @@
+{
+  "system": {
+    "ping":  {
+      "am": "I'm",
+      "service": "service"
+    }
+  },
+  "error": {
+    "common": {
+      "not_found": "not found"
+    },
+    "metric": {
+      "name": "Metric",
+      "exists": "Metric with given ID already exists",
+      "invalid_time": "Invalid time range unit:",
+      "metric_type": "Metric type"
+    },
+    "metric_category": {
+      "name": "Metric Category",
+      "exist": "already exists",
+      "deleted": "cannot be deleted as it has associated Metric Types"
+    },
+    "metric_type": {
+      "name": "Metric Type",
+      "category": "Metric Category",
+      "exist": "already exists",
+      "deleted": "cannot be deleted as it has associated Metric"
+    },
+    "report": {
+      "name": "Report"
+    }
+  },
+  "validator": {
+    "common": {
+      "id": "Entity IDs",
+      "arn": "Entity ARNs",
+      "page": "Page",
+      "limit": "Limit",
+      "sort": "Sort"
+    },
+    "metrics": {
+      "orgId": "Organization Id",
+      "region": "Region",
+      "metricCategoryId": "Metric Type Id",
+      "metricCategoryCode": "Metric Type Code",
+      "metricTypeId": "Metric Type Id",
+      "metricTypeCode": "Metric Type Code",
+      "metricTypeVersion": "Metric Type Version",
+      "accountId": "Account Id",
+      "userId": "User Id",
+      "relatedToRn": "Related To",
+      "deviceId": "Device ID",
+      "batchId": "Batch id",
+      "value": "Value",
+      "valueMin": "Value Minimum",
+      "valueMax": "Value Maximum",
+      "takenAtMin": "Taken at minimum",
+      "takenAtMax": "Taken at maximum",
+      "takenAtOffset": "Taken at Offset",
+      "recordedAtMin": "Recorded at minimum",
+      "recordedAtMax": "Recorded at maximum",
+      "nextToken": "Next Token",
+      "column": "Column",
+      "row": "Row",
+      "columnAggregation": "Aggregate Column",
+      "rowAggregation": "Aggregate Row",
+      "takenAt": "Taken At"
+    },
+    "metricCategory": {
+      "orgId": "Organization Id",
+      "region": "Region",
+      "accountId": "Account Id",
+      "title": "Category title",
+      "code": "Category code",
+      "status": "Status",
+      "includeInherited": "Include inherited",
+      "metadata": "Metric category metadata",
+      "metricCategoryId": "Metric category Id"
+    },
+    "metricType": {
+      "orgId": "Organization Id",
+      "region": "Region",
+      "accountId": "Account Id",
+      "metricCategoryId": "Metric Category Id",
+      "title": "Title",
+      "code": "Type code",
+      "unit": "Unit",
+      "factor": "Factor",
+      "relatedTo": "Related To",
+      "version": "Version",
+      "lonic_code": "Lonic code",
+      "lonic_url": "Lonic URL",
+      "status": "Status",
+      "metadata": "Metric type metadata",
+      "metricTypeId": "Metric type Id"
+    },
+    "reports": {
+      "orgId": "Organization Id",
+      "region": "Region",
+      "accountId": "Account Id",
+      "title": "Title",
+      "inDashboard": "In dashboard",
+      "reportParameters": "Report Parameters",
+      "reportId": "Report Id"
+    }
+  }
+}

@@ -8,6 +8,7 @@ import {
 	NotFoundError,
 	SearchResultInterface,
 	ValidateFuncArgs,
+	I18nType,
 } from "@structured-growth/microservice-sdk";
 import { pick } from "lodash";
 import { ReportAttributes } from "../../../database/models/report.sequelize";
@@ -41,8 +42,13 @@ type PublicReportAttributes = Pick<ReportAttributes, ReportKeys>;
 @Tags("Reports")
 @autoInjectable()
 export class ReportsController extends BaseController {
-	constructor(@inject("ReportsRepository") private reportsRepository: ReportsRepository) {
+	private i18n: I18nType;
+	constructor(
+		@inject("ReportsRepository") private reportsRepository: ReportsRepository,
+		@inject("i18n") private getI18n: () => I18nType
+	) {
 		super();
+		this.i18n = this.getI18n();
 	}
 
 	/**
@@ -101,7 +107,9 @@ export class ReportsController extends BaseController {
 		const report = await this.reportsRepository.read(reportId);
 
 		if (!report) {
-			throw new NotFoundError(`Report ${report} not found`);
+			throw new NotFoundError(
+				`${this.i18n.__("error.report.name")} ${report} ${this.i18n.__("error.common.not_found")}`
+			);
 		}
 
 		return {

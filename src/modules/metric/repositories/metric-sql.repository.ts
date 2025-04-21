@@ -3,6 +3,8 @@ import {
 	NotFoundError,
 	SearchResultInterface,
 	ValidationError,
+	I18nType,
+	inject,
 } from "@structured-growth/microservice-sdk";
 import MetricSQL from "../../../../database/models/metric-sql.sequelize";
 import { MetricSearchParamsInterface } from "../../../interfaces/metric-search-params.interface";
@@ -15,6 +17,10 @@ import { Sequelize } from "sequelize-typescript";
 
 @autoInjectable()
 export class MetricSqlRepository {
+	private i18n: I18nType;
+	constructor(@inject("i18n") private getI18n: () => I18nType) {
+		this.i18n = this.getI18n();
+	}
 	public async search(params: MetricSearchParamsInterface): Promise<SearchResultInterface<MetricSQL>> {
 		const { where, offset, limit, page, order } = this.buildQuery(params);
 
@@ -82,7 +88,7 @@ export class MetricSqlRepository {
 			return await MetricSQL.bulkCreate(params, { transaction });
 		} catch (e) {
 			if (e.name === "SequelizeUniqueConstraintError") {
-				throw new ValidationError({}, "Metric with given ID already exists");
+				throw new ValidationError({}, this.i18n.__("error.metric.exists"));
 			} else {
 				throw e;
 			}
@@ -110,7 +116,7 @@ export class MetricSqlRepository {
 	public async update(id: string, params: MetricUpdateAttributes, transaction?: Transaction): Promise<MetricSQL> {
 		const metricAurora = await this.read(id, { transaction });
 		if (!metricAurora) {
-			throw new NotFoundError(`Metric ${id} not found`);
+			throw new NotFoundError(`${this.i18n.__("error.metric.name")} ${id} ${this.i18n.__("error.common.not_found")}`);
 		}
 		metricAurora.setAttributes(params);
 
@@ -120,7 +126,7 @@ export class MetricSqlRepository {
 	public async delete(id: string, transaction?: Transaction): Promise<void> {
 		const metricAurora = await this.read(id, { transaction });
 		if (!metricAurora) {
-			throw new NotFoundError(`Metric ${id} not found`);
+			throw new NotFoundError(`${this.i18n.__("error.metric.name")} ${id} ${this.i18n.__("error.common.not_found")}`);
 		}
 		metricAurora.isDeleted = true;
 

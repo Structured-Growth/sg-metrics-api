@@ -71,6 +71,59 @@ TODO readme.
 1. Make the `main` branch protected and deny direct push to it.
 2. Create `dev` branch.
 
+## API Localization
+
+The API uses the `i18n` library along with the Translate API to support multilingual functionality.
+
+### Deploying the API with Terraform and Translate API
+
+To enable full multilingual support, ensure that the Translate API is deployed and a **Translate Client ID** is created.
+
+Set the following global environment variables:
+
+- `TRANSLATE_API_URL` – the current URL of the Translate API
+- `TRANSLATE_API_CLIENT_ID` – the client ID used to authenticate with the Translate API
+- `DEFAULT_LANGUAGE` – the default language of the API (e.g. `en-US`)
+- `DEFAULT_AVAILABLE_LANGUAGES` – a comma-separated list of supported languages (e.g. `en-US,zh-CN,pt-BR`)
+- `DEFAULT_TRANSLATE_DIRECTORY_PATH` – path to the file with default translations
+
+When adding new texts, follow the `i18n` workflow:
+
+- Replace static text with i18n tokens in the format:
+  ```js
+  this.i18n.__("system.ping.service")
+  ```
+- Add the corresponding translation to the default locale file.
+
+Upon deployment via Terraform:
+- New tokens are automatically added to the Translate API
+- Modified tokens are updated
+- Removed tokens are deleted from the Translate API
+
+### Running the API Without the Translate API (Single Instance)
+
+For a single-instance API setup (e.g., local development or testing), follow these steps:
+- Use all global variables from the .env.example file
+- Set TRANSLATE_API_URL to an empty string
+
+In this setup:
+- Only the local translation file is used
+- Only the default language is supported
+- Add new texts using the same token format:
+  ```js
+  this.i18n.__("system.ping.service")
+  ```
+- Ensure the default translation is present in the local file
+
+### Changing the Default Language
+
+To change the API’s default language:
+1. Update the DEFAULT_LANGUAGE variable (e.g., zh-CN, pt-BR)
+2. Rename the corresponding translation file in the path set by DEFAULT_TRANSLATE_DIRECTORY_PATH
+
+**Note:** Language codes must conform to the i18n format, such as: `en-US`, `zh-CN`, `pt-BR`
+
+
 ## Build
 
 Docker image registry is the main distribution channel for our microservices. This repository provides GitHub workflows

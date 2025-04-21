@@ -9,6 +9,7 @@ import {
 	NotFoundError,
 	ValidateFuncArgs,
 	SearchResultInterface,
+	I18nType,
 } from "@structured-growth/microservice-sdk";
 import { MetricTypeAttributes } from "../../../database/models/metric-type.sequelize";
 import { MetricTypeSearchParamsInterface } from "../../interfaces/metric-type-search-params.interface";
@@ -48,11 +49,14 @@ type PublicMetricTypeAttributes = Pick<MetricTypeAttributes, MetricTypeKeys> & {
 @Tags("Metric Type")
 @autoInjectable()
 export class MetricTypeController extends BaseController {
+	private i18n: I18nType;
 	constructor(
 		@inject("MetricTypeRepository") private metricTypeRepository: MetricTypeRepository,
-		@inject("MetricTypeService") private metricTypeService: MetricTypeService
+		@inject("MetricTypeService") private metricTypeService: MetricTypeService,
+		@inject("i18n") private getI18n: () => I18nType
 	) {
 		super();
+		this.i18n = this.getI18n();
 	}
 
 	/**
@@ -128,7 +132,9 @@ export class MetricTypeController extends BaseController {
 		const metricType = await this.metricTypeRepository.read(metricTypeId);
 		this.response.status(200);
 		if (!metricType) {
-			throw new NotFoundError(`Metric Type ${metricTypeId} not found`);
+			throw new NotFoundError(
+				`${this.i18n.__("error.metric_type.name")} ${metricTypeId} ${this.i18n.__("error.common.not_found")}`
+			);
 		}
 
 		return {
@@ -183,7 +189,9 @@ export class MetricTypeController extends BaseController {
 		const metricType = await this.metricTypeRepository.read(metricTypeId);
 
 		if (!metricType) {
-			throw new NotFoundError(`Metric Type ${metricTypeId} not found`);
+			throw new NotFoundError(
+				`${this.i18n.__("error.metric_type.name")} ${metricTypeId} ${this.i18n.__("error.common.not_found")}`
+			);
 		}
 		await this.metricTypeService.delete(metricTypeId);
 

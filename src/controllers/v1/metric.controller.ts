@@ -8,6 +8,7 @@ import {
 	NotFoundError,
 	ValidateFuncArgs,
 	SearchResultInterface,
+	I18nType,
 } from "@structured-growth/microservice-sdk";
 import { MetricAttributes } from "../../../database/models/metric";
 import { MetricService } from "../../modules/metric/metric.service";
@@ -55,8 +56,13 @@ interface MetricCreateBodyWithoutOffset extends Omit<MetricCreateBodyInterface, 
 @Tags("Metric")
 @autoInjectable()
 export class MetricController extends BaseController {
-	constructor(@inject("MetricService") private metricService: MetricService) {
+	private i18n: I18nType;
+	constructor(
+		@inject("MetricService") private metricService: MetricService,
+		@inject("i18n") private getI18n: () => I18nType
+	) {
 		super();
+		this.i18n = this.getI18n();
 	}
 
 	/**
@@ -161,7 +167,9 @@ export class MetricController extends BaseController {
 		const metric = await this.metricService.read(metricId);
 		this.response.status(200);
 		if (!metric) {
-			throw new NotFoundError(`Metric ${metricId} not found`);
+			throw new NotFoundError(
+				`${this.i18n.__("error.metric.name")} ${metricId} ${this.i18n.__("error.common.not_found")}`
+			);
 		}
 
 		return {
@@ -252,7 +260,9 @@ export class MetricController extends BaseController {
 		const metric = await this.metricService.read(metricId);
 
 		if (!metric) {
-			throw new NotFoundError(`Metric ${metricId} not found`);
+			throw new NotFoundError(
+				`${this.i18n.__("error.metric.name")} ${metricId} ${this.i18n.__("error.common.not_found")}`
+			);
 		}
 
 		await this.metricService.delete(metricId);

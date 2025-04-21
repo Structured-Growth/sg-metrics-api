@@ -4,6 +4,7 @@ import {
 	NotFoundError,
 	signedInternalFetch,
 	ValidationError,
+	I18nType,
 } from "@structured-growth/microservice-sdk";
 import MetricType, { MetricTypeUpdateAttributes } from "../../../database/models/metric-type.sequelize";
 import { MetricTypeCreateBodyInterface } from "../../interfaces/metric-type-create-body.interface";
@@ -18,12 +19,16 @@ import MetricCategory from "../../../database/models/metric-category.sequelize";
 
 @autoInjectable()
 export class MetricTypeService {
+	private i18n: I18nType;
 	constructor(
 		@inject("MetricTypeRepository") private metricTypeRepository: MetricTypeRepository,
 		@inject("MetricCategoryRepository") private metricCategoryRepository: MetricCategoryRepository,
 		@inject("MetricService") private metricService: MetricService,
-		@inject("accountApiUrl") private accountApiUrl: string
-	) {}
+		@inject("accountApiUrl") private accountApiUrl: string,
+		@inject("i18n") private getI18n: () => I18nType
+	) {
+		this.i18n = this.getI18n();
+	}
 
 	public async search(
 		params: MetricTypeSearchParamsInterface & {
@@ -59,14 +64,18 @@ export class MetricTypeService {
 		if (params.metricCategoryId) {
 			const checkMetricCategoryId = await this.metricCategoryRepository.read(params.metricCategoryId);
 			if (!checkMetricCategoryId) {
-				throw new NotFoundError(`Metric Category ${params.metricCategoryId} not found`);
+				throw new NotFoundError(
+					`${this.i18n.__("error.metric_type.category")} ${params.metricCategoryId} ${this.i18n.__(
+						"error.common.not_found"
+					)}`
+				);
 			}
 		}
 		const existingMetricType = await this.metricTypeRepository.findByCode(params.code);
 		if (existingMetricType) {
 			throw new ValidationError(
 				{ code: `Metric Type with code ${params.code} already exists` },
-				`Metric Type with code ${params.code} already exists`
+				`${this.i18n.__("error.metric_type.name")} ${params.code} ${this.i18n.__("error.metric_type.exist")}`
 			);
 		}
 
@@ -89,14 +98,16 @@ export class MetricTypeService {
 	public async update(metricTypeId, params: MetricTypeUpdateBodyInterface): Promise<MetricType> {
 		const metricType = await this.metricTypeRepository.read(metricTypeId);
 		if (!metricType) {
-			throw new NotFoundError(`Metric Type ${metricTypeId} not found`);
+			throw new NotFoundError(
+				`${this.i18n.__("error.metric_type.name")} ${metricTypeId} ${this.i18n.__("error.common.not_found")}`
+			);
 		}
 		if (params.code && params.code !== metricType.code) {
 			const metricCategoryWithSameCode = await this.metricTypeRepository.findByCode(params.code);
 			if (metricCategoryWithSameCode) {
 				throw new ValidationError(
 					{ code: `Metric Type with code ${params.code} already exists` },
-					`Metric Category with code ${params.code} already exists`
+					`${this.i18n.__("error.metric_type.name")} ${params.code} ${this.i18n.__("error.metric_type.exist")}`
 				);
 			}
 		}
@@ -124,14 +135,16 @@ export class MetricTypeService {
 		const metricType = await this.metricTypeRepository.read(metricTypeId);
 
 		if (!metricType) {
-			throw new NotFoundError(`Metric Type ${metricTypeId} not found`);
+			throw new NotFoundError(
+				`${this.i18n.__("error.metric_type.name")} ${metricTypeId} ${this.i18n.__("error.common.not_found")}`
+			);
 		}
 		const orgId = metricType.orgId;
 		const associatedMetric = await this.metricService.search({ orgId, metricTypeId: [metricTypeId] });
 		if (associatedMetric.data.length > 0) {
 			throw new ValidationError(
 				{ code: `Metric Type ${metricTypeId} cannot be deleted as it has associated Metric` },
-				`Metric Type ${metricTypeId} cannot be deleted as it has associated Metric`
+				`${this.i18n.__("error.metric_type.name")} ${metricTypeId} ${this.i18n.__("error.metric_type.deleted")}`
 			);
 		}
 
