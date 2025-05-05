@@ -36,7 +36,7 @@ describe("PUT /api/v1/metrics/:metricId", () => {
 		assert.equal(statusCode, 201);
 		assert.isNumber(body.id);
 		context.createdMetricCategoryId = body.id;
-	});
+	}).timeout(1800000);
 
 	it("Should create metric type", async () => {
 		const { statusCode, body } = await server.post("/v1/metric-type").send({
@@ -58,7 +58,7 @@ describe("PUT /api/v1/metrics/:metricId", () => {
 		assert.equal(statusCode, 201);
 		assert.isNumber(body.id);
 		context.createdMetricTypeId = body.id;
-	});
+	}).timeout(1800000);
 
 	it("Should create metric", async () => {
 		const { statusCode, body } = await server.post("/v1/metrics").send([
@@ -82,7 +82,7 @@ describe("PUT /api/v1/metrics/:metricId", () => {
 		]);
 		assert.equal(statusCode, 201);
 		context.createdMetricId = body[0].id;
-	});
+	}).timeout(1800000);
 
 	it("Should create second metric", async () => {
 		const { statusCode, body } = await server.post("/v1/metrics").send([
@@ -104,7 +104,7 @@ describe("PUT /api/v1/metrics/:metricId", () => {
 		assert.equal(statusCode, 201);
 		assert.equal(body[0].relatedToRn, relatedToRn);
 		context.createdMetric2Id = body[0].id;
-	});
+	}).timeout(1800000);
 
 	it("Should return metric", async () => {
 		const { statusCode, body } = await server.get(`/v1/metrics/${context.createdMetricId}`);

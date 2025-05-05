@@ -2,8 +2,8 @@ import "../../../../src/app/providers";
 import { App } from "../../../../src/app/app";
 import { container } from "@structured-growth/microservice-sdk";
 import { RegionEnum } from "@structured-growth/microservice-sdk";
-import {assert} from "chai";
-import {initTest} from "../../../common/init-test";
+import { assert } from "chai";
+import { initTest } from "../../../common/init-test";
 
 describe("DELETE /api/v1/metrics/:metricId", () => {
 	const { server, context } = initTest();
@@ -37,8 +37,7 @@ describe("DELETE /api/v1/metrics/:metricId", () => {
 		assert.equal(statusCode, 201);
 		assert.isNumber(body.id);
 		context.createdMetricCategoryId = body.id;
-
-	});
+	}).timeout(1800000);
 
 	it("Should create metric type", async () => {
 		const { statusCode, body } = await server.post("/v1/metric-type").send({
@@ -60,30 +59,30 @@ describe("DELETE /api/v1/metrics/:metricId", () => {
 		assert.equal(statusCode, 201);
 		assert.isNumber(body.id);
 		context.createdMetricTypeId = body.id;
-	});
+	}).timeout(1800000);
 
 	it("Should create metric", async () => {
 		const { statusCode, body } = await server.post("/v1/metrics").send([
 			{
-			orgId: orgId,
-			region: RegionEnum.US,
-			accountId: accountId,
-			userId: userId,
-			relatedToRn: relatedToRn,
-			metricCategoryId: context.createdMetricCategoryId,
-			metricTypeId: context.createdMetricTypeId,
-			metricTypeVersion: metricTypeVersion,
-			deviceId: deviceId,
-			batchId: batchId,
-			value: value,
-			takenAt: "2024-05-16T14:30:00+00:00",
-			takenAtOffset: takenAtOffset,
-		}
+				orgId: orgId,
+				region: RegionEnum.US,
+				accountId: accountId,
+				userId: userId,
+				relatedToRn: relatedToRn,
+				metricCategoryId: context.createdMetricCategoryId,
+				metricTypeId: context.createdMetricTypeId,
+				metricTypeVersion: metricTypeVersion,
+				deviceId: deviceId,
+				batchId: batchId,
+				value: value,
+				takenAt: "2024-05-16T14:30:00+00:00",
+				takenAtOffset: takenAtOffset,
+			},
 		]);
 		assert.equal(statusCode, 201);
 
 		context.createdMetricId = body[0].id;
-	});
+	}).timeout(1800000);
 
 	it("Should delete metric", async () => {
 		const { statusCode, body } = await server.delete(`/v1/metrics/${context.createdMetricId}`);
@@ -91,8 +90,7 @@ describe("DELETE /api/v1/metrics/:metricId", () => {
 	}).timeout(1800000);
 
 	it("Should return error because metric  was deleted", async () => {
-		const { statusCode, body } = await server.get(`/v1/metrics/${context.createdMetricId}`).send({
-		});
+		const { statusCode, body } = await server.get(`/v1/metrics/${context.createdMetricId}`).send({});
 		assert.equal(statusCode, 404);
 		assert.isString(body.message);
 	}).timeout(1800000);

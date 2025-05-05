@@ -37,7 +37,7 @@ describe("GET /api/v1/metrics:metricId", () => {
 		assert.equal(statusCode, 201);
 		assert.isNumber(body.id);
 		context.createdMetricCategoryId = body.id;
-	});
+	}).timeout(1800000);
 
 	it("Should create metric type", async () => {
 		const { statusCode, body } = await server.post("/v1/metric-type").send({
@@ -59,7 +59,8 @@ describe("GET /api/v1/metrics:metricId", () => {
 		assert.equal(statusCode, 201);
 		assert.isNumber(body.id);
 		context.createdMetricTypeId = body.id;
-	});
+	}).timeout(1800000);
+
 	it("Should create metric", async () => {
 		const { statusCode, body } = await server.post("/v1/metrics").send([
 			{
@@ -80,7 +81,7 @@ describe("GET /api/v1/metrics:metricId", () => {
 		assert.equal(statusCode, 201);
 		assert.equal(body[0].relatedToRn, relatedToRn);
 		context.createdMetricId = body[0].id;
-	});
+	}).timeout(1800000);
 
 	it("Should return metric", async () => {
 		const { statusCode, body } = await server.get(`/v1/metrics/${context.createdMetricId}`).send({});

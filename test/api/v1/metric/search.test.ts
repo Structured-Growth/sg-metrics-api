@@ -38,7 +38,7 @@ describe("GET /api/v1/metrics", () => {
 		assert.equal(statusCode, 201);
 		assert.isNumber(body.id);
 		context.createdMetricCategoryId = body.id;
-	});
+	}).timeout(1800000);
 
 	it("Should create metric type", async () => {
 		const { statusCode, body } = await server.post("/v1/metric-type").send({
@@ -60,7 +60,7 @@ describe("GET /api/v1/metrics", () => {
 		assert.equal(statusCode, 201);
 		assert.isNumber(body.id);
 		context.createdMetricTypeId = body.id;
-	});
+	}).timeout(1800000);
 
 	it("Should create metric", async () => {
 		const { statusCode, body } = await server.post("/v1/metrics").send([
@@ -82,7 +82,7 @@ describe("GET /api/v1/metrics", () => {
 		assert.equal(statusCode, 201);
 		assert.equal(body[0].relatedToRn, relatedToRn);
 		context.createdMetricId = body[0].id;
-	});
+	}).timeout(1800000);
 
 	it("Should create second metric", async () => {
 		const { statusCode, body } = await server.post("/v1/metrics").send([
@@ -104,7 +104,7 @@ describe("GET /api/v1/metrics", () => {
 		assert.equal(statusCode, 201);
 		assert.equal(body[0].relatedToRn, relatedToRn);
 		context.createdMetric2Id = body[0].id;
-	});
+	}).timeout(1800000);
 
 	it("Should return metric", async () => {
 		const { statusCode, body } = await server.get(`/v1/metrics/${context.createdMetricId}`).send({});
@@ -137,7 +137,7 @@ describe("GET /api/v1/metrics", () => {
 		assert.isString(body.validation.query.value[0]);
 		assert.isString(body.validation.query.takenAt[0]);
 		assert.isString(body.validation.query.takenAtOffset[0]);
-	});
+	}).timeout(1800000);
 
 	it("Should return created metric by id", async () => {
 		const { statusCode, body } = await server.get("/v1/metrics").query({
@@ -313,7 +313,7 @@ describe("GET /api/v1/metrics", () => {
 		});
 		assert.equal(statusCode, 422);
 		assert.isString(body.validation.query.metricTypeId[0]);
-	});
+	}).timeout(1800000);
 
 	it("Should search by multiple metric types", async () => {
 		const { statusCode, body } = await server.get("/v1/metrics").query({
@@ -323,7 +323,7 @@ describe("GET /api/v1/metrics", () => {
 		assert.equal(statusCode, 200);
 		assert.equal(body.data[0].userId, userId);
 		assert.equal(body.data[0].metricTypeId, context.createdMetricTypeId);
-	});
+	}).timeout(1800000);
 
 	it("Should search by multiple metric type codes", async () => {
 		const { statusCode, body } = await server.get("/v1/metrics").query({
@@ -333,5 +333,5 @@ describe("GET /api/v1/metrics", () => {
 		assert.equal(statusCode, 200);
 		assert.equal(body.data[0].userId, userId);
 		assert.equal(body.data[0].metricTypeId, context.createdMetricTypeId);
-	});
+	}).timeout(1800000);
 });

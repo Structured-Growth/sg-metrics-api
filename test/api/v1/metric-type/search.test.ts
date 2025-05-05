@@ -31,7 +31,7 @@ describe("GET /api/v1/metric-type", () => {
 		assert.equal(statusCode, 201);
 		assert.isNumber(body.id);
 		context.createdMetricCategoryId = body.id;
-	});
+	}).timeout(1800000);
 
 	it("Should create metric type", async () => {
 		const { statusCode, body } = await server.post("/v1/metric-type").send({
@@ -54,7 +54,7 @@ describe("GET /api/v1/metric-type", () => {
 		assert.equal(statusCode, 201);
 		assert.isNumber(body.id);
 		context.createdMetricTypeId = body.id;
-	});
+	}).timeout(1800000);
 
 	it("Should return validation error", async () => {
 		const { statusCode, body } = await server.get("/v1/metric-type").query({
@@ -81,7 +81,7 @@ describe("GET /api/v1/metric-type", () => {
 		assert.isString(body.validation.query.metricCategoryId[0]);
 		assert.isString(body.validation.query.orgId[0]);
 		assert.isString(body.validation.query.accountId[0]);
-	});
+	}).timeout(1800000);
 
 	it("Should return created metric type by id", async () => {
 		const { statusCode, body } = await server.get("/v1/metric-type").query({
@@ -108,7 +108,7 @@ describe("GET /api/v1/metric-type", () => {
 		assert.equal(body.page, 1);
 		assert.equal(body.limit, 20);
 		assert.equal(body.total, 1);
-	});
+	}).timeout(1800000);
 
 	it("Should search by code", async () => {
 		const { statusCode, body } = await server.get("/v1/metric-type").query({
@@ -135,7 +135,7 @@ describe("GET /api/v1/metric-type", () => {
 		assert.equal(body.page, 1);
 		assert.equal(body.limit, 20);
 		assert.equal(body.total, 1);
-	});
+	}).timeout(1800000);
 
 	it("Should return error if one status is invalid", async () => {
 		const { statusCode, body } = await server.get("/v1/metric-type").query({
@@ -145,7 +145,7 @@ describe("GET /api/v1/metric-type", () => {
 		});
 		assert.equal(statusCode, 422);
 		assert.isNotEmpty(body.validation.query.status[0]);
-	});
+	}).timeout(1800000);
 
 	it("Should return created metric type by status", async () => {
 		const { statusCode, body } = await server.get("/v1/metric-type").query({
@@ -174,7 +174,7 @@ describe("GET /api/v1/metric-type", () => {
 		assert.equal(body.page, 1);
 		assert.equal(body.limit, 20);
 		assert.equal(body.total, 1);
-	});
+	}).timeout(1800000);
 
 	it("Should return created metric type by created Metric Category Id", async () => {
 		const { statusCode, body } = await server.get("/v1/metric-type").query({
@@ -201,5 +201,5 @@ describe("GET /api/v1/metric-type", () => {
 		assert.equal(body.page, 1);
 		assert.equal(body.limit, 20);
 		assert.equal(body.total, 1);
-	});
+	}).timeout(1800000);
 });

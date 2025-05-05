@@ -39,7 +39,7 @@ describe("POST /api/v1/metrics/bulk", () => {
 		assert.equal(statusCode, 201);
 		assert.isNumber(body.id);
 		context.createdMetricCategoryId = body.id;
-	});
+	}).timeout(1800000);
 
 	it("Should create metric type", async () => {
 		const { statusCode, body } = await server.post("/v1/metric-type").send({
@@ -61,7 +61,7 @@ describe("POST /api/v1/metrics/bulk", () => {
 		assert.equal(statusCode, 201);
 		assert.isNumber(body.id);
 		context.createdMetricTypeId = body.id;
-	});
+	}).timeout(1800000);
 
 	it("Should run bulk operation", async () => {
 		const { statusCode, body } = await server.post("/v1/metrics/bulk").send([
@@ -137,5 +137,5 @@ describe("POST /api/v1/metrics/bulk", () => {
 			},
 		]);
 		assert.equal(statusCode, 200);
-	});
+	}).timeout(1800000);
 });

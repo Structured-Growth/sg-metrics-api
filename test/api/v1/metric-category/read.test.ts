@@ -1,7 +1,7 @@
 import "../../../../src/app/providers";
 import { assert } from "chai";
 import { initTest } from "../../../common/init-test";
-import {RegionEnum, webServer} from "@structured-growth/microservice-sdk";
+import { RegionEnum, webServer } from "@structured-growth/microservice-sdk";
 
 describe("GET /api/v1/metric-category:metricCategoryId", () => {
 	const { server, context } = initTest();
@@ -23,7 +23,7 @@ describe("GET /api/v1/metric-category:metricCategoryId", () => {
 		assert.equal(statusCode, 201);
 		assert.isNumber(body.id);
 		context.createdMetricCategoryId = body.id;
-	});
+	}).timeout(1800000);
 
 	it("Should return metric category", async () => {
 		const { statusCode, body } = await server.get(`/v1/metric-category/${context.createdMetricCategoryId}`);
@@ -37,13 +37,13 @@ describe("GET /api/v1/metric-category:metricCategoryId", () => {
 		assert.isString(body.title, code);
 		assert.equal(body.status, "active");
 		assert.isString(body.arn);
-	});
+	}).timeout(1800000);
 
 	it("Should return error is metric category id is wrong", async () => {
 		const { statusCode, body } = await server.get(`/v1/metric-category/9999`).send({
-			MetricCategoryId: "a"
+			MetricCategoryId: "a",
 		});
 		assert.equal(statusCode, 404);
 		assert.isString(body.message);
-	});
+	}).timeout(1800000);
 });

@@ -13,7 +13,10 @@ import { Metric, MetricCreationAttributes, MetricUpdateAttributes } from "../../
 import { MetricCreateBodyInterface } from "../../interfaces/metric-create-body.interface";
 import { MetricSearchParamsInterface } from "../../interfaces/metric-search-params.interface";
 import { MetricAggregateParamsInterface } from "../../interfaces/metric-aggregate-params.interface";
-import { MetricAggregateResultInterface } from "../../interfaces/metric-aggregate-result.interface";
+import {
+	MetricAggregateResultInterface,
+	MetricAggregationInterface,
+} from "../../interfaces/metric-aggregate-result.interface";
 import { keyBy, map, omit, pick, uniq } from "lodash";
 import { MetricTypeRepository } from "../metric-type/metric-type.repository";
 import MetricType from "../../../database/models/metric-type.sequelize";
@@ -38,7 +41,10 @@ export class MetricService {
 		this.i18n = this.getI18n();
 	}
 
-	public async create(params: MetricCreateBodyInterface[], transaction?: Transaction): Promise<Metric[]> {
+	public async create(
+		params: MetricCreateBodyInterface[],
+		transaction?: Transaction
+	): Promise<(Metric & { metricTypeCode?: string; metricCategoryCode?: string })[]> {
 		// check if there are metrics with metricTypeCode and populate them with metricTypeId and metricCategoryId
 		const metricTypeCodes = map(params, "metricTypeCode").filter((i) => !!i);
 		let metricTypesMap: Record<string, MetricType> = {};
@@ -77,10 +83,27 @@ export class MetricService {
 			},
 		});
 
-		return result.map((item) => new Metric(item.toJSON()));
+		const [types, categories] = await Promise.all([
+			this.metricTypeRepository.search({ id: uniq(result.map((m) => m.metricTypeId)) }, transaction),
+			this.metricCategoryRepository.search({ id: uniq(result.map((m) => m.metricCategoryId)) }, transaction),
+		]);
+
+		const typeCodeMap = new Map(types.data.map((type) => [type.id, type.code]));
+		const categoryCodeMap = new Map(categories.data.map((cat) => [cat.id, cat.code]));
+
+		return result.map(
+			(metric) =>
+				Object.assign(metric, {
+					metricTypeCode: typeCodeMap.get(metric.metricTypeId),
+					metricCategoryCode: categoryCodeMap.get(metric.metricCategoryId),
+				}) as Metric & { metricTypeCode?: string; metricCategoryCode?: string }
+		);
 	}
 
-	public async upsert(params: MetricCreateBodyInterface[], transaction?: Transaction): Promise<Metric[]> {
+	public async upsert(
+		params: MetricCreateBodyInterface[],
+		transaction?: Transaction
+	): Promise<(Metric & { metricTypeCode: string; metricCategoryCode: string })[]> {
 		// check if there are metrics with metricTypeCode and populate them with metricTypeId and metricCategoryId
 		const metricTypeCodes = map(params, "metricTypeCode").filter((i) => !!i);
 		let metricTypesMap: Record<string, MetricType> = {};
@@ -145,11 +168,27 @@ export class MetricService {
 			},
 		});
 
-		return result.map((item) => new Metric(item.toJSON()));
+		const resultMetrics = result.map((item) => new Metric(item.toJSON()));
+
+		const [types, categories] = await Promise.all([
+			this.metricTypeRepository.search({ id: uniq(resultMetrics.map((m) => m.metricTypeId)) }, transaction),
+			this.metricCategoryRepository.search({ id: uniq(resultMetrics.map((m) => m.metricCategoryId)) }, transaction),
+		]);
+
+		const typeCodeMap = new Map(types.data.map((t) => [t.id, t.code]));
+		const categoryCodeMap = new Map(categories.data.map((c) => [c.id, c.code]));
+
+		return resultMetrics.map(
+			(metric) =>
+				Object.assign(metric, {
+					metricTypeCode: typeCodeMap.get(metric.metricTypeId),
+					metricCategoryCode: categoryCodeMap.get(metric.metricCategoryId),
+				}) as Metric & { metricTypeCode: string; metricCategoryCode: string }
+		);
 	}
 
 	public async search(params: MetricSearchParamsInterface & {}): Promise<
-		SearchResultInterface<Metric> & {
+		SearchResultInterface<Metric & { metricTypeCode: string; metricCategoryCode: string }> & {
 			nextToken?: string;
 		}
 	> {
@@ -171,12 +210,40 @@ export class MetricService {
 			params.metricTypeId = uniq([...(params.metricTypeId || []), ...metricTypesIds]);
 		}
 
-		return await this.metricSqlRepository.search(params);
+		let metrics = await this.metricSqlRepository.search(params);
+
+		const [metricTypeCodes, metricCategoryCodes] = await Promise.all([
+			this.metricTypeRepository.search({ id: uniq(metrics.data.map((m) => m.metricTypeId)) }),
+			this.metricCategoryRepository.search({ id: uniq(metrics.data.map((m) => m.metricCategoryId)) }),
+		]);
+
+		const typeCodeMap = new Map(metricTypeCodes.data.map((mt) => [mt.id, mt.code]));
+		const categoryCodeMap = new Map(metricCategoryCodes.data.map((mc) => [mc.id, mc.code]));
+
+		const enrichedData = metrics.data.map(
+			(metric) =>
+				Object.assign(metric, {
+					metricTypeCode: typeCodeMap.get(metric.metricTypeId),
+					metricCategoryCode: categoryCodeMap.get(metric.metricCategoryId),
+				}) as Metric & {
+					metricTypeCode: string;
+					metricCategoryCode: string;
+				}
+		);
+
+		return {
+			...metrics,
+			data: enrichedData,
+		};
 	}
 
 	public async aggregate(
 		params: MetricAggregateParamsInterface & { page?: number; limit?: number; sort?: any }
-	): Promise<MetricAggregateResultInterface> {
+	): Promise<
+		MetricAggregateResultInterface & {
+			data: (MetricAggregationInterface & { metricTypeCode: string })[];
+		}
+	> {
 		if (params.column === "time") {
 			params.column = "takenAt";
 		}
@@ -201,30 +268,72 @@ export class MetricService {
 			params.metricTypeId = uniq([...(params.metricTypeId || []), ...metricTypesIds]);
 		}
 
-		return await this.metricSqlRepository.aggregate(params);
+		const result = await this.metricSqlRepository.aggregate(params);
+
+		const metricTypeCodes = await this.metricTypeRepository.search({
+			id: uniq(result.data.map((item) => item.metricTypeId)),
+		});
+
+		const typeCodeMap = new Map(metricTypeCodes.data.map((mt) => [mt.id, mt.code]));
+
+		const enrichedData = result.data.map((item) => ({
+			...item,
+			metricTypeCode: typeCodeMap.get(item.metricTypeId),
+		}));
+
+		return {
+			...result,
+			data: enrichedData,
+		};
 	}
 
-	public async read(id: string, transaction?: Transaction): Promise<Metric | null> {
+	public async read(
+		id: string,
+		transaction?: Transaction
+	): Promise<
+		| (Metric & {
+				metricTypeCode?: string;
+				metricCategoryCode?: string;
+		  })
+		| null
+	> {
 		const metric = await this.metricSqlRepository.read(id, { transaction });
 		if (!metric) {
 			throw new NotFoundError(`${this.i18n.__("error.metric.name")} ${id} ${this.i18n.__("error.common.not_found")}`);
 		}
 
-		return new Metric(metric.toJSON());
+		const metricJson = metric.toJSON();
+
+		const [metricType, metricCategory] = await Promise.all([
+			this.metricTypeRepository.read(metricJson.metricTypeId),
+			this.metricCategoryRepository.read(metricJson.metricCategoryId),
+		]);
+
+		return Object.assign(new Metric(metricJson), {
+			metricTypeCode: metricType?.code,
+			metricCategoryCode: metricCategory?.code,
+		}) as Metric & {
+			metricTypeCode?: string;
+			metricCategoryCode?: string;
+		};
 	}
 
 	public async update(
 		id: string,
 		params: MetricUpdateAttributes & { metricTypeCode?: string; metricTypeVersion?: number },
 		transaction?: Transaction
-	): Promise<Metric> {
-		const { metricTypeCode, metricTypeVersion, ...updateParams } = params;
-		let metricTypeId;
+	): Promise<Metric & { metricTypeCode: string; metricCategoryCode: string }> {
+		let { metricTypeCode, metricTypeVersion, ...updateParams } = params;
+
+		let metricTypeId: number | undefined;
+		let metricType: MetricType | undefined;
 
 		if (metricTypeCode && metricTypeVersion) {
-			const metricType = await this.metricTypeRepository.search({ code: [metricTypeCode] }, transaction);
+			const metricTypeResult = await this.metricTypeRepository.search({ code: [metricTypeCode] }, transaction);
 
-			metricTypeId = metricType?.data?.[0]?.id;
+			metricType = metricTypeResult.data?.[0];
+			metricTypeId = metricType?.id;
+
 			if (!metricTypeId) {
 				throw new NotFoundError(
 					`${this.i18n.__("error.metric.metric_type")} ${metricTypeCode} ${this.i18n.__("error.common.not_found")}`
@@ -242,7 +351,26 @@ export class MetricService {
 			transaction
 		);
 
-		return new Metric(updatedMetric.toJSON());
+		const metric = new Metric(updatedMetric.toJSON());
+
+		let metricCategoryCode: string | undefined;
+
+		if (metricType) {
+			const category = await this.metricCategoryRepository.read(metricType.metricCategoryId);
+			metricCategoryCode = category?.code;
+		} else {
+			const [type, category] = await Promise.all([
+				this.metricTypeRepository.read(metric.metricTypeId),
+				this.metricCategoryRepository.read(metric.metricCategoryId),
+			]);
+			metricTypeCode = type?.code;
+			metricCategoryCode = category?.code;
+		}
+
+		return Object.assign(metric, {
+			metricTypeCode,
+			metricCategoryCode,
+		}) as Metric & { metricTypeCode: string; metricCategoryCode: string };
 	}
 
 	public async delete(id: string, transaction?: Transaction): Promise<void> {
