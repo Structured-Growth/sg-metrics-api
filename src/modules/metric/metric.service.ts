@@ -9,7 +9,12 @@ import {
 import { v4 } from "uuid";
 import { MetricTimestreamRepository } from "./repositories/metric-timestream.repository";
 import { MetricSqlRepository } from "./repositories/metric-sql.repository";
-import { Metric, MetricCreationAttributes, MetricUpdateAttributes } from "../../../database/models/metric";
+import {
+	Metric,
+	MetricCreationAttributes,
+	MetricUpdateAttributes,
+	MetricExtended,
+} from "../../../database/models/metric";
 import { MetricCreateBodyInterface } from "../../interfaces/metric-create-body.interface";
 import { MetricSearchParamsInterface } from "../../interfaces/metric-search-params.interface";
 import { MetricAggregateParamsInterface } from "../../interfaces/metric-aggregate-params.interface";
@@ -41,10 +46,7 @@ export class MetricService {
 		this.i18n = this.getI18n();
 	}
 
-	public async create(
-		params: MetricCreateBodyInterface[],
-		transaction?: Transaction
-	): Promise<(Metric & { metricTypeCode?: string; metricCategoryCode?: string })[]> {
+	public async create(params: MetricCreateBodyInterface[], transaction?: Transaction): Promise<MetricExtended[]> {
 		// check if there are metrics with metricTypeCode and populate them with metricTypeId and metricCategoryId
 		const metricTypeCodes = map(params, "metricTypeCode").filter((i) => !!i);
 		let metricTypesMap: Record<string, MetricType> = {};
@@ -83,13 +85,7 @@ export class MetricService {
 			},
 		});
 
-		const [types, categories] = await Promise.all([
-			this.metricTypeRepository.search({ id: uniq(result.map((m) => m.metricTypeId)) }, transaction),
-			this.metricCategoryRepository.search({ id: uniq(result.map((m) => m.metricCategoryId)) }, transaction),
-		]);
-
-		const typeCodeMap = new Map(types.data.map((type) => [type.id, type.code]));
-		const categoryCodeMap = new Map(categories.data.map((cat) => [cat.id, cat.code]));
+		const { typeCodeMap, categoryCodeMap } = await this.getMetricCodeMaps(result, transaction);
 
 		return result.map(
 			(metric) =>
@@ -100,10 +96,7 @@ export class MetricService {
 		);
 	}
 
-	public async upsert(
-		params: MetricCreateBodyInterface[],
-		transaction?: Transaction
-	): Promise<(Metric & { metricTypeCode: string; metricCategoryCode: string })[]> {
+	public async upsert(params: MetricCreateBodyInterface[], transaction?: Transaction): Promise<MetricExtended[]> {
 		// check if there are metrics with metricTypeCode and populate them with metricTypeId and metricCategoryId
 		const metricTypeCodes = map(params, "metricTypeCode").filter((i) => !!i);
 		let metricTypesMap: Record<string, MetricType> = {};
@@ -161,22 +154,18 @@ export class MetricService {
 			})
 		);
 
-		await this.eventBus.publish({
-			arn: `${this.appPrefix}:${data[0].region}:${data[0].orgId}:${data[0].accountId}:events/metrics/created`,
-			data: {
-				metrics: createdMetrics.map((metric) => metric.toJSON()),
-			},
-		});
+		if (createdMetrics.length > 0) {
+			await this.eventBus.publish({
+				arn: `${this.appPrefix}:${data[0].region}:${data[0].orgId}:${data[0].accountId}:events/metrics/created`,
+				data: {
+					metrics: createdMetrics.map((metric) => metric.toJSON()),
+				},
+			});
+		}
 
 		const resultMetrics = result.map((item) => new Metric(item.toJSON()));
 
-		const [types, categories] = await Promise.all([
-			this.metricTypeRepository.search({ id: uniq(resultMetrics.map((m) => m.metricTypeId)) }, transaction),
-			this.metricCategoryRepository.search({ id: uniq(resultMetrics.map((m) => m.metricCategoryId)) }, transaction),
-		]);
-
-		const typeCodeMap = new Map(types.data.map((t) => [t.id, t.code]));
-		const categoryCodeMap = new Map(categories.data.map((c) => [c.id, c.code]));
+		const { typeCodeMap, categoryCodeMap } = await this.getMetricCodeMaps(resultMetrics, transaction);
 
 		return resultMetrics.map(
 			(metric) =>
@@ -188,7 +177,7 @@ export class MetricService {
 	}
 
 	public async search(params: MetricSearchParamsInterface & {}): Promise<
-		SearchResultInterface<Metric & { metricTypeCode: string; metricCategoryCode: string }> & {
+		SearchResultInterface<MetricExtended> & {
 			nextToken?: string;
 		}
 	> {
@@ -212,13 +201,7 @@ export class MetricService {
 
 		let metrics = await this.metricSqlRepository.search(params);
 
-		const [metricTypeCodes, metricCategoryCodes] = await Promise.all([
-			this.metricTypeRepository.search({ id: uniq(metrics.data.map((m) => m.metricTypeId)) }),
-			this.metricCategoryRepository.search({ id: uniq(metrics.data.map((m) => m.metricCategoryId)) }),
-		]);
-
-		const typeCodeMap = new Map(metricTypeCodes.data.map((mt) => [mt.id, mt.code]));
-		const categoryCodeMap = new Map(metricCategoryCodes.data.map((mc) => [mc.id, mc.code]));
+		const { typeCodeMap, categoryCodeMap } = await this.getMetricCodeMaps(metrics.data);
 
 		const enrichedData = metrics.data.map(
 			(metric) =>
@@ -241,7 +224,7 @@ export class MetricService {
 		params: MetricAggregateParamsInterface & { page?: number; limit?: number; sort?: any }
 	): Promise<
 		MetricAggregateResultInterface & {
-			data: (MetricAggregationInterface & { metricTypeCode: string })[];
+			data: MetricAggregationInterface[];
 		}
 	> {
 		if (params.column === "time") {
@@ -287,16 +270,7 @@ export class MetricService {
 		};
 	}
 
-	public async read(
-		id: string,
-		transaction?: Transaction
-	): Promise<
-		| (Metric & {
-				metricTypeCode?: string;
-				metricCategoryCode?: string;
-		  })
-		| null
-	> {
+	public async read(id: string, transaction?: Transaction): Promise<MetricExtended | null> {
 		const metric = await this.metricSqlRepository.read(id, { transaction });
 		if (!metric) {
 			throw new NotFoundError(`${this.i18n.__("error.metric.name")} ${id} ${this.i18n.__("error.common.not_found")}`);
@@ -322,7 +296,7 @@ export class MetricService {
 		id: string,
 		params: MetricUpdateAttributes & { metricTypeCode?: string; metricTypeVersion?: number },
 		transaction?: Transaction
-	): Promise<Metric & { metricTypeCode: string; metricCategoryCode: string }> {
+	): Promise<MetricExtended> {
 		let { metricTypeCode, metricTypeVersion, ...updateParams } = params;
 
 		let metricTypeId: number | undefined;
@@ -370,7 +344,7 @@ export class MetricService {
 		return Object.assign(metric, {
 			metricTypeCode,
 			metricCategoryCode,
-		}) as Metric & { metricTypeCode: string; metricCategoryCode: string };
+		}) as MetricExtended;
 	}
 
 	public async delete(id: string, transaction?: Transaction): Promise<void> {
@@ -414,5 +388,23 @@ export class MetricService {
 			}
 		});
 		return result;
+	}
+
+	private async getMetricCodeMaps(
+		metrics: { metricTypeId: number; metricCategoryId: number }[],
+		transaction?: Transaction
+	): Promise<{
+		typeCodeMap: Map<number, string>;
+		categoryCodeMap: Map<number, string>;
+	}> {
+		const [types, categories] = await Promise.all([
+			this.metricTypeRepository.search({ id: uniq(metrics.map((m) => m.metricTypeId)) }, transaction),
+			this.metricCategoryRepository.search({ id: uniq(metrics.map((m) => m.metricCategoryId)) }, transaction),
+		]);
+
+		const typeCodeMap = new Map(types.data.map((type) => [type.id, type.code]));
+		const categoryCodeMap = new Map(categories.data.map((cat) => [cat.id, cat.code]));
+
+		return { typeCodeMap, categoryCodeMap };
 	}
 }

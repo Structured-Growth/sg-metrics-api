@@ -19,7 +19,10 @@ describe("PUT /api/v1/metrics/:metricId", () => {
 	const batchId = `batchId-${Date.now()}`;
 	const value = parseInt(Date.now().toString().slice(0, 5));
 
-	before(async () => container.resolve<App>("App").ready);
+	before(async () => {
+		process.env.TRANSLATE_API_URL = "";
+		await container.resolve<App>("App").ready;
+	});
 
 	it("Should create metric category", async () => {
 		const { statusCode, body } = await server.post("/v1/metric-category").send({
@@ -36,7 +39,7 @@ describe("PUT /api/v1/metrics/:metricId", () => {
 		assert.equal(statusCode, 201);
 		assert.isNumber(body.id);
 		context.createdMetricCategoryId = body.id;
-	}).timeout(1800000);
+	});
 
 	it("Should create metric type", async () => {
 		const { statusCode, body } = await server.post("/v1/metric-type").send({
@@ -58,7 +61,7 @@ describe("PUT /api/v1/metrics/:metricId", () => {
 		assert.equal(statusCode, 201);
 		assert.isNumber(body.id);
 		context.createdMetricTypeId = body.id;
-	}).timeout(1800000);
+	});
 
 	it("Should create metric", async () => {
 		const { statusCode, body } = await server.post("/v1/metrics").send([
@@ -82,7 +85,7 @@ describe("PUT /api/v1/metrics/:metricId", () => {
 		]);
 		assert.equal(statusCode, 201);
 		context.createdMetricId = body[0].id;
-	}).timeout(1800000);
+	});
 
 	it("Should create second metric", async () => {
 		const { statusCode, body } = await server.post("/v1/metrics").send([
@@ -104,13 +107,13 @@ describe("PUT /api/v1/metrics/:metricId", () => {
 		assert.equal(statusCode, 201);
 		assert.equal(body[0].relatedToRn, relatedToRn);
 		context.createdMetric2Id = body[0].id;
-	}).timeout(1800000);
+	});
 
 	it("Should return metric", async () => {
 		const { statusCode, body } = await server.get(`/v1/metrics/${context.createdMetricId}`);
 		assert.equal(statusCode, 200);
 		assert.equal(body.id, context["createdMetricId"]);
-	}).timeout(1800000);
+	});
 
 	it("Should update metric value and metadata", async () => {
 		const { statusCode, body } = await server.put(`/v1/metrics/${context.createdMetricId}`).send({
@@ -123,13 +126,13 @@ describe("PUT /api/v1/metrics/:metricId", () => {
 		assert.equal(body.value, value + 100);
 		assert.equal(body.metadata.a, 2);
 		console.log(body);
-	}).timeout(1800000);
+	});
 
 	it("Should return updated metric with new value", async () => {
 		const { statusCode, body } = await server.get(`/v1/metrics/${context.createdMetricId}`);
 		assert.equal(statusCode, 200);
 		assert.equal(body.value, value + 100);
-	}).timeout(1800000);
+	});
 
 	it("Should update metric time", async () => {
 		const { statusCode, body } = await server.put(`/v1/metrics/${context.createdMetric2Id}`).send({
@@ -139,12 +142,12 @@ describe("PUT /api/v1/metrics/:metricId", () => {
 		assert.equal(body.takenAtOffset, 0);
 		context.createdMetric2NewId = body.id;
 		console.log(body);
-	}).timeout(1800000);
+	});
 
 	it("Should return updated metric with new time", async () => {
 		const { statusCode, body } = await server.get(`/v1/metrics/${context.createdMetric2NewId}`);
 		assert.equal(statusCode, 200);
 		assert.equal(body.takenAtOffset, 0);
 		console.log(body);
-	}).timeout(1800000);
+	});
 });

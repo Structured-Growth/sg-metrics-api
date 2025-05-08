@@ -20,7 +20,10 @@ describe("DELETE /api/v1/metrics/:metricId", () => {
 	const value = factor - metricTypeVersion;
 	const takenAtOffset = metricTypeVersion + factor;
 
-	before(async () => container.resolve<App>("App").ready);
+	before(async () => {
+		process.env.TRANSLATE_API_URL = "";
+		await container.resolve<App>("App").ready;
+	});
 
 	it("Should create metric category", async () => {
 		const { statusCode, body } = await server.post("/v1/metric-category").send({
@@ -37,7 +40,7 @@ describe("DELETE /api/v1/metrics/:metricId", () => {
 		assert.equal(statusCode, 201);
 		assert.isNumber(body.id);
 		context.createdMetricCategoryId = body.id;
-	}).timeout(1800000);
+	});
 
 	it("Should create metric type", async () => {
 		const { statusCode, body } = await server.post("/v1/metric-type").send({
@@ -59,7 +62,7 @@ describe("DELETE /api/v1/metrics/:metricId", () => {
 		assert.equal(statusCode, 201);
 		assert.isNumber(body.id);
 		context.createdMetricTypeId = body.id;
-	}).timeout(1800000);
+	});
 
 	it("Should create metric", async () => {
 		const { statusCode, body } = await server.post("/v1/metrics").send([
@@ -82,22 +85,22 @@ describe("DELETE /api/v1/metrics/:metricId", () => {
 		assert.equal(statusCode, 201);
 
 		context.createdMetricId = body[0].id;
-	}).timeout(1800000);
+	});
 
 	it("Should delete metric", async () => {
 		const { statusCode, body } = await server.delete(`/v1/metrics/${context.createdMetricId}`);
 		assert.equal(statusCode, 204);
-	}).timeout(1800000);
+	});
 
 	it("Should return error because metric  was deleted", async () => {
 		const { statusCode, body } = await server.get(`/v1/metrics/${context.createdMetricId}`).send({});
 		assert.equal(statusCode, 404);
 		assert.isString(body.message);
-	}).timeout(1800000);
+	});
 
 	it("Should return validation error if id is wrong", async () => {
 		const { statusCode, body } = await server.delete("/v1/metrics/9999");
 		assert.equal(statusCode, 404);
 		assert.isString(body.message);
-	}).timeout(1800000);
+	});
 });

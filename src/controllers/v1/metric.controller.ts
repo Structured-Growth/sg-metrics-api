@@ -52,6 +52,11 @@ const publicMetricAttributes = [
 ] as const;
 type MetricKeys = (typeof publicMetricAttributes)[number];
 export type PublicMetricAttributes = Pick<Omit<MetricAttributes, "deletedAt">, MetricKeys> & {};
+export type PublicMetricAttributesExtended = PublicMetricAttributes & {
+	metricTypeCode: string;
+	metricCategoryCode: string;
+	arn: string;
+};
 
 interface MetricCreateBodyWithoutOffset extends Omit<MetricCreateBodyInterface, "takenAtOffset"> {}
 
@@ -84,7 +89,7 @@ export class MetricController extends BaseController {
 	@DescribeResource("Metric", ({ query }) => query.id?.map(Number))
 	@ValidateFuncArgs(MetricSearchParamsValidator)
 	public async search(@Queries() query: MetricSearchParamsInterface): Promise<
-		SearchResultInterface<PublicMetricAttributes & { metricTypeCode: string; metricCategoryCode: string }> & {
+		SearchResultInterface<PublicMetricAttributesExtended> & {
 			nextToken?: string;
 		}
 	> {
@@ -116,7 +121,7 @@ export class MetricController extends BaseController {
 	@DescribeResource("Metric", ({ query }) => query.id?.map(Number))
 	public async aggregate(@Queries() query: MetricAggregateParamsInterface): Promise<
 		MetricAggregateResultInterface & {
-			data: (MetricAggregationInterface & { metricTypeCode: string })[];
+			data: MetricAggregationInterface[];
 		}
 	> {
 		const { data, ...result } = await this.metricService.aggregate(query);
@@ -151,13 +156,7 @@ export class MetricController extends BaseController {
 	async create(
 		@Queries() query: {},
 		@Body() body: MetricCreateBodyWithoutOffset[]
-	): Promise<
-		(PublicMetricAttributes & {
-			arn: string;
-			metricTypeCode: string;
-			metricCategoryCode: string;
-		})[]
-	> {
+	): Promise<PublicMetricAttributesExtended[]> {
 		const metrics = await this.metricService.create(
 			body.map((item) => {
 				return {
@@ -186,13 +185,7 @@ export class MetricController extends BaseController {
 	@SuccessResponse(200, "Returns metric")
 	@DescribeAction("metrics/read")
 	@DescribeResource("Metric", ({ params }) => params.metricId)
-	public async get(@Path() metricId: string): Promise<
-		PublicMetricAttributes & {
-			arn: string;
-			metricTypeCode: string;
-			metricCategoryCode: string;
-		}
-	> {
+	public async get(@Path() metricId: string): Promise<PublicMetricAttributesExtended> {
 		const metric = await this.metricService.read(metricId);
 		this.response.status(200);
 		if (!metric) {
@@ -222,13 +215,7 @@ export class MetricController extends BaseController {
 		@Path() metricId: string,
 		@Queries() query: {},
 		@Body() body: MetricUpdateBodyInterface
-	): Promise<
-		PublicMetricAttributes & {
-			arn: string;
-			metricTypeCode: string;
-			metricCategoryCode: string;
-		}
-	> {
+	): Promise<PublicMetricAttributesExtended> {
 		const metric = await this.metricService.update(
 			metricId,
 			omitBy(
@@ -267,13 +254,7 @@ export class MetricController extends BaseController {
 	public async upsert(
 		@Queries() query: {},
 		@Body() body: MetricCreateBodyWithoutOffset[]
-	): Promise<
-		(PublicMetricAttributes & {
-			arn: string;
-			metricTypeCode: string;
-			metricCategoryCode: string;
-		})[]
-	> {
+	): Promise<PublicMetricAttributesExtended[]> {
 		const metrics = await this.metricService.upsert(
 			body.map((item) => {
 				return {

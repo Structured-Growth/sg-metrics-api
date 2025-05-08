@@ -19,7 +19,10 @@ describe("POST /api/v1/metrics/upsert", () => {
 	const batchId = `batchId-${Date.now()}`;
 	const value = factor - metricTypeVersion;
 
-	before(async () => container.resolve<App>("App").ready);
+	before(async () => {
+		process.env.TRANSLATE_API_URL = "";
+		await container.resolve<App>("App").ready;
+	});
 
 	it("Should create metric category", async () => {
 		const { statusCode, body } = await server.post("/v1/metric-category").send({
@@ -36,7 +39,7 @@ describe("POST /api/v1/metrics/upsert", () => {
 		assert.equal(statusCode, 201);
 		assert.isNumber(body.id);
 		context.createdMetricCategoryId = body.id;
-	}).timeout(1800000);
+	});
 
 	it("Should create metric type", async () => {
 		const { statusCode, body } = await server.post("/v1/metric-type").send({
@@ -58,7 +61,7 @@ describe("POST /api/v1/metrics/upsert", () => {
 		assert.equal(statusCode, 201);
 		assert.isNumber(body.id);
 		context.createdMetricTypeId = body.id;
-	}).timeout(1800000);
+	});
 
 	it("Should create metric", async () => {
 		const { statusCode, body } = await server.post("/v1/metrics/upsert").send([
@@ -93,7 +96,7 @@ describe("POST /api/v1/metrics/upsert", () => {
 		assert.equal(body[0].takenAtOffset, 60);
 		assert.isString(body[0].arn);
 		context.createdMetricId = body[0].id;
-	}).timeout(1800000);
+	});
 
 	it("Should create metric by metric type code", async () => {
 		const { statusCode, body } = await server.post("/v1/metrics/upsert").send([
@@ -119,6 +122,8 @@ describe("POST /api/v1/metrics/upsert", () => {
 		assert.equal(body[0].relatedToRn, relatedToRn);
 		assert.equal(body[0].metricCategoryId, context["createdMetricCategoryId"]);
 		assert.equal(body[0].metricTypeId, context["createdMetricTypeId"]);
+		assert.equal(body[0].metricCategoryCode, code);
+		assert.equal(body[0].metricTypeCode, code);
 		assert.equal(body[0].metricTypeVersion, metricTypeVersion);
 		assert.equal(body[0].deviceId, deviceId);
 		assert.equal(body[0].batchId, batchId);
@@ -127,7 +132,7 @@ describe("POST /api/v1/metrics/upsert", () => {
 		assert.equal(body[0].takenAtOffset, 60);
 		assert.isString(body[0].arn);
 		context.createdMetricId = body[0].id;
-	}).timeout(1800000);
+	});
 
 	it("Should return validation error", async () => {
 		const { statusCode, body } = await server.post("/v1/metrics/upsert").send([
@@ -159,7 +164,7 @@ describe("POST /api/v1/metrics/upsert", () => {
 		assert.isString(body.validation.body[0].value[0]);
 		assert.isString(body.validation.body[0].takenAt[0]);
 		assert.isString(body.validation.body[0].takenAtOffset[0]);
-	}).timeout(1800000);
+	});
 
 	it("Should create metric with metadata", async () => {
 		const { statusCode, body } = await server.post("/v1/metrics/upsert").send([
@@ -188,7 +193,7 @@ describe("POST /api/v1/metrics/upsert", () => {
 		assert.equal(body[0].metadata.string, "string");
 		assert.isString(body[0].metadata.date);
 		assert.equal(body[0].metadata.number, 1);
-	}).timeout(1800000);
+	});
 
 	it("Should return error if there are to much fields", async () => {
 		const { statusCode, body } = await server.post("/v1/metrics/upsert").send([
@@ -223,5 +228,5 @@ describe("POST /api/v1/metrics/upsert", () => {
 		assert.equal(statusCode, 422);
 		assert.isDefined(body.validation);
 		assert.isString(body.message);
-	}).timeout(1800000);
+	});
 });
