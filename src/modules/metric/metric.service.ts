@@ -402,6 +402,8 @@ export class MetricService {
 			this.metricCategoryRepository.search({ id: uniq(metrics.map((m) => m.metricCategoryId)) }, transaction),
 		]);
 
+		// test
+
 		const typeCodeMap = new Map(types.data.map((type) => [type.id, type.code]));
 		const categoryCodeMap = new Map(categories.data.map((cat) => [cat.id, cat.code]));
 
