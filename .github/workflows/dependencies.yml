@@ -1,0 +1,265 @@
+name: Generate list of software dependencies and security
+
+on:
+  workflow_call:
+    secrets:
+      NPM_AUTH_TOKEN:
+        required: true
+      REPORT_TITLE:
+        required: true
+
+jobs:
+  generate-dependencies:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install dependencies
+        run: |
+          echo "📦 Installing dependencies..."
+          npm cache clean --force
+          GITHUB_TOKEN=${{ secrets.NPM_AUTH_TOKEN }} npm install
+
+      - name: Generate dependencies HTML report with vulnerabilities
+        env:
+          REPORT_TITLE: ${{ secrets.REPORT_TITLE }}
+        run: |
+          echo "📂 Creating reports directory..."
+          mkdir -p reports
+
+          echo "📄 Generating HTML report..."
+          node -e '
+          const fs = require("fs");
+          const path = require("path");
+          const { execSync } = require("child_process");
+
+          function flattenDeps(tree, level = 0, list = [], seen = new Set()) {
+            if (!tree || !tree.dependencies) return list;
+            for (const [name, info] of Object.entries(tree.dependencies)) {
+              if (seen.has(info)) continue;
+              seen.add(info);
+
+              const indent = "&nbsp;".repeat(level * 4) + (level > 0 ? "└── " : "");
+              list.push({
+                name: indent + name,
+                rawName: name,
+                version: info.version || "N/A"
+              });
+
+              flattenDeps(info, level + 1, list, seen);
+            }
+            return list;
+          }
+
+          let deps = [];
+          let auditMap = {};
+          let severityCounts = {
+            info: 0,
+            low: 0,
+            moderate: 0,
+            high: 0,
+            critical: 0
+          };
+          let totalVulns = 0;
+          const vulnDetails = {
+            critical: [],
+            high: [],
+            moderate: [],
+            low: [],
+            info: []
+          };
+
+          try {
+            console.log("🔍 Running npm ls...");
+            const lsRaw = execSync("npm ls --all --json", { encoding: "utf8" });
+            const lsJson = JSON.parse(lsRaw);
+            deps = flattenDeps(lsJson);
+            console.log(`📋 Total dependencies collected: ${deps.length}`);
+          } catch (err) {
+            console.error("Failed to parse npm ls:", err.message);
+          }
+
+          try {
+            console.log("🔐 Running npm audit...");
+            const auditRaw = execSync("npm audit --json || true", { encoding: "utf8" });
+            const auditJson = JSON.parse(auditRaw);
+            const vulnerabilities = auditJson.vulnerabilities || {};
+            console.log(`⚠️ Packages with vulnerabilities: ${Object.keys(vulnerabilities).length}`);
+          
+            for (const [pkg, vuln] of Object.entries(vulnerabilities)) {
+              const severities = {};
+          
+              vuln.via.forEach(v => {
+                if (typeof v === "object" && v.severity) {
+                  severityCounts[v.severity] += 1;
+                  totalVulns += 1;
+                  severities[v.severity] = (severities[v.severity] || 0) + 1;
+                } else if (typeof v === "string") {
+                  const severity = vuln.severity;
+                  severityCounts[severity] += 1;
+                  totalVulns += 1;
+                  severities[severity] = (severities[severity] || 0) + 1;
+                }
+              });
+          
+              const summary = Object.entries(severities).map(([s, c]) => `${s}: ${c}`).join(", ");
+          
+              const descriptions = vuln.via
+                .filter(v => typeof v === "object" && v.title)
+                .map(v => {
+                  let line = `- ${v.title}`;
+                  if (v.url) {
+                    line += ` <a href="${v.url}" target="_blank">Details</a>`;
+                  }
+                  return line;
+                })
+                .join("<br>");
+          
+              vuln.via.forEach(v => {
+                if (typeof v === "object" && v.severity) {
+                  const severity = v.severity;
+          
+                  vulnDetails[severity].push({
+                    package: pkg,
+                    version: vuln.range || "N/A",
+                    dependency: v.dependency || pkg,
+                    severity: severity,
+                    report: v.title + (v.url ? ` <a href="${v.url}" target="_blank">Details</a>` : "")
+                  });
+                } else if (typeof v === "string") {
+                    vulnDetails[vuln.severity].push({
+                      package: pkg,
+                      version: vuln.range || "N/A",
+                      dependency: `${pkg} > ${v}`,
+                      severity: vuln.severity,
+                      report: `Affected indirectly via "${v}" used by "${pkg}". No detailed report available.`
+                    });
+                  }
+                });
+          
+              auditMap[pkg] = summary + (descriptions ? "<br>" + descriptions : "");
+            }
+          } catch (err) {
+            console.warn("npm audit failed:", err.message);
+          }
+
+          const dateStr = new Date().toLocaleString();
+          let html = `
+          <!DOCTYPE html>
+          <html>
+          <head>
+            <meta charset="UTF-8">
+            <title>Dependencies Report</title>
+            <style>
+              body { font-family: Arial, sans-serif; margin: 20px; }
+              h2, h3 { margin-top: 20px; padding-top: 20px; }
+              table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+              th, td { border: 1px solid #ddd; padding: 8px; text-align: left; vertical-align: top; }
+              th { background-color: #f4f4f4; }
+              td.dependency {
+                width: 30%;
+                white-space: pre-wrap;
+                word-break: break-word;
+              }
+              td.vulnerabilities {
+                width: 50%;
+              }
+              .header { margin-bottom: 10px; }
+            </style>
+          </head>
+          <body>
+            <h1>${process.env.REPORT_TITLE || "Dependencies Report"}</h1>
+            <div class="header"><strong>Generated at:</strong> ${dateStr}</div>
+            <table>
+              <tr><td><strong>Total dependencies</strong></td><td>${deps.length}</td></tr>
+              <tr><td><strong>Total dependencies with vulnerabilities</strong></td><td>${Object.keys(auditMap).length}</td></tr>
+              <tr><td><strong>Total dependabot vulnerabilities</strong></td><td>${totalVulns}</td></tr>
+              <tr><td>Critical dependabot vulnerabilities</td><td>${severityCounts.critical}</td></tr>
+              <tr><td>High dependabot vulnerabilities</td><td>${severityCounts.high}</td></tr>
+              <tr><td>Moderate dependabot vulnerabilities</td><td>${severityCounts.moderate}</td></tr>
+              <tr><td>Low dependabot vulnerabilities</td><td>${severityCounts.low}</td></tr>
+              <tr><td>Informational dependabot vulnerabilities</td><td>${severityCounts.info}</td></tr>
+            </table>
+          `;
+          
+          console.log("Severity Counts: ", severityCounts);
+          console.log("Vuln Details: ", vulnDetails);
+          
+          ["critical", "high", "moderate", "low", "info"].forEach(level => {
+            const entries = vulnDetails[level];
+            if (entries.length) {
+              html += `<h3>${level.charAt(0).toUpperCase() + level.slice(1)} dependabot vulnerabilities</h3>`;
+          
+              html += `<table>
+                <colgroup>
+                  <col style="width: 5%">
+                  <col style="width: 25%">
+                  <col style="width: 20%">
+                  <col style="width: 10%">
+                  <col style="width: 40%">
+                </colgroup>
+                <tr>
+                  <th>#</th>
+                  <th>Dependency</th>
+                  <th>Version</th>
+                  <th>Severity</th>
+                  <th>Description</th>
+                </tr>`;
+          
+              entries.forEach((entry, i) => {
+                html += `<tr>
+                  <td>${i + 1}</td>
+                  <td>${entry.dependency}</td>
+                  <td>${entry.version}</td>
+                  <td>${entry.severity}</td>
+                  <td>${entry.report}</td>
+                </tr>`;
+              });
+          
+              html += `</table>`;
+            }
+          });
+          
+          html += "<h2>Dependencies</h2>";
+          html += `<table>
+                <colgroup>
+                <col style="width: 5%">
+                <col style="width: 25%">
+                <col style="width: 20%">
+                <col style="width: 50%">
+                </colgroup>
+                <tr><th>#</th><th>Dependency</th><th>Version</th><th>Description</th></tr>`;
+
+          deps.forEach((dep, i) => {
+            html += `<tr>
+              <td>${i + 1}</td>
+              <td class="dependency">${dep.name}</td>
+              <td>${dep.version}</td>
+              <td class="vulnerabilities">${auditMap[dep.rawName] || "none"}</td>
+            </tr>`;
+          });
+
+          html += "</table></body></html>";
+          fs.writeFileSync(path.join("reports", "report.html"), html);
+          console.log("✅ Report created at reports/report.html");
+          '
+
+      - name: Convert HTML to PDF
+        id: generate_pdf
+        uses: fifsky/html-to-pdf-action@master
+        with:
+          htmlFile: reports/report.html
+          outputFile: reports/dependencies-report.pdf
+          pdfOptions: '{"format": "A4", "margin": {"top": "10mm", "left": "10mm", "right": "10mm", "bottom": "10mm"}}'
+        continue-on-error: false
+
+      - name: Debug PDF Report
+        run: ls -lh reports/
+
+      - name: Upload PDF as artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: dependencies-pdf-report
+          path: reports/dependencies-report.pdf
