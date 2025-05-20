@@ -86,7 +86,7 @@ export class Metric implements MetricAttributes {
 			`:${this.region}`,
 			`:${this.orgId}`,
 			`:${this.accountId}` || "-",
-			`/metrics/${this.id}`,
+			`:metrics/${this.id}`,
 		].join("");
 	}
 
