@@ -224,6 +224,12 @@ export class MetricController extends BaseController {
 	@Post("/upsert")
 	@SuccessResponse(200, "Returns created or updated metric")
 	@DescribeAction("metrics/upsert")
+	@DescribeResource("Organization", ({ body }) => body.map((i) => i.orgId))
+	@DescribeResource("Account", ({ body }) => body.map((i) => i.accountId))
+	@DescribeResource("User", ({ body }) => body.map((i) => i.userId))
+	@DescribeResource("MetricCategory", ({ body }) => body.map((i) => i.metricCategoryId))
+	@DescribeResource("MetricType", ({ body }) => body.map((i) => i.metricTypeId))
+	@DescribeResource("Device", ({ body }) => body.map((i) => i.deviceId))
 	@ValidateFuncArgs(MetricCreateParamsValidator)
 	public async upsert(
 		@Queries() query: {},
@@ -281,6 +287,27 @@ export class MetricController extends BaseController {
 	@Post("/bulk")
 	@SuccessResponse(204, "Operations success")
 	@DescribeAction("metrics/bulk")
+	@DescribeResource("Organization", ({ body }) =>
+		body.filter((i) => i.op === "create" || i.op === "upsert").map((i) => i.data.orgId)
+	)
+	@DescribeResource("Account", ({ body }) =>
+		body.filter((i) => i.op === "create" || i.op === "upsert").map((i) => i.data.accountId)
+	)
+	@DescribeResource("User", ({ body }) =>
+		body.filter((i) => i.op === "create" || i.op === "upsert").map((i) => i.data.userId)
+	)
+	@DescribeResource("MetricCategory", ({ body }) =>
+		body.filter((i) => i.op === "create" || i.op === "upsert").map((i) => i.data.metricCategoryId)
+	)
+	@DescribeResource("MetricType", ({ body }) =>
+		body.filter((i) => i.op === "create" || i.op === "upsert").map((i) => i.data.metricTypeId)
+	)
+	@DescribeResource("Device", ({ body }) =>
+		body.filter((i) => i.op === "create" || i.op === "upsert").map((i) => i.data.deviceId)
+	)
+	@DescribeResource("Metric", ({ body }) =>
+		body.filter((i) => i.op === "update" || i.op === "delete").map((i) => i.data.id)
+	)
 	@ValidateFuncArgs(MetricBulkRequestValidator)
 	public async bulk(
 		@Queries() query: {},
