@@ -77,7 +77,7 @@ export class Metric implements MetricAttributes {
 	}
 
 	static get arnPattern(): string {
-		return [container.resolve("appPrefix"), ":<region>", ":<orgId>", ":<accountId>", "/metrics/<metricId>"].join("");
+		return [container.resolve("appPrefix"), ":<region>", ":<orgId>", ":<accountId>", ":metrics/<metricId>"].join("");
 	}
 
 	get arn(): string {
