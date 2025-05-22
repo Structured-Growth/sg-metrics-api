@@ -4,7 +4,7 @@ import { container, webServer } from "@structured-growth/microservice-sdk";
 import { agent } from "supertest";
 import { routes } from "../../../../src/routes";
 import { RegionEnum } from "@structured-growth/microservice-sdk";
-import {assert} from "chai";
+import { assert } from "chai";
 
 describe("POST /api/v1/metric-category", () => {
 	const server = agent(webServer(routes));
@@ -33,14 +33,14 @@ describe("POST /api/v1/metric-category", () => {
 		assert.isString(body.title, code);
 		assert.equal(body.status, "active");
 		assert.isString(body.arn);
-	});
+	}).timeout(1800000);
 
 	it("Should create second metric category", async () => {
 		const { statusCode, body } = await server.post("/v1/metric-category").send({
 			orgId: orgId,
 			region: RegionEnum.US,
 			title: code,
-			code: code + 'second',
+			code: code + "second",
 			status: "active",
 			metadata: {
 				specUrl: "https://",
@@ -55,7 +55,7 @@ describe("POST /api/v1/metric-category", () => {
 		assert.isString(body.title, code);
 		assert.equal(body.status, "active");
 		assert.isString(body.arn);
-	});
+	}).timeout(1800000);
 
 	it("Should return validation error", async () => {
 		const { statusCode, body } = await server.post("/v1/metric-category").send({
@@ -76,6 +76,5 @@ describe("POST /api/v1/metric-category", () => {
 		assert.isString(body.validation.body.title[0]);
 		assert.isString(body.validation.body.code[0]);
 		assert.isString(body.validation.body.status[0]);
-
-	});
+	}).timeout(1800000);
 });

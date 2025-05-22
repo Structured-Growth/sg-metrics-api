@@ -23,6 +23,11 @@ export interface MetricAttributes {
 	arn: string;
 }
 
+export type MetricExtended = Metric & {
+	metricTypeCode?: string;
+	metricCategoryCode?: string;
+};
+
 export interface MetricCreationAttributes extends Omit<MetricAttributes, "arn"> {}
 
 export interface MetricUpdateAttributes

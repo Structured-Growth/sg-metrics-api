@@ -34,7 +34,8 @@ export class MetricCategoryRepository
 		this.i18n = this.getI18n();
 	}
 	public async search(
-		params: MetricCategoryRepositorySearchParamsInterface
+		params: MetricCategoryRepositorySearchParamsInterface,
+		transaction?: Transaction
 	): Promise<SearchResultInterface<MetricCategory>> {
 		const page = params.page || 1;
 		const limit = params.limit || 20;
@@ -84,6 +85,7 @@ export class MetricCategoryRepository
 			offset,
 			limit,
 			order,
+			transaction,
 		});
 
 		await Promise.all(
@@ -93,6 +95,7 @@ export class MetricCategoryRepository
 						metricCategoryId: category.id,
 					},
 					raw: true,
+					transaction,
 				});
 
 				category.metadata = metadata.reduce((acc, item) => {

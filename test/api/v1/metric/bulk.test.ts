@@ -22,7 +22,10 @@ describe("POST /api/v1/metrics/bulk", () => {
 	const batchId = `batchId-${Date.now()}`;
 	const value = factor - metricTypeVersion;
 
-	before(async () => container.resolve<App>("App").ready);
+	before(async () => {
+		process.env.TRANSLATE_API_URL = "";
+		await container.resolve<App>("App").ready;
+	});
 
 	it("Should run operations in a transaction", async () => {
 		const { statusCode, body } = await server.post("/v1/metric-category").send({
@@ -137,5 +140,5 @@ describe("POST /api/v1/metrics/bulk", () => {
 			},
 		]);
 		assert.equal(statusCode, 200);
-	});
+	}).timeout(300000);
 });

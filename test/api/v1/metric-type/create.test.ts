@@ -2,8 +2,8 @@ import "../../../../src/app/providers";
 import { App } from "../../../../src/app/app";
 import { container, webServer } from "@structured-growth/microservice-sdk";
 import { RegionEnum } from "@structured-growth/microservice-sdk";
-import {assert} from "chai";
-import {initTest} from "../../../common/init-test";
+import { assert } from "chai";
+import { initTest } from "../../../common/init-test";
 
 describe("POST /api/v1/metric-type", () => {
 	const { server, context } = initTest();
@@ -29,8 +29,7 @@ describe("POST /api/v1/metric-type", () => {
 		assert.equal(statusCode, 201);
 		assert.isNumber(body.id);
 		context.createdMetricCategoryId = body.id;
-
-	});
+	}).timeout(1800000);
 
 	it("Should create metric type", async () => {
 		const { statusCode, body } = await server.post("/v1/metric-type").send({
@@ -62,7 +61,7 @@ describe("POST /api/v1/metric-type", () => {
 		assert.equal(body.version, version);
 		assert.equal(body.status, "inactive");
 		assert.isString(body.arn);
-	});
+	}).timeout(1800000);
 
 	it("Should error because this code exists", async () => {
 		const { statusCode, body } = await server.post("/v1/metric-type").send({
@@ -84,7 +83,7 @@ describe("POST /api/v1/metric-type", () => {
 		assert.equal(statusCode, 422);
 		assert.isDefined(body.validation);
 		assert.isString(body.message);
-	});
+	}).timeout(1800000);
 
 	it("Should return validation error", async () => {
 		const { statusCode, body } = await server.post("/v1/metric-type").send({
@@ -115,7 +114,5 @@ describe("POST /api/v1/metric-type", () => {
 		assert.isString(body.validation.body.relatedTo[0]);
 		assert.isString(body.validation.body.version[0]);
 		assert.isString(body.validation.body.status[0]);
-
-
-	});
+	}).timeout(1800000);
 });

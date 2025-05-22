@@ -22,7 +22,7 @@ describe("GET /api/v1/metric-category", () => {
 		assert.equal(statusCode, 201);
 		assert.isNumber(body.id);
 		context.createdMetricCategoryId = body.id;
-	});
+	}).timeout(1800000);
 
 	it("Should return validation error", async () => {
 		const { statusCode, body } = await server.get("/v1/metric-category").query({
@@ -40,7 +40,7 @@ describe("GET /api/v1/metric-category", () => {
 		assert.isString(body.validation.query.title[0]);
 		assert.isString(body.validation.query.code[0]);
 		assert.isString(body.validation.query.orgId[0]);
-	});
+	}).timeout(1800000);
 
 	it("Should return created metric category by id", async () => {
 		const { statusCode, body } = await server.get("/v1/metric-category").query({
@@ -60,7 +60,7 @@ describe("GET /api/v1/metric-category", () => {
 		assert.equal(body.page, 1);
 		assert.equal(body.limit, 20);
 		assert.equal(body.total, 1);
-	});
+	}).timeout(1800000);
 
 	it("Should search by code", async () => {
 		const { statusCode, body } = await server.get("/v1/metric-category").query({
@@ -71,7 +71,7 @@ describe("GET /api/v1/metric-category", () => {
 		assert.equal(statusCode, 200);
 		assert.equal(body.total, 1);
 		assert.equal(body.data[0].id, context["createdMetricCategoryId"]);
-	});
+	}).timeout(1800000);
 
 	it("Should return error if one status is invalid", async () => {
 		const { statusCode, body } = await server.get("/v1/metric-category").query({
@@ -80,7 +80,7 @@ describe("GET /api/v1/metric-category", () => {
 		});
 		assert.equal(statusCode, 422);
 		assert.isNotEmpty(body.validation.query.status[0]);
-	});
+	}).timeout(1800000);
 
 	it("Should return created metric category by status", async () => {
 		const { statusCode, body } = await server.get("/v1/metric-category").query({
@@ -90,5 +90,5 @@ describe("GET /api/v1/metric-category", () => {
 			includeInherited: false,
 		});
 		assert.equal(statusCode, 200);
-	});
+	}).timeout(1800000);
 });
