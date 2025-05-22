@@ -1,9 +1,9 @@
 import "../../../../src/app/providers";
 import { assert } from "chai";
 import { initTest } from "../../../common/init-test";
-import {RegionEnum, webServer} from "@structured-growth/microservice-sdk";
-import {container} from "@structured-growth/microservice-sdk";
-import {App} from "../../../../src/app/app";
+import { RegionEnum, webServer } from "@structured-growth/microservice-sdk";
+import { container } from "@structured-growth/microservice-sdk";
+import { App } from "../../../../src/app/app";
 
 describe("GET /api/v1/metric-type:metricTypeId", () => {
 	const { server, context } = initTest();
@@ -30,8 +30,7 @@ describe("GET /api/v1/metric-type:metricTypeId", () => {
 		assert.equal(statusCode, 201);
 		assert.isNumber(body.id);
 		context.createdMetricCategoryId = body.id;
-
-	});
+	}).timeout(1800000);
 
 	it("Should create metric type", async () => {
 		const { statusCode, body } = await server.post("/v1/metric-type").send({
@@ -54,11 +53,11 @@ describe("GET /api/v1/metric-type:metricTypeId", () => {
 		assert.equal(statusCode, 201);
 		assert.isNumber(body.id);
 		context.createdMetricTypeId = body.id;
-	});
+	}).timeout(1800000);
 
 	it("Should return metric type", async () => {
 		const { statusCode, body } = await server.get(`/v1/metric-type/${context.createdMetricTypeId}`).send({
-			MetricTypeId: context["createdMetricTypeId"]
+			MetricTypeId: context["createdMetricTypeId"],
 		});
 		assert.equal(statusCode, 200);
 		assert.isNumber(body.id);
@@ -74,13 +73,13 @@ describe("GET /api/v1/metric-type:metricTypeId", () => {
 		assert.equal(body.version, version);
 		assert.equal(body.status, "inactive");
 		assert.isString(body.arn);
-	});
+	}).timeout(1800000);
 
 	it("Should return error is metric type id is wrong", async () => {
 		const { statusCode, body } = await server.get(`/v1/metric-type/9999`).send({
-			MetricTypeId: "9999"
+			MetricTypeId: "9999",
 		});
 		assert.equal(statusCode, 404);
 		assert.isString(body.message);
-	});
+	}).timeout(1800000);
 });

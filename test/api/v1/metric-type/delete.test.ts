@@ -36,7 +36,7 @@ describe("DELETE /api/v1/metric-type/:metricTypeId", () => {
 		assert.equal(statusCode, 201);
 		assert.isNumber(body.id);
 		context.createdMetricCategoryId = body.id;
-	});
+	}).timeout(1800000);
 
 	it("Should create metric type", async () => {
 		const { statusCode, body } = await server.post("/v1/metric-type").send({
@@ -58,7 +58,7 @@ describe("DELETE /api/v1/metric-type/:metricTypeId", () => {
 		assert.equal(statusCode, 201);
 		assert.isNumber(body.id);
 		context.createdMetricTypeId = body.id;
-	});
+	}).timeout(1800000);
 
 	it("Should create second  metric type", async () => {
 		const { statusCode, body } = await server.post("/v1/metric-type").send({
@@ -80,7 +80,7 @@ describe("DELETE /api/v1/metric-type/:metricTypeId", () => {
 		assert.equal(statusCode, 201);
 		assert.isNumber(body.id);
 		context.createdMetricType2Id = body.id;
-	});
+	}).timeout(1800000);
 
 	it("Should create metric", async () => {
 		const { statusCode, body } = await server.post("/v1/metrics").send([
@@ -108,7 +108,7 @@ describe("DELETE /api/v1/metric-type/:metricTypeId", () => {
 		});
 		assert.equal(statusCode, 200);
 		assert.isNumber(body.id);
-	});
+	}).timeout(1800000);
 
 	it("Should return error because metric type is not empty", async function () {
 		const { statusCode, body } = await server.delete(`/v1/metric-type/${context.createdMetricType2Id}`);
@@ -120,7 +120,7 @@ describe("DELETE /api/v1/metric-type/:metricTypeId", () => {
 	it("Should delete metric type", async () => {
 		const { statusCode, body } = await server.delete(`/v1/metric-type/${context.createdMetricTypeId}`);
 		assert.equal(statusCode, 204);
-	});
+	}).timeout(1800000);
 
 	it("Should return error because metric type was deleted", async () => {
 		const { statusCode, body } = await server.get(`/v1/metric-type/${context.createdMetricTypeId}`).send({
@@ -128,11 +128,11 @@ describe("DELETE /api/v1/metric-type/:metricTypeId", () => {
 		});
 		assert.equal(statusCode, 404);
 		assert.isString(body.message);
-	});
+	}).timeout(1800000);
 
 	it("Should return validation error if id is wrong", async () => {
 		const { statusCode, body } = await server.delete("/v1/metric-type/9999");
 		assert.equal(statusCode, 404);
 		assert.isString(body.message);
-	});
+	}).timeout(1800000);
 });

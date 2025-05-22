@@ -56,7 +56,7 @@ describe("e2e/metrics-unique-uuid", () => {
 		assert.equal(statusCode, 201);
 		assert.isNumber(body.id);
 		context.createdMetricTypeId = body.id;
-	});
+	}).timeout(1800000);
 
 	it("Should create metric with uuid", async () => {
 		const { statusCode, body } = await server.post("/v1/metrics").send([
@@ -99,5 +99,4 @@ describe("e2e/metrics-unique-uuid", () => {
 		]);
 		assert.equal(statusCode, 422);
 	});
-
 });

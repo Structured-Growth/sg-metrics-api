@@ -13,7 +13,7 @@ export const MetricCreateParamsValidator = joi.object({
 					orgId: joi.number().positive().required().label("validator.metrics.orgId"),
 					region: joi.string().min(2).required().label("validator.metrics.region"),
 					accountId: joi.number().positive().label("validator.metrics.accountId"),
-					userId: joi.number().positive().required().label("validator.metrics.userId"),
+					userId: joi.number().positive().label("validator.metrics.userId"),
 					metricCategoryId: joi.number().positive().label("validator.metrics.metricCategoryId"),
 					metricTypeId: joi.number().positive().label("validator.metrics.metricTypeId"),
 					metricTypeCode: joi.string().max(50).label("validator.metrics.metricTypeCode"),

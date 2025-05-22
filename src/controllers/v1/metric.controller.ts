@@ -20,7 +20,10 @@ import { MetricCreateParamsValidator } from "../../validators/metric-create-para
 import { MetricUpdateParamsValidator } from "../../validators/metric-update-params.validator";
 import { isUndefined, omitBy, pick } from "lodash";
 import { MetricAggregateParamsInterface } from "../../interfaces/metric-aggregate-params.interface";
-import { MetricAggregateResultInterface } from "../../interfaces/metric-aggregate-result.interface";
+import {
+	MetricAggregateResultInterface,
+	MetricAggregationInterface,
+} from "../../interfaces/metric-aggregate-result.interface";
 import { getTimezoneOffset } from "../../helpers/get-timezone-offset";
 import { MetricAggregateParamsValidator } from "../../validators/metric-aggregate-params.validator";
 import { EventMutation } from "@structured-growth/microservice-sdk";
@@ -49,6 +52,11 @@ const publicMetricAttributes = [
 ] as const;
 type MetricKeys = (typeof publicMetricAttributes)[number];
 export type PublicMetricAttributes = Pick<Omit<MetricAttributes, "deletedAt">, MetricKeys> & {};
+export type PublicMetricAttributesExtended = PublicMetricAttributes & {
+	metricTypeCode: string;
+	metricCategoryCode: string;
+	arn: string;
+};
 
 interface MetricCreateBodyWithoutOffset extends Omit<MetricCreateBodyInterface, "takenAtOffset"> {}
 
@@ -81,7 +89,7 @@ export class MetricController extends BaseController {
 	@DescribeResource("Metric", ({ query }) => query.id?.map(Number))
 	@ValidateFuncArgs(MetricSearchParamsValidator)
 	public async search(@Queries() query: MetricSearchParamsInterface): Promise<
-		SearchResultInterface<PublicMetricAttributes> & {
+		SearchResultInterface<PublicMetricAttributesExtended> & {
 			nextToken?: string;
 		}
 	> {
@@ -92,6 +100,8 @@ export class MetricController extends BaseController {
 			data: data.map((metric) => ({
 				...(pick(metric.toJSON(), publicMetricAttributes) as PublicMetricAttributes),
 				arn: metric.arn,
+				metricTypeCode: metric.metricTypeCode,
+				metricCategoryCode: metric.metricCategoryCode,
 			})),
 			...result,
 		};
@@ -109,12 +119,19 @@ export class MetricController extends BaseController {
 	@DescribeResource("MetricCategory", ({ query }) => Number(query.metricCategoryId))
 	@DescribeResource("MetricType", ({ query }) => query.metricTypeId?.map(Number))
 	@DescribeResource("Metric", ({ query }) => query.id?.map(Number))
-	public async aggregate(@Queries() query: MetricAggregateParamsInterface): Promise<MetricAggregateResultInterface> {
+	public async aggregate(@Queries() query: MetricAggregateParamsInterface): Promise<
+		MetricAggregateResultInterface & {
+			data: MetricAggregationInterface[];
+		}
+	> {
 		const { data, ...result } = await this.metricService.aggregate(query);
 		this.response.status(200);
 
 		return {
-			data,
+			data: data.map((row: MetricAggregationInterface & { metricTypeCode: string }) => ({
+				...row,
+				metricTypeCode: row.metricTypeCode,
+			})),
 			page: result.page,
 			total: result.total,
 			limit: result.limit,
@@ -136,7 +153,10 @@ export class MetricController extends BaseController {
 	@DescribeResource("MetricType", ({ body }) => body.map((i) => i.metricTypeId))
 	@DescribeResource("Device", ({ body }) => body.map((i) => i.deviceId))
 	@ValidateFuncArgs(MetricCreateParamsValidator)
-	async create(@Queries() query: {}, @Body() body: MetricCreateBodyWithoutOffset[]): Promise<PublicMetricAttributes[]> {
+	async create(
+		@Queries() query: {},
+		@Body() body: MetricCreateBodyWithoutOffset[]
+	): Promise<PublicMetricAttributesExtended[]> {
 		const metrics = await this.metricService.create(
 			body.map((item) => {
 				return {
@@ -152,6 +172,8 @@ export class MetricController extends BaseController {
 		return metrics.map((metric) => ({
 			...(pick(metric.toJSON(), publicMetricAttributes) as PublicMetricAttributes),
 			arn: metric.arn,
+			metricTypeCode: metric.metricTypeCode,
+			metricCategoryCode: metric.metricCategoryCode,
 		}));
 	}
 
@@ -163,7 +185,7 @@ export class MetricController extends BaseController {
 	@SuccessResponse(200, "Returns metric")
 	@DescribeAction("metrics/read")
 	@DescribeResource("Metric", ({ params }) => params.metricId)
-	public async get(@Path() metricId: string): Promise<PublicMetricAttributes> {
+	public async get(@Path() metricId: string): Promise<PublicMetricAttributesExtended> {
 		const metric = await this.metricService.read(metricId);
 		this.response.status(200);
 		if (!metric) {
@@ -175,6 +197,8 @@ export class MetricController extends BaseController {
 		return {
 			...(pick(metric.toJSON(), publicMetricAttributes) as PublicMetricAttributes),
 			arn: metric.arn,
+			metricTypeCode: metric.metricTypeCode,
+			metricCategoryCode: metric.metricCategoryCode,
 		};
 	}
 
@@ -191,7 +215,7 @@ export class MetricController extends BaseController {
 		@Path() metricId: string,
 		@Queries() query: {},
 		@Body() body: MetricUpdateBodyInterface
-	): Promise<PublicMetricAttributes> {
+	): Promise<PublicMetricAttributesExtended> {
 		const metric = await this.metricService.update(
 			metricId,
 			omitBy(
@@ -214,6 +238,8 @@ export class MetricController extends BaseController {
 		return {
 			...(pick(metric.toJSON(), publicMetricAttributes) as PublicMetricAttributes),
 			arn: metric.arn,
+			metricTypeCode: metric.metricTypeCode,
+			metricCategoryCode: metric.metricCategoryCode,
 		};
 	}
 
@@ -234,7 +260,7 @@ export class MetricController extends BaseController {
 	public async upsert(
 		@Queries() query: {},
 		@Body() body: MetricCreateBodyWithoutOffset[]
-	): Promise<PublicMetricAttributes[]> {
+	): Promise<PublicMetricAttributesExtended[]> {
 		const metrics = await this.metricService.upsert(
 			body.map((item) => {
 				return {
@@ -250,6 +276,8 @@ export class MetricController extends BaseController {
 		return metrics.map((metric) => ({
 			...(pick(metric.toJSON(), publicMetricAttributes) as PublicMetricAttributes),
 			arn: metric.arn,
+			metricTypeCode: metric.metricTypeCode,
+			metricCategoryCode: metric.metricCategoryCode,
 		}));
 	}
 

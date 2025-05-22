@@ -20,7 +20,10 @@ describe("GET /api/v1/metrics/aggregate", () => {
 	const value = parseInt(Date.now().toString().slice(0, 5));
 	const takenAtOffset = 90;
 
-	before(async () => container.resolve<App>("App").ready);
+	before(async () => {
+		process.env.TRANSLATE_API_URL = "";
+		await container.resolve<App>("App").ready;
+	});
 
 	it("Should create metric category", async () => {
 		const { statusCode, body } = await server.post("/v1/metric-category").send({
@@ -111,7 +114,7 @@ describe("GET /api/v1/metrics/aggregate", () => {
 		const { statusCode, body } = await server.get(`/v1/metrics/${context.createdMetricId}`).send({});
 		assert.equal(statusCode, 200);
 		assert.equal(body.id, context["createdMetricId"]);
-	}).timeout(1800000);
+	});
 
 	it("Should aggregate metrics", async () => {
 		const { statusCode, body } = await server.get(`/v1/metrics/aggregate`).query({
@@ -122,7 +125,7 @@ describe("GET /api/v1/metrics/aggregate", () => {
 			takenAtMin: "2024-05-01T00:00:00Z",
 		});
 		assert.equal(statusCode, 200);
-	}).timeout(1800000);
+	});
 
 	it("Should aggregate metrics with one filter", async () => {
 		const { statusCode, body } = await server.get(`/v1/metrics/aggregate`).query({
@@ -133,7 +136,7 @@ describe("GET /api/v1/metrics/aggregate", () => {
 			orgId,
 		});
 		assert.equal(statusCode, 200);
-	}).timeout(1800000);
+	});
 
 	it("Should aggregate metrics wih one filter and new sort", async () => {
 		const { statusCode, body } = await server.get(`/v1/metrics/aggregate`).query({
@@ -145,7 +148,7 @@ describe("GET /api/v1/metrics/aggregate", () => {
 			sort: ["avg:desc", "takenAt:asc"],
 		});
 		assert.equal(statusCode, 200);
-	}).timeout(1800000);
+	});
 
 	it("Should aggregate metrics with two filter", async () => {
 		const { statusCode, body } = await server.get(`/v1/metrics/aggregate`).query({
@@ -157,7 +160,7 @@ describe("GET /api/v1/metrics/aggregate", () => {
 			deviceId: deviceId,
 		});
 		assert.equal(statusCode, 200);
-	}).timeout(1800000);
+	});
 
 	it("Should aggregate metrics wih three filter", async () => {
 		const { statusCode, body } = await server.get(`/v1/metrics/aggregate`).query({
@@ -170,7 +173,7 @@ describe("GET /api/v1/metrics/aggregate", () => {
 			"userId[0]": userId,
 		});
 		assert.equal(statusCode, 200);
-	}).timeout(1800000);
+	});
 
 	it("Should return nextToken when aggregate results exceed limit", async () => {
 		for (let i = 0; i < 15; i++) {
@@ -237,7 +240,7 @@ describe("GET /api/v1/metrics/aggregate", () => {
 		assert.equal(statusCode, 200);
 		assert.equal(body.data.length, 5);
 		// assert.isString(body.nextToken);
-	}).timeout(1800000);
+	});
 
 	it("Should aggregate metrics with sum row aggregation", async () => {
 		const { statusCode, body } = await server.get(`/v1/metrics/aggregate`).query({
@@ -248,7 +251,7 @@ describe("GET /api/v1/metrics/aggregate", () => {
 			limit: 5,
 		});
 		assert.equal(statusCode, 200);
-	}).timeout(1800000);
+	});
 
 	it("Should aggregate metrics with min row aggregation", async () => {
 		const { statusCode, body } = await server.get(`/v1/metrics/aggregate`).query({
@@ -259,7 +262,7 @@ describe("GET /api/v1/metrics/aggregate", () => {
 			limit: 5,
 		});
 		assert.equal(statusCode, 200);
-	}).timeout(1800000);
+	});
 
 	it("Should aggregate metrics with max row aggregation", async () => {
 		const { statusCode, body } = await server.get(`/v1/metrics/aggregate`).query({
@@ -270,7 +273,7 @@ describe("GET /api/v1/metrics/aggregate", () => {
 			limit: 5,
 		});
 		assert.equal(statusCode, 200);
-	}).timeout(1800000);
+	});
 
 	it("Should aggregate metrics with avg row aggregation", async () => {
 		const { statusCode, body } = await server.get(`/v1/metrics/aggregate`).query({
@@ -281,7 +284,7 @@ describe("GET /api/v1/metrics/aggregate", () => {
 			limit: 5,
 		});
 		assert.equal(statusCode, 200);
-	}).timeout(1800000);
+	});
 
 	it("Should aggregate metrics with 1h column aggregation", async () => {
 		const { statusCode, body } = await server.get(`/v1/metrics/aggregate`).query({
@@ -292,7 +295,7 @@ describe("GET /api/v1/metrics/aggregate", () => {
 			limit: 5,
 		});
 		assert.equal(statusCode, 200);
-	}).timeout(1800000);
+	});
 
 	it("Should aggregate metrics with 1d column aggregation", async () => {
 		const { statusCode, body } = await server.get(`/v1/metrics/aggregate`).query({
@@ -303,7 +306,7 @@ describe("GET /api/v1/metrics/aggregate", () => {
 			limit: 5,
 		});
 		assert.equal(statusCode, 200);
-	}).timeout(1800000);
+	});
 
 	it("Should aggregate metrics with 30d column aggregation", async () => {
 		const { statusCode, body } = await server.get(`/v1/metrics/aggregate`).query({
@@ -314,7 +317,7 @@ describe("GET /api/v1/metrics/aggregate", () => {
 			limit: 5,
 		});
 		assert.equal(statusCode, 200);
-	}).timeout(1800000);
+	});
 
 	it("Should aggregate metrics with column as orgId and row as value", async () => {
 		const { statusCode, body } = await server.get(`/v1/metrics/aggregate`).query({
@@ -328,9 +331,10 @@ describe("GET /api/v1/metrics/aggregate", () => {
 		assert.isArray(body.data);
 		body.data.forEach((item) => {
 			assert.property(item, "orgId");
+			assert.property(item, "metricTypeCode");
 			assert.property(item, "avg");
 		});
-	}).timeout(1800000);
+	});
 
 	it("Should aggregate metrics with column as orgId, row as value, and rowAggregation as max", async () => {
 		const { statusCode, body } = await server.get(`/v1/metrics/aggregate`).query({
@@ -343,9 +347,10 @@ describe("GET /api/v1/metrics/aggregate", () => {
 		assert.isArray(body.data);
 		body.data.forEach((item) => {
 			assert.property(item, "orgId");
+			assert.property(item, "metricTypeCode");
 			assert.property(item, "max");
 		});
-	}).timeout(1800000);
+	});
 
 	it("Should aggregate metrics with column as orgId, row as value, and rowAggregation as min", async () => {
 		const { statusCode, body } = await server.get(`/v1/metrics/aggregate`).query({
@@ -358,9 +363,10 @@ describe("GET /api/v1/metrics/aggregate", () => {
 		assert.isArray(body.data);
 		body.data.forEach((item) => {
 			assert.property(item, "orgId");
+			assert.property(item, "metricTypeCode");
 			assert.property(item, "min");
 		});
-	}).timeout(1800000);
+	});
 
 	it("Should aggregate metrics with column as orgId and row as time with min aggregation", async () => {
 		const { statusCode, body } = await server.get(`/v1/metrics/aggregate`).query({
@@ -373,9 +379,10 @@ describe("GET /api/v1/metrics/aggregate", () => {
 		assert.isArray(body.data);
 		body.data.forEach((item) => {
 			assert.property(item, "orgId");
+			assert.property(item, "metricTypeCode");
 			assert.property(item, "min");
 		});
-	}).timeout(1800000);
+	});
 
 	it("Should aggregate metrics with column as orgId and row as time with max aggregation", async () => {
 		const { statusCode, body } = await server.get(`/v1/metrics/aggregate`).query({
@@ -388,9 +395,10 @@ describe("GET /api/v1/metrics/aggregate", () => {
 		assert.isArray(body.data);
 		body.data.forEach((item) => {
 			assert.property(item, "orgId");
+			assert.property(item, "metricTypeCode");
 			assert.property(item, "max");
 		});
-	}).timeout(1800000);
+	});
 
 	it("Should aggregate metrics with column as time and row as orgId with min aggregation", async () => {
 		const { statusCode, body } = await server.get(`/v1/metrics/aggregate`).query({
@@ -404,9 +412,10 @@ describe("GET /api/v1/metrics/aggregate", () => {
 		assert.isArray(body.data);
 		body.data.forEach((item) => {
 			assert.property(item, "takenAt");
+			assert.property(item, "metricTypeCode");
 			assert.property(item, "min");
 		});
-	}).timeout(1800000);
+	});
 
 	it("Should aggregate metrics with column as time and row as orgId with max aggregation", async () => {
 		const { statusCode, body } = await server.get(`/v1/metrics/aggregate`).query({
@@ -420,7 +429,8 @@ describe("GET /api/v1/metrics/aggregate", () => {
 		assert.isArray(body.data);
 		body.data.forEach((item) => {
 			assert.property(item, "takenAt");
+			assert.property(item, "metricTypeCode");
 			assert.property(item, "max");
 		});
-	}).timeout(1800000);
+	});
 });

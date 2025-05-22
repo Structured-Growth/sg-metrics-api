@@ -20,7 +20,10 @@ describe("GET /api/v1/metrics:metricId", () => {
 	const value = parseInt(Date.now().toString().slice(0, 5));
 	const takenAtOffset = 90;
 
-	before(async () => container.resolve<App>("App").ready);
+	before(async () => {
+		process.env.TRANSLATE_API_URL = "";
+		await container.resolve<App>("App").ready;
+	});
 
 	it("Should create metric category", async () => {
 		const { statusCode, body } = await server.post("/v1/metric-category").send({
@@ -60,6 +63,7 @@ describe("GET /api/v1/metrics:metricId", () => {
 		assert.isNumber(body.id);
 		context.createdMetricTypeId = body.id;
 	});
+
 	it("Should create metric", async () => {
 		const { statusCode, body } = await server.post("/v1/metrics").send([
 			{
@@ -93,6 +97,8 @@ describe("GET /api/v1/metrics:metricId", () => {
 		assert.equal(body.relatedToRn, relatedToRn);
 		assert.equal(body.metricCategoryId, context["createdMetricCategoryId"]);
 		assert.equal(body.metricTypeId, context["createdMetricTypeId"]);
+		assert.equal(body.metricCategoryCode, code);
+		assert.equal(body.metricTypeCode, code);
 		assert.equal(body.metricTypeVersion, metricTypeVersion);
 		assert.equal(body.deviceId, deviceId);
 		assert.equal(body.batchId, batchId);
@@ -101,11 +107,11 @@ describe("GET /api/v1/metrics:metricId", () => {
 		assert.equal(body.takenAtOffset, 60);
 		assert.isString(body.recordedAt);
 		assert.isObject(body.metadata);
-	}).timeout(1800000);
+	});
 
 	it("Should return error is metric type id is wrong", async () => {
 		const { statusCode, body } = await server.get(`/v1/metrics/9999`).send({});
 		assert.equal(statusCode, 404);
 		assert.isString(body.message);
-	}).timeout(1800000);
+	});
 });
