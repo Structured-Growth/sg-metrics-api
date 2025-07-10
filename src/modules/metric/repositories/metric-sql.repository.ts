@@ -76,6 +76,7 @@ export class MetricSqlRepository {
 				...item,
 				count: Number(item.count),
 				avg: item.avg !== undefined && item.avg !== null ? round(item.avg, 2) : undefined,
+				stddev_pop: item.stddev_pop !== undefined && item.stddev_pop !== null ? round(item.stddev_pop, 2) : undefined,
 			})) as any,
 			limit,
 			page,
