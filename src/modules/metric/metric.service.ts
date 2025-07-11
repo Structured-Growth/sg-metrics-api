@@ -415,6 +415,7 @@ export class MetricService {
 	public async generateStatisticsRange(
 		params: MetricStatisticsBodyInterface
 	): Promise<MetricStatisticsResponseInterface> {
+		console.log("TEST");
 		const { userId, accountId, startPreviousPeriod, startCurrentPeriod, lowThreshold, highThreshold } = params;
 
 		const baseWhere = {
