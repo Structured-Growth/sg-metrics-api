@@ -481,16 +481,20 @@ export class MetricService {
 		}
 
 		return {
-			lowValuePrevious: toPercent(lowValuePrevious, countPreviousPeriod),
-			highValuePrevious: toPercent(highValuePrevious, countPreviousPeriod),
+			lowValuePrevious: countPreviousPeriod > 0 ? toPercent(lowValuePrevious, countPreviousPeriod) : null,
+			highValuePrevious: countPreviousPeriod > 0 ? toPercent(highValuePrevious, countPreviousPeriod) : null,
 			inRangeValuePrevious:
-				100 - toPercent(lowValuePrevious, countPreviousPeriod) - toPercent(highValuePrevious, countPreviousPeriod),
+				countPreviousPeriod > 0
+					? 100 - toPercent(lowValuePrevious, countPreviousPeriod) - toPercent(highValuePrevious, countPreviousPeriod)
+					: null,
 			countPreviousPeriod,
 			startTimePrevious,
-			lowValueCurrent: toPercent(lowValueCurrent, countCurrentPeriod),
-			highValueCurrent: toPercent(highValueCurrent, countCurrentPeriod),
+			lowValueCurrent: countCurrentPeriod > 0 ? toPercent(lowValueCurrent, countCurrentPeriod) : null,
+			highValueCurrent: countCurrentPeriod > 0 ? toPercent(highValueCurrent, countCurrentPeriod) : null,
 			inRangeValueCurrent:
-				100 - toPercent(lowValueCurrent, countCurrentPeriod) - toPercent(highValueCurrent, countCurrentPeriod),
+				countCurrentPeriod > 0
+					? 100 - toPercent(lowValueCurrent, countCurrentPeriod) - toPercent(highValueCurrent, countCurrentPeriod)
+					: null,
 			countCurrentPeriod,
 			startTimeCurrent,
 		};
