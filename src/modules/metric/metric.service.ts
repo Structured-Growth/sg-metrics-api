@@ -415,7 +415,6 @@ export class MetricService {
 	public async generateStatisticsRange(
 		params: MetricStatisticsBodyInterface
 	): Promise<MetricStatisticsResponseInterface> {
-		console.log("TEST");
 		const { userId, accountId, startPreviousPeriod, startCurrentPeriod, lowThreshold, highThreshold } = params;
 
 		const baseWhere = {
@@ -478,7 +477,7 @@ export class MetricService {
 
 		function toPercent(part: number, total: number): number {
 			if (total === 0) return 0;
-			return Number(((part / total) * 100).toFixed(2));
+			return Number(((part / total) * 100).toFixed(0));
 		}
 
 		return {
