@@ -18,6 +18,7 @@ import { MetricUpdateBodyInterface } from "../../interfaces/metric-update-body.i
 import { MetricSearchParamsValidator } from "../../validators/metric-search-params.validator";
 import { MetricCreateParamsValidator } from "../../validators/metric-create-params.validator";
 import { MetricUpdateParamsValidator } from "../../validators/metric-update-params.validator";
+import { MetricStatisticsParamsValidator } from "../../validators/metric-statistics-params.validator";
 import { isUndefined, omitBy, pick } from "lodash";
 import { MetricAggregateParamsInterface } from "../../interfaces/metric-aggregate-params.interface";
 import {
@@ -30,6 +31,8 @@ import { EventMutation } from "@structured-growth/microservice-sdk";
 import { MetricsBulkRequestInterface } from "../../interfaces/metrics-bulk.request.interface";
 import { MetricBulkRequestValidator } from "../../validators/metric-bulk-request.validator";
 import { MetricsBulkResponseInterface } from "../../interfaces/metrics-bulk-response.interface";
+import { MetricStatisticsBodyInterface } from "../../interfaces/metric-statistics-body.interface";
+import { MetricStatisticsResponseInterface } from "../../interfaces/metric-statistics-response.interface";
 
 const publicMetricAttributes = [
 	"id",
@@ -359,5 +362,26 @@ export class MetricController extends BaseController {
 					return { op, data };
 			}
 		});
+	}
+
+	/**
+	 * Generate statistics range to the selected user
+	 */
+	@OperationId("generateStatisticsRange")
+	@Post("/statistics")
+	@SuccessResponse(201, "Returns range stats")
+	@DescribeAction("metrics/statistics")
+	@DescribeResource("Account", ({ body }) => Number(body.accountId))
+	@DescribeResource("User", ({ body }) => Number(body.userId))
+	@ValidateFuncArgs(MetricStatisticsParamsValidator)
+	async generateStatisticsRange(
+		@Queries() query: {},
+		@Body() body: MetricStatisticsBodyInterface
+	): Promise<MetricStatisticsResponseInterface> {
+		const stats = await this.metricService.generateStatisticsRange(body);
+
+		this.response.status(201);
+
+		return stats;
 	}
 }

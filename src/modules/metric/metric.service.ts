@@ -28,8 +28,10 @@ import MetricType from "../../../database/models/metric-type.sequelize";
 import { MetricCategoryRepository } from "../metric-category/metric-category.repository";
 import { MetricsBulkRequestInterface } from "../../interfaces/metrics-bulk.request.interface";
 import MetricSQL from "../../../database/models/metric-sql.sequelize";
-import { Transaction } from "sequelize";
+import { Transaction, Op } from "sequelize";
 import { MetricsBulkResultInterface } from "./interfaces/metrics-bulk-result.interface";
+import { MetricStatisticsBodyInterface } from "../../interfaces/metric-statistics-body.interface";
+import { MetricStatisticsResponseInterface } from "../../interfaces/metric-statistics-response.interface";
 
 @autoInjectable()
 export class MetricService {
@@ -408,5 +410,93 @@ export class MetricService {
 		const categoryCodeMap = new Map(categories.data.map((cat) => [cat.id, cat.code]));
 
 		return { typeCodeMap, categoryCodeMap };
+	}
+
+	public async generateStatisticsRange(
+		params: MetricStatisticsBodyInterface
+	): Promise<MetricStatisticsResponseInterface> {
+		const { userId, accountId, startPreviousPeriod, startCurrentPeriod, lowThreshold, highThreshold } = params;
+
+		const baseWhere = {
+			userId,
+			accountId,
+		};
+
+		const wherePrev = {
+			...baseWhere,
+			takenAt: {
+				[Op.gte]: startPreviousPeriod,
+				[Op.lt]: startCurrentPeriod,
+			},
+		};
+
+		const countPreviousPeriod = await MetricSQL.count({ where: wherePrev });
+
+		const lowValuePrevious = await MetricSQL.count({
+			where: {
+				...wherePrev,
+				value: { [Op.lt]: lowThreshold },
+			},
+		});
+
+		const highValuePrevious = await MetricSQL.count({
+			where: {
+				...wherePrev,
+				value: { [Op.gt]: highThreshold },
+			},
+		});
+
+		const rawStartTimePrevious = (await MetricSQL.min("takenAt", { where: wherePrev })) as string | Date | null;
+		const startTimePrevious = rawStartTimePrevious ? new Date(rawStartTimePrevious) : null;
+
+		const whereCurr = {
+			...baseWhere,
+			takenAt: {
+				[Op.gte]: startCurrentPeriod,
+			},
+		};
+
+		const countCurrentPeriod = await MetricSQL.count({ where: whereCurr });
+
+		const lowValueCurrent = await MetricSQL.count({
+			where: {
+				...whereCurr,
+				value: { [Op.lt]: lowThreshold },
+			},
+		});
+
+		const highValueCurrent = await MetricSQL.count({
+			where: {
+				...whereCurr,
+				value: { [Op.gt]: highThreshold },
+			},
+		});
+
+		const rawStartTimeCurrent = (await MetricSQL.min("takenAt", { where: whereCurr })) as string | Date | null;
+		const startTimeCurrent = rawStartTimeCurrent ? new Date(rawStartTimeCurrent) : null;
+
+		function toPercent(part: number, total: number): number {
+			if (total === 0) return 0;
+			return Number(((part / total) * 100).toFixed(0));
+		}
+
+		return {
+			lowValuePrevious: countPreviousPeriod > 0 ? toPercent(lowValuePrevious, countPreviousPeriod) : null,
+			highValuePrevious: countPreviousPeriod > 0 ? toPercent(highValuePrevious, countPreviousPeriod) : null,
+			inRangeValuePrevious:
+				countPreviousPeriod > 0
+					? 100 - toPercent(lowValuePrevious, countPreviousPeriod) - toPercent(highValuePrevious, countPreviousPeriod)
+					: null,
+			countPreviousPeriod,
+			startTimePrevious,
+			lowValueCurrent: countCurrentPeriod > 0 ? toPercent(lowValueCurrent, countCurrentPeriod) : null,
+			highValueCurrent: countCurrentPeriod > 0 ? toPercent(highValueCurrent, countCurrentPeriod) : null,
+			inRangeValueCurrent:
+				countCurrentPeriod > 0
+					? 100 - toPercent(lowValueCurrent, countCurrentPeriod) - toPercent(highValueCurrent, countCurrentPeriod)
+					: null,
+			countCurrentPeriod,
+			startTimeCurrent,
+		};
 	}
 }
