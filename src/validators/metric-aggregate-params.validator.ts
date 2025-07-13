@@ -82,9 +82,12 @@ export const MetricAggregateParamsValidator = joi.object({
 			.label("validator.metrics.row"),
 		columnAggregation: joi
 			.string()
-			.valid("1m", "5m", "30m", "1h", "4h", "6h", "12h", "1d", "7d", "30d", "60d")
+			.valid("1m", "5m", "30m", "1h", "4h", "6h", "12h", "1d", "7d", "15d", "30d", "60d")
 			.label("validator.metrics.columnAggregation"),
-		rowAggregation: joi.string().valid("avg", "min", "max", "sum", "count").label("validator.metrics.rowAggregation"),
+		rowAggregation: joi
+			.string()
+			.valid("avg", "min", "max", "sum", "count", "stddev_pop")
+			.label("validator.metrics.rowAggregation"),
 		nextToken: joi.string().label("validator.metrics.nextToken"),
 	}),
 });
