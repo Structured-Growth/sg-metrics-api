@@ -23,14 +23,12 @@ describe("Test resolver", () => {
 
 	it("Should return list of actions", async () => {
 		const { data } = await controller.actions();
-		console.log(data);
 		assert.isArray(data);
 		assert.equal(data.filter((item) => item.action.includes("resolve")).length, 3);
 	});
 
 	it("Should return list of models", async () => {
 		const { data } = await controller.models();
-		console.log(data);
 		assert.isString(data[0].resource);
 	});
 });

@@ -125,7 +125,6 @@ describe("PUT /api/v1/metrics/:metricId", () => {
 		assert.equal(statusCode, 200);
 		assert.equal(body.value, value + 100);
 		assert.equal(body.metadata.a, 2);
-		console.log(body);
 	});
 
 	it("Should return updated metric with new value", async () => {
@@ -141,13 +140,11 @@ describe("PUT /api/v1/metrics/:metricId", () => {
 		assert.equal(statusCode, 200);
 		assert.equal(body.takenAtOffset, 0);
 		context.createdMetric2NewId = body.id;
-		console.log(body);
 	});
 
 	it("Should return updated metric with new time", async () => {
 		const { statusCode, body } = await server.get(`/v1/metrics/${context.createdMetric2NewId}`);
 		assert.equal(statusCode, 200);
 		assert.equal(body.takenAtOffset, 0);
-		console.log(body);
 	});
 });
