@@ -187,7 +187,6 @@ export class MetricService {
 		if (params.metricCategoryCode) {
 			const metricCategory = await this.metricCategoryRepository.findByCode(params.metricCategoryCode);
 			if (metricCategory) {
-				console.log(metricCategory, metricCategory.id);
 				params.metricCategoryId = metricCategory.id;
 			}
 		}
