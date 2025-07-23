@@ -9,6 +9,8 @@ import {
 	ValidateFuncArgs,
 	SearchResultInterface,
 	I18nType,
+	HashFields,
+	MaskFields,
 } from "@structured-growth/microservice-sdk";
 import { MetricAttributes } from "../../../database/models/metric";
 import { MetricService } from "../../modules/metric/metric.service";
@@ -90,6 +92,7 @@ export class MetricController extends BaseController {
 	@DescribeResource("MetricCategory", ({ query }) => Number(query.metricCategoryId))
 	@DescribeResource("MetricType", ({ query }) => query.metricTypeId?.map(Number))
 	@DescribeResource("Metric", ({ query }) => query.id?.map(Number))
+	@HashFields(["value", "metricCategoryCode", "metricTypeCode"])
 	@ValidateFuncArgs(MetricSearchParamsValidator)
 	public async search(@Queries() query: MetricSearchParamsInterface): Promise<
 		SearchResultInterface<PublicMetricAttributesExtended> & {
@@ -122,6 +125,8 @@ export class MetricController extends BaseController {
 	@DescribeResource("MetricCategory", ({ query }) => Number(query.metricCategoryId))
 	@DescribeResource("MetricType", ({ query }) => query.metricTypeId?.map(Number))
 	@DescribeResource("Metric", ({ query }) => query.id?.map(Number))
+	@HashFields(["value", "metricCategoryCode", "metricTypeCode"])
+	@MaskFields(["count", "min", "max", "sum", "avg"])
 	public async aggregate(@Queries() query: MetricAggregateParamsInterface): Promise<
 		MetricAggregateResultInterface & {
 			data: MetricAggregationInterface[];
@@ -155,6 +160,7 @@ export class MetricController extends BaseController {
 	@DescribeResource("MetricCategory", ({ body }) => body.map((i) => i.metricCategoryId))
 	@DescribeResource("MetricType", ({ body }) => body.map((i) => i.metricTypeId))
 	@DescribeResource("Device", ({ body }) => body.map((i) => i.deviceId))
+	@HashFields(["value", "metricCategoryCode", "metricTypeCode"])
 	@ValidateFuncArgs(MetricCreateParamsValidator)
 	async create(
 		@Queries() query: {},
@@ -188,6 +194,7 @@ export class MetricController extends BaseController {
 	@SuccessResponse(200, "Returns metric")
 	@DescribeAction("metrics/read")
 	@DescribeResource("Metric", ({ params }) => params.metricId)
+	@HashFields(["value", "metricCategoryCode", "metricTypeCode"])
 	public async get(@Path() metricId: string): Promise<PublicMetricAttributesExtended> {
 		const metric = await this.metricService.read(metricId);
 		this.response.status(200);
@@ -213,6 +220,7 @@ export class MetricController extends BaseController {
 	@SuccessResponse(200, "Returns updated metric")
 	@DescribeAction("metrics/update")
 	@DescribeResource("Metric", ({ params }) => params.metricId)
+	@HashFields(["value", "metricCategoryCode", "metricTypeCode"])
 	@ValidateFuncArgs(MetricUpdateParamsValidator)
 	public async update(
 		@Path() metricId: string,
@@ -259,6 +267,7 @@ export class MetricController extends BaseController {
 	@DescribeResource("MetricCategory", ({ body }) => body.map((i) => i.metricCategoryId))
 	@DescribeResource("MetricType", ({ body }) => body.map((i) => i.metricTypeId))
 	@DescribeResource("Device", ({ body }) => body.map((i) => i.deviceId))
+	@HashFields(["value", "metricCategoryCode", "metricTypeCode"])
 	@ValidateFuncArgs(MetricCreateParamsValidator)
 	public async upsert(
 		@Queries() query: {},
@@ -339,6 +348,7 @@ export class MetricController extends BaseController {
 	@DescribeResource("Metric", ({ body }) =>
 		body.filter((i) => i.op === "update" || i.op === "delete").map((i) => i.data.id)
 	)
+	@HashFields(["value", "metricCategoryCode", "metricTypeCode"])
 	@ValidateFuncArgs(MetricBulkRequestValidator)
 	public async bulk(
 		@Queries() query: {},

@@ -10,6 +10,7 @@ import {
 	ValidateFuncArgs,
 	NotFoundError,
 	I18nType,
+	HashFields,
 } from "@structured-growth/microservice-sdk";
 import { pick } from "lodash";
 import { MetricCategory, MetricCategoryAttributes } from "../../../database/models/metric-category.sequelize";
@@ -65,6 +66,7 @@ export class MetricCategoryController extends BaseController {
 	@DescribeResource("Organization", ({ query }) => Number(query.orgId))
 	@DescribeResource("Account", ({ query }) => Number(query.accountId))
 	@DescribeResource("MetricCategory", ({ query }) => query.id?.map(Number))
+	@HashFields(["title", "code"])
 	@ValidateFuncArgs(MetricCategorySearchParamsValidator)
 	async search(
 		@Queries() query: MetricCategorySearchParamsInterface
@@ -97,6 +99,7 @@ export class MetricCategoryController extends BaseController {
 	@SuccessResponse(201, "Returns created category")
 	@DescribeAction("metric-category/create")
 	@DescribeResource("Organization", ({ body }) => Number(body.orgId))
+	@HashFields(["title", "code"])
 	@ValidateFuncArgs(MetricCategoryCreateParamsValidator)
 	async create(
 		@Queries() query: {},
@@ -129,6 +132,7 @@ export class MetricCategoryController extends BaseController {
 	@SuccessResponse(200, "Returns category")
 	@DescribeAction("metric-category/read")
 	@DescribeResource("MetricCategory", ({ params }) => Number(params.metricCategoryId))
+	@HashFields(["title", "code"])
 	async get(@Path() metricCategoryId: number): Promise<PublicMetricCategoryAttributes> {
 		const metricCategory = await this.metricCategoryRepository.read(metricCategoryId);
 		this.response.status(200);
@@ -153,6 +157,7 @@ export class MetricCategoryController extends BaseController {
 	@SuccessResponse(200, "Returns updated category")
 	@DescribeAction("metric-category/update")
 	@DescribeResource("MetricCategory", ({ params }) => Number(params.metricCategoryId))
+	@HashFields(["title", "code"])
 	@ValidateFuncArgs(MetricCategoryUpdateSearchParamsValidator)
 	async update(
 		@Path() metricCategoryId: number,
