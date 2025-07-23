@@ -10,6 +10,7 @@ import {
 	ValidateFuncArgs,
 	SearchResultInterface,
 	I18nType,
+	HashFields,
 } from "@structured-growth/microservice-sdk";
 import { MetricTypeAttributes } from "../../../database/models/metric-type.sequelize";
 import { MetricTypeSearchParamsInterface } from "../../interfaces/metric-type-search-params.interface";
@@ -69,6 +70,7 @@ export class MetricTypeController extends BaseController {
 	@DescribeResource("Organization", ({ query }) => Number(query.orgId))
 	@DescribeResource("Account", ({ query }) => Number(query.accountId))
 	@DescribeResource("MetricType", ({ query }) => query.id?.map(Number))
+	@HashFields(["title", "code", "unit", "factor"])
 	@ValidateFuncArgs(MetricTypeSearchParamsValidator)
 	async search(
 		@Queries() query: MetricTypeSearchParamsInterface
@@ -99,6 +101,7 @@ export class MetricTypeController extends BaseController {
 	@DescribeResource("Organization", ({ body }) => Number(body.orgId))
 	@DescribeResource("Account", ({ body }) => Number(body.accountId))
 	@DescribeResource("MetricCategory", ({ body }) => Number(body.metricCategoryId))
+	@HashFields(["title", "code", "unit", "factor"])
 	@ValidateFuncArgs(MetricTypeCreateParamsValidator)
 	async create(@Queries() query: {}, @Body() body: MetricTypeCreateBodyInterface): Promise<PublicMetricTypeAttributes> {
 		const metricType = await this.metricTypeService.create(body);
@@ -128,6 +131,7 @@ export class MetricTypeController extends BaseController {
 	@SuccessResponse(200, "Returns model")
 	@DescribeAction("metric-type/read")
 	@DescribeResource("MetricType", ({ params }) => Number(params.metricTypeId))
+	@HashFields(["title", "code", "unit", "factor"])
 	async get(@Path() metricTypeId: number): Promise<PublicMetricTypeAttributes> {
 		const metricType = await this.metricTypeRepository.read(metricTypeId);
 		this.response.status(200);
@@ -152,6 +156,7 @@ export class MetricTypeController extends BaseController {
 	@SuccessResponse(200, "Returns updated model")
 	@DescribeAction("metric-type/update")
 	@DescribeResource("MetricType", ({ params }) => Number(params.metricTypeId))
+	@HashFields(["title", "code", "unit", "factor"])
 	@ValidateFuncArgs(MetricTypeUpdateParamsValidator)
 	async update(
 		@Path() metricTypeId: number,
