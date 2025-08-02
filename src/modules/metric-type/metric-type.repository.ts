@@ -14,6 +14,8 @@ import MetricType, {
 import { MetricTypeSearchParamsInterface } from "../../interfaces/metric-type-search-params.interface";
 import MetricTypeMetadata from "../../../database/models/metric-type-metadata.sequelize";
 
+// For devops
+
 interface MetricTypeRepositorySearchParamsInterface extends Omit<MetricTypeSearchParamsInterface, "orgId"> {
 	orgId?: number[];
 	metadata?: Record<string, string>;
