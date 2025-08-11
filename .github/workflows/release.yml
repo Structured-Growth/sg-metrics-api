@@ -64,10 +64,8 @@ jobs:
     name: Release
     runs-on: ubuntu-latest
     env:
-      REGISTRY_URI: ${{ secrets.REGISTRY_URI }}
-      AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
-      AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-      AWS_DEFAULT_REGION: ${{ secrets.AWS_DEFAULT_REGION }}
+      DOCKER_REGISTRY_USER: ${{ secrets.DOCKER_REGISTRY_USER }}
+      DOCKER_REGISTRY_PASSWORD: ${{ secrets.DOCKER_REGISTRY_PASSWORD }}
     steps:
       - name: Checkout
         uses: actions/checkout@v2
@@ -90,14 +88,11 @@ jobs:
       - name: Build
         run: npm run build
 
-      - name: Authenticate in docker registry
-        run: aws ecr get-login-password | docker login --username AWS --password-stdin $REGISTRY_URI
-
       - name: Release
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           NPM_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: node_modules/.bin/semantic-release --dockerRegistry=$REGISTRY_URI
+        run: node_modules/.bin/semantic-release
     if: success()
 
   # 7. slack notification about created release
