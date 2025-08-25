@@ -5,6 +5,8 @@ import * as dbConfig from "../../../database/config/config";
 import { BaseController, DescribeAction, injectable } from "@structured-growth/microservice-sdk";
 import { Tags } from "tsoa";
 import { Options } from "sequelize/types/sequelize";
+import { defaultJoiTranslations } from "@structured-growth/microservice-sdk";
+import * as mainJson from "../../i18n/locales/en-US.json";
 
 @Route("v1/system")
 @Tags("System")
@@ -56,5 +58,28 @@ export class SystemController extends BaseController {
 		const result = await umzug.up();
 
 		this.logger.info(`${result.length} migrations applied.`, result);
+	}
+
+	@Post("i18n-upload")
+	@DescribeAction("system/i18n-upload")
+	@Hidden()
+	public async uploadI18n(): Promise<void> {
+		const merged = { ...mainJson, ...defaultJoiTranslations };
+
+		const payload = {
+			locale: process.env.DEFAULT_LANGUAGE || "en-US",
+			data: merged,
+		};
+
+		const url = `${process.env.TRANSLATE_API_URL}/v1/translation-set/${process.env.TRANSLATE_API_CLIENT_ID}/upload`;
+		const resp = await fetch(url, {
+			method: "POST",
+			headers: { "Content-Type": "application/json" },
+			body: JSON.stringify(payload),
+		});
+
+		if (resp.status !== 204) {
+			throw new Error(`Translate API responded with ${resp.status}: ${await resp.text()}`);
+		}
 	}
 }
