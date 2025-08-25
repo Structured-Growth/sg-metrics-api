@@ -18,6 +18,7 @@ const pathPrefix = process.env.URI_PATH_PREFIX || '';
 
 //SystemController
 router.post(pathPrefix + '/v1/system/migrate', handleRequest(Controllers.SystemController, "migrate", handlerOpts));
+router.post(pathPrefix + '/v1/system/i18n-upload', handleRequest(Controllers.SystemController, "uploadI18n", handlerOpts));
 
 //PingController
 router.get(pathPrefix + '/v1/ping/alive', handleRequest(Controllers.PingController, "pingGet", handlerOpts));
@@ -62,6 +63,7 @@ router.get(pathPrefix + '/v1/resolver/models', handleRequest(Controllers.Resolve
 // map is required for correct resolving action by route
 export const actionToRouteMap = {
 	"SystemController.migrate": 'post /v1/system/migrate',
+	"SystemController.uploadI18n": 'post /v1/system/i18n-upload',
 	"PingController.pingGet": 'get /v1/ping/alive',
 	"MetricController.search": 'get /v1/metrics',
 	"MetricController.aggregate": 'get /v1/metrics/aggregate',
