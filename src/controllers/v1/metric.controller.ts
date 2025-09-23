@@ -17,10 +17,12 @@ import { MetricService } from "../../modules/metric/metric.service";
 import { MetricSearchParamsInterface } from "../../interfaces/metric-search-params.interface";
 import { MetricCreateBodyInterface } from "../../interfaces/metric-create-body.interface";
 import { MetricUpdateBodyInterface } from "../../interfaces/metric-update-body.interface";
+import { MetricExportParamsInterface } from "../../interfaces/metric-export-params.interface";
 import { MetricSearchParamsValidator } from "../../validators/metric-search-params.validator";
 import { MetricCreateParamsValidator } from "../../validators/metric-create-params.validator";
 import { MetricUpdateParamsValidator } from "../../validators/metric-update-params.validator";
 import { MetricStatisticsParamsValidator } from "../../validators/metric-statistics-params.validator";
+import { MetricExportParamsValidator } from "../../validators/metric-export-params.validator";
 import { isUndefined, omitBy, pick } from "lodash";
 import { MetricAggregateParamsInterface } from "../../interfaces/metric-aggregate-params.interface";
 import {
@@ -35,6 +37,7 @@ import { MetricBulkRequestValidator } from "../../validators/metric-bulk-request
 import { MetricsBulkResponseInterface } from "../../interfaces/metrics-bulk-response.interface";
 import { MetricStatisticsBodyInterface } from "../../interfaces/metric-statistics-body.interface";
 import { MetricStatisticsResponseInterface } from "../../interfaces/metric-statistics-response.interface";
+import { parseAccountArn } from "../../helpers/parse-account-arn";
 
 const publicMetricAttributes = [
 	"id",
@@ -111,6 +114,38 @@ export class MetricController extends BaseController {
 			})),
 			...result,
 		};
+	}
+
+	/**
+	 * Export Metrics
+	 */
+	@OperationId("export")
+	@Get("/export")
+	@SuccessResponse(200, "Export metrics")
+	@DescribeAction("metrics/export")
+	@DescribeResource("Organization", ({ query }) => Number(query.orgId))
+	@DescribeResource("Account", ({ query }) => query.accountId?.map(Number))
+	@DescribeResource("User", ({ query }) => query.userId?.map(Number))
+	@DescribeResource("Device", ({ query }) => Number(query.deviceId))
+	@DescribeResource("MetricCategory", ({ query }) => Number(query.metricCategoryId))
+	@DescribeResource("MetricType", ({ query }) => query.metricTypeId?.map(Number))
+	@DescribeResource("Metric", ({ query }) => query.id?.map(Number))
+	@HashFields(["value", "metricCategoryCode", "metricTypeCode"])
+	@ValidateFuncArgs(MetricExportParamsValidator)
+	public async export(@Queries() query: MetricExportParamsInterface): Promise<string> {
+		const { region, orgId, accountId } = parseAccountArn(query.reportingPersonArn);
+		const result = await this.metricService.search(query);
+
+		await this.eventBus.publish({
+			arn: `${this.appPrefix}:${region}:${orgId}:${accountId}:events/export/created`,
+			data: {
+				params: result,
+				language: this.i18n.locale,
+			},
+		});
+
+		this.response.status(200);
+		return "The file generation request has been sent.";
 	}
 
 	@OperationId("Aggregate")

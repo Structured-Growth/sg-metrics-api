@@ -17,6 +17,7 @@ import {
 } from "../../../database/models/metric";
 import { MetricCreateBodyInterface } from "../../interfaces/metric-create-body.interface";
 import { MetricSearchParamsInterface } from "../../interfaces/metric-search-params.interface";
+import { MetricExportParamsInterface } from "../../interfaces/metric-export-params.interface";
 import { MetricAggregateParamsInterface } from "../../interfaces/metric-aggregate-params.interface";
 import {
 	MetricAggregateResultInterface,
@@ -219,6 +220,27 @@ export class MetricService {
 			...metrics,
 			data: enrichedData,
 		};
+	}
+
+	public async export(params: MetricExportParamsInterface & {}): Promise<MetricExportParamsInterface> {
+		// get metric category id by its code, if provided
+		if (params.metricCategoryCode) {
+			const metricCategory = await this.metricCategoryRepository.findByCode(params.metricCategoryCode);
+			if (metricCategory) {
+				params.metricCategoryId = metricCategory.id;
+			}
+		}
+
+		// get metric type ids by theirs codes, if provided
+		if (params.metricTypeCode?.length > 0) {
+			const metricTypes = await this.metricTypeRepository.search({
+				code: params.metricTypeCode,
+			});
+			const metricTypesIds = map(metricTypes.data, "id");
+			params.metricTypeId = uniq([...(params.metricTypeId || []), ...metricTypesIds]);
+		}
+
+		return params;
 	}
 
 	public async aggregate(

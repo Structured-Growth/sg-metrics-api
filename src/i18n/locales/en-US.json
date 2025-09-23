@@ -64,7 +64,8 @@
       "row": "Row",
       "columnAggregation": "Aggregate Column",
       "rowAggregation": "Aggregate Row",
-      "takenAt": "Taken At"
+      "takenAt": "Taken At",
+      "reportingPersonArn": "Reporting Person ARN"
     },
     "metricCategory": {
       "orgId": "Organization Id",
