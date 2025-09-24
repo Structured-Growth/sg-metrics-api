@@ -6,12 +6,15 @@ import {
 	Lifecycle,
 	logWriters,
 	Logger,
+	queueProviders,
+	QueueService,
 	AuthService,
 	PolicyService,
 	eventBusProviders,
 	EventbusService,
 } from "@structured-growth/microservice-sdk";
 import { loadEnvironment } from "./load-environment";
+import { emailTransports, Mailer } from "@structured-growth/microservice-sdk";
 import { MetricService } from "../modules/metric/metric.service";
 import { MetricTypeService } from "../modules/metric-type/metric-type.service";
 import { MetricTypeRepository } from "../modules/metric-type/metric-type.repository";
@@ -47,11 +50,18 @@ container.register("policiesServiceUrl", { useValue: process.env.POLICY_SERVICE_
 
 container.register("accountApiUrl", { useValue: process.env.ACCOUNT_API_URL });
 
+container.register("metricsApiQueueName", { useValue: process.env.PLATFORM_API_SQS_QUEUE_NAME });
+
+container.register("QueueProvider", queueProviders.AwsSqsQueueProvider);
+container.register("QueueService", QueueService);
+
 // services
 container.register("LogWriter", logWriters[process.env.LOG_WRITER] || "ConsoleLogWriter", {
 	lifecycle: Lifecycle.Singleton,
 });
 container.register("Logger", Logger);
+container.register("EmailTransport", emailTransports[process.env.EMAIL_TRANSPORT || "SesEmailTransport"]);
+container.register("Mailer", Mailer);
 container.register("App", App, { lifecycle: Lifecycle.Singleton });
 container.register("AuthService", AuthService);
 container.register("PolicyService", PolicyService);

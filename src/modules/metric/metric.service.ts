@@ -3,10 +3,14 @@ import {
 	EventbusService,
 	inject,
 	NotFoundError,
+	ServerError,
+	signedInternalFetch,
 	SearchResultInterface,
 	I18nType,
 } from "@structured-growth/microservice-sdk";
 import { v4 } from "uuid";
+import * as AWS from "aws-sdk";
+import { Mailer } from "@structured-growth/microservice-sdk";
 import { MetricTimestreamRepository } from "./repositories/metric-timestream.repository";
 import { MetricSqlRepository } from "./repositories/metric-sql.repository";
 import {
@@ -17,6 +21,7 @@ import {
 } from "../../../database/models/metric";
 import { MetricCreateBodyInterface } from "../../interfaces/metric-create-body.interface";
 import { MetricSearchParamsInterface } from "../../interfaces/metric-search-params.interface";
+import { MetricExportParamsInterface } from "../../interfaces/metric-export-params.interface";
 import { MetricAggregateParamsInterface } from "../../interfaces/metric-aggregate-params.interface";
 import {
 	MetricAggregateResultInterface,
@@ -36,6 +41,7 @@ import { MetricStatisticsResponseInterface } from "../../interfaces/metric-stati
 @autoInjectable()
 export class MetricService {
 	private i18n: I18nType;
+	private s3: AWS.S3;
 	constructor(
 		@inject("MetricTimestreamRepository") private metricTimestreamRepository: MetricTimestreamRepository,
 		@inject("MetricSqlRepository") private metricSqlRepository: MetricSqlRepository,
@@ -43,9 +49,12 @@ export class MetricService {
 		@inject("MetricTypeRepository") private metricTypeRepository: MetricTypeRepository,
 		@inject("EventbusService") private eventBus: EventbusService,
 		@inject("appPrefix") private appPrefix: string,
-		@inject("i18n") private getI18n: () => I18nType
+		@inject("i18n") private getI18n: () => I18nType,
+		@inject("accountApiUrl") private accountApiUrl: string,
+		@inject("Mailer") private mailer: Mailer
 	) {
 		this.i18n = this.getI18n();
+		this.s3 = new AWS.S3();
 	}
 
 	public async create(params: MetricCreateBodyInterface[], transaction?: Transaction): Promise<MetricExtended[]> {
@@ -219,6 +228,51 @@ export class MetricService {
 			...metrics,
 			data: enrichedData,
 		};
+	}
+
+	public async export(
+		params: MetricExportParamsInterface & {},
+		orgId: number,
+		accountId: number
+	): Promise<{ params: MetricExportParamsInterface; email: string }> {
+		let emailsData;
+		try {
+			const emailUrl = `${this.accountApiUrl}/v1/emails?orgId=${orgId}&accountId[]=${accountId}&isPrimary=true`;
+			const emailResponse = await signedInternalFetch(emailUrl, {
+				method: "get",
+				headers: {
+					"Content-Type": "application/json",
+					"Accept-Language": this.i18n.locale,
+				},
+			});
+			emailsData = await emailResponse.json();
+		} catch (err) {
+			console.log("Error: ", err);
+			throw new ServerError(this.i18n.__("error.export.server_problem"));
+		}
+
+		if (!emailsData || emailsData.data.length !== 1) {
+			throw new NotFoundError(this.i18n.__("error.export.no_emails"));
+		}
+
+		// get metric category id by its code, if provided
+		if (params.metricCategoryCode) {
+			const metricCategory = await this.metricCategoryRepository.findByCode(params.metricCategoryCode);
+			if (metricCategory) {
+				params.metricCategoryId = metricCategory.id;
+			}
+		}
+
+		// get metric type ids by theirs codes, if provided
+		if (params.metricTypeCode?.length > 0) {
+			const metricTypes = await this.metricTypeRepository.search({
+				code: params.metricTypeCode,
+			});
+			const metricTypesIds = map(metricTypes.data, "id");
+			params.metricTypeId = uniq([...(params.metricTypeId || []), ...metricTypesIds]);
+		}
+
+		return { params, email: emailsData.data[0].email };
 	}
 
 	public async aggregate(
@@ -403,12 +457,153 @@ export class MetricService {
 			this.metricCategoryRepository.search({ id: uniq(metrics.map((m) => m.metricCategoryId)) }, transaction),
 		]);
 
-		// test
-
 		const typeCodeMap = new Map(types.data.map((type) => [type.id, type.code]));
 		const categoryCodeMap = new Map(categories.data.map((cat) => [cat.id, cat.code]));
 
 		return { typeCodeMap, categoryCodeMap };
+	}
+
+	public async exportGeneration(data: { params: MetricExportParamsInterface & {}; columns: string[]; email: string }) {
+		const { params, columns, email } = data;
+		const { page: _ignoredPage, limit: _ignoredLimit, ...query } = params;
+
+		const PAGE_SIZE = 500;
+		let currentPage = 1;
+
+		const getByPath = (obj: any, path: string) => {
+			if (!obj || !path) return undefined;
+			return path.split(".").reduce((acc, key) => (acc == null ? acc : acc[key]), obj);
+		};
+
+		const serialize = (val: any): string => {
+			if (val === null || val === undefined) return "";
+			if (val instanceof Date) return val.toISOString();
+			if (typeof val === "object") return JSON.stringify(val);
+			return String(val);
+		};
+
+		const escapeCsv = (cell: string): string => {
+			const needsQuotes = /[",\r\n]/.test(cell);
+			const escaped = cell.replace(/"/g, '""');
+			return needsQuotes ? `"${escaped}"` : escaped;
+		};
+
+		const header = columns
+			.map((colKey) => {
+				try {
+					return escapeCsv(this.i18n.__(colKey));
+				} catch {
+					return escapeCsv(colKey);
+				}
+			})
+			.join(",");
+
+		const rows: string[] = [];
+		let total = 0;
+		let collected = 0;
+
+		while (true) {
+			try {
+				const batch = await this.metricSqlRepository.search({
+					...query,
+					page: currentPage,
+					limit: PAGE_SIZE,
+				});
+
+				if (!batch.data.length) {
+					total = batch.total ?? collected;
+					break;
+				}
+
+				const { typeCodeMap, categoryCodeMap } = await this.getMetricCodeMaps(batch.data);
+
+				const enriched = batch.data.map((metric) =>
+					Object.assign(metric, {
+						metricTypeCode: typeCodeMap.get(metric.metricTypeId),
+						metricCategoryCode: categoryCodeMap.get(metric.metricCategoryId),
+					})
+				);
+
+				for (const m of enriched) {
+					const cells = columns.map((path) => {
+						const value = getByPath(m, path);
+						return escapeCsv(serialize(value));
+					});
+					rows.push(cells.join(","));
+				}
+
+				collected += batch.data.length;
+				total = batch.total ?? collected;
+
+				if (collected >= total) break;
+
+				currentPage += 1;
+			} catch (err) {
+				console.log("Error receiving/processing batch of metrics", {
+					page: currentPage,
+					limit: PAGE_SIZE,
+					query,
+					error: err instanceof Error ? { name: err.name, message: err.message, stack: err.stack } : err,
+				});
+				throw new ServerError(this.i18n.__("error.export.metrics_batch"));
+			}
+		}
+
+		const csv = [header, ...rows].join("\r\n");
+		const buffer = Buffer.from(csv, "utf8");
+		const filename = `metrics_export_${new Date().toISOString().replace(/[:.]/g, "-")}.csv`;
+
+		const fullPath = `exports/metrics/${filename}`;
+
+		try {
+			await this.s3
+				.upload({
+					Bucket: process.env.AWS_BUCKET!,
+					Key: fullPath,
+					Body: buffer,
+					ContentType: "text/csv; charset=utf-8",
+				})
+				.promise();
+		} catch (err) {
+			console.log("Error uploading report to S3");
+			throw new ServerError(this.i18n.__("error.export.upload_failed"));
+		}
+
+		let signedUrl: string;
+		try {
+			signedUrl = await this.s3.getSignedUrlPromise("getObject", {
+				Bucket: process.env.AWS_BUCKET!,
+				Key: fullPath,
+				Expires: Number(process.env.AWS_LINK_EXPIRES),
+			});
+		} catch (err) {
+			console.log("Error creating presigned URL");
+			throw new ServerError(this.i18n.__("error.export.link_failed"));
+		}
+
+		const mailOk = await this.mailer.send({
+			toEmail: email,
+			fromEmail: process.env.FROM_EMAIL || "noreply@example.com",
+			subject: this.i18n.__("export.letter.report"),
+			html: `
+				<h1>${this.i18n.__("export.letter.report")}</h1>
+				<p>${this.i18n.__("export.letter.get_it")} <a href="${signedUrl}">${this.i18n.__("export.letter.link")}</a>.</p>
+				<p>${this.i18n.__("export.letter.link_lifetime")}: ${process.env.AWS_LINK_EXPIRES} ${this.i18n.__(
+				"export.letter.seconds"
+			)}</p>
+			`,
+			text: `${this.i18n.__("export.letter.report")}. ${this.i18n.__("export.letter.get_it")} ${this.i18n.__(
+				"export.letter.link"
+			)}: ${signedUrl}
+			${this.i18n.__("export.letter.link_lifetime")}: ${process.env.AWS_LINK_EXPIRES} ${this.i18n.__(
+				"export.letter.seconds"
+			)}`,
+		});
+
+		if (!mailOk) {
+			console.error("Failed to send email to user");
+			throw new ServerError(this.i18n.__("error.export.email_failed"));
+		}
 	}
 
 	public async generateStatisticsRange(
