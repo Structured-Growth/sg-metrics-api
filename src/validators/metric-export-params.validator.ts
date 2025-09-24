@@ -1,0 +1,33 @@
+import { joi } from "@structured-growth/microservice-sdk";
+
+export const MetricExportParamsValidator = joi.object({
+	query: joi.object({
+		id: joi.array().items(joi.string().required()).label("validator.common.id"),
+		orgId: joi.number().positive().label("validator.metrics.orgId"),
+		metricCategoryId: joi.number().positive().label("validator.metrics.metricCategoryId"),
+		metricCategoryCode: joi.string().max(50).min(1).label("validator.metrics.metricCategoryCode"),
+		metricTypeId: joi.array().items(joi.number().positive()).label("validator.metrics.metricTypeId"),
+		metricTypeCode: joi.array().items(joi.string().max(50).min(1)).label("validator.metrics.metricTypeCode"),
+		metricTypeVersion: joi.number().positive().label("validator.metrics.metricTypeVersion"),
+		accountId: joi.array().items(joi.number().positive()).label("validator.metrics.accountId"),
+		userId: joi.array().items(joi.number().positive()).label("validator.metrics.userId"),
+		relatedToRn: joi.string().max(50).label("validator.metrics.relatedToRn"),
+		deviceId: joi.number().positive().label("validator.metrics.deviceId"),
+		batchId: joi.string().max(50).label("validator.metrics.batchId"),
+		value: joi.number().label("validator.metrics.value"),
+		valueMin: joi.number().label("validator.metrics.valueMin"),
+		valueMax: joi.number().label("validator.metrics.valueMax"),
+		takenAtMin: joi.date().iso().label("validator.metrics.takenAtMin"),
+		takenAtMax: joi.date().iso().label("validator.metrics.takenAtMax"),
+		takenAtOffset: joi.number().label("validator.metrics.takenAtOffset"),
+		recordedAtMin: joi.date().iso().label("validator.metrics.recordedAtMin"),
+		recordedAtMax: joi.date().iso().label("validator.metrics.recordedAtMax"),
+		limit: joi.number().positive().label("validator.common.limit"),
+		sort: joi.array().items(joi.string().required()).label("validator.common.sort"),
+		page: joi.number().positive().label("validator.common.page"),
+	}),
+	body: joi.object({
+		reportingPersonArn: joi.string().required().label("validator.metrics.reportingPersonArn"),
+		columns: joi.array().items(joi.string().required()).required().label("validator.metrics.columns"),
+	}),
+});

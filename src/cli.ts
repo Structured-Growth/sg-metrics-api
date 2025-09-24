@@ -1,8 +1,9 @@
 #!/usr/bin/env node
 import "./app/providers";
 import { AppMock } from "./app/app.mock";
-import { container, generateApiDocs, Lifecycle } from "@structured-growth/microservice-sdk";
+import { container, generateApiDocs, Lifecycle, QueueService } from "@structured-growth/microservice-sdk";
 import { program } from "commander";
+import { Message } from "aws-sdk/clients/sqs";
 
 program.option("-e, --env-file <envFile>", "path to .env file", ".env");
 
@@ -12,6 +13,32 @@ program
 	.action(async () => {
 		const { startWebServer } = await require("./api");
 		await startWebServer();
+	});
+
+program
+	.command("sqs")
+	.description("Runs a queue listener")
+	.action(async () => {
+		const queue: QueueService = container.resolve<QueueService>("QueueService");
+		const alertsApiQueueName: string = container.resolve<string>("metricsApiQueueName");
+		const { handler } = await require("./lambda-sqs");
+		queue.subscribe(alertsApiQueueName, async (message, event: Message) => {
+			await handler({
+				Records: [
+					{
+						messageId: event.MessageId,
+						receiptHandle: event.ReceiptHandle,
+						body: event.Body,
+						attributes: event.Attributes,
+						messageAttributes: event.MessageAttributes,
+						md5OfBody: event.MD5OfBody,
+						eventSource: "",
+						eventSourceARN: "",
+						awsRegion: "",
+					} as any,
+				],
+			});
+		});
 	});
 
 program

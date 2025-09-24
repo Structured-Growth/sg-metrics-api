@@ -25,6 +25,7 @@ router.get(pathPrefix + '/v1/ping/alive', handleRequest(Controllers.PingControll
 
 //MetricController
 router.get(pathPrefix + '/v1/metrics', handleRequest(Controllers.MetricController, "search", handlerOpts));
+router.post(pathPrefix + '/v1/metrics/export', handleRequest(Controllers.MetricController, "export", handlerOpts));
 router.get(pathPrefix + '/v1/metrics/aggregate', handleRequest(Controllers.MetricController, "aggregate", handlerOpts));
 router.post(pathPrefix + '/v1/metrics', handleRequest(Controllers.MetricController, "create", handlerOpts));
 router.get(pathPrefix + '/v1/metrics/:metricId', handleRequest(Controllers.MetricController, "get", handlerOpts));
@@ -66,6 +67,7 @@ export const actionToRouteMap = {
 	"SystemController.uploadI18n": 'post /v1/system/i18n-upload',
 	"PingController.pingGet": 'get /v1/ping/alive',
 	"MetricController.search": 'get /v1/metrics',
+	"MetricController.export": 'post /v1/metrics/export',
 	"MetricController.aggregate": 'get /v1/metrics/aggregate',
 	"MetricController.create": 'post /v1/metrics',
 	"MetricController.get": 'get /v1/metrics/:metricId',
