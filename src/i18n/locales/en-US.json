@@ -28,6 +28,40 @@
     },
     "report": {
       "name": "Report"
+    },
+    "export": {
+      "server_problem": "Problem with reading mails",
+      "no_emails": "The user does not have an email address to send a report",
+      "metrics_batch": "Error receiving/processing batch of metrics",
+      "upload_failed": "Error uploading report to S3",
+      "link_failed": "Error creating presigned URL",
+      "email_failed": "Failed to send email to user"
+    }
+  },
+  "export": {
+    "columns": {
+      "accountId": "Account ID",
+      "userId": "User ID",
+      "metricTypeId": "Metric Type ID",
+      "metricTypeVersion": "Metric Type Version",
+      "deviceId": "Device ID",
+      "batchId": "Batch ID",
+      "value": "Value",
+      "takenAt": "Taken At",
+      "takenAtOffset": "Taken At Offset",
+      "recordedAt": "Recorded At",
+      "id": "ID",
+      "metadata.note": "Note",
+      "metadata.rawValue": "Raw Value",
+      "metadata.sensorStatus": "Sensor Status",
+      "metadata.sequenceNumber": "Sequence Number"
+    },
+    "letter": {
+      "report": "Your report is ready",
+      "get_it": "You can get it at",
+      "link": "temporary link",
+      "link_lifetime": "Link lifetime",
+      "seconds": "seconds"
     }
   },
   "validator": {
@@ -65,7 +99,8 @@
       "columnAggregation": "Aggregate Column",
       "rowAggregation": "Aggregate Row",
       "takenAt": "Taken At",
-      "reportingPersonArn": "Reporting Person ARN"
+      "reportingPersonArn": "Reporting Person ARN",
+      "columns": "Columns"
     },
     "metricCategory": {
       "orgId": "Organization Id",

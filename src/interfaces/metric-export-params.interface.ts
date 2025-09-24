@@ -21,5 +21,4 @@ export interface MetricExportParamsInterface
 	takenAtMax?: Date;
 	recordedAtMin?: Date;
 	recordedAtMax?: Date;
-	reportingPersonArn: string;
 }

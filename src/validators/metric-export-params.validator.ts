@@ -25,6 +25,9 @@ export const MetricExportParamsValidator = joi.object({
 		limit: joi.number().positive().label("validator.common.limit"),
 		sort: joi.array().items(joi.string().required()).label("validator.common.sort"),
 		page: joi.number().positive().label("validator.common.page"),
+	}),
+	body: joi.object({
 		reportingPersonArn: joi.string().required().label("validator.metrics.reportingPersonArn"),
+		columns: joi.array().items(joi.string().required()).required().label("validator.metrics.columns"),
 	}),
 });

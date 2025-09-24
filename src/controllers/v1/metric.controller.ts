@@ -18,6 +18,7 @@ import { MetricSearchParamsInterface } from "../../interfaces/metric-search-para
 import { MetricCreateBodyInterface } from "../../interfaces/metric-create-body.interface";
 import { MetricUpdateBodyInterface } from "../../interfaces/metric-update-body.interface";
 import { MetricExportParamsInterface } from "../../interfaces/metric-export-params.interface";
+import { MetricExportBodyInterface } from "../../interfaces/metric-export-body.interface";
 import { MetricSearchParamsValidator } from "../../validators/metric-search-params.validator";
 import { MetricCreateParamsValidator } from "../../validators/metric-create-params.validator";
 import { MetricUpdateParamsValidator } from "../../validators/metric-update-params.validator";
@@ -120,7 +121,7 @@ export class MetricController extends BaseController {
 	 * Export Metrics
 	 */
 	@OperationId("export")
-	@Get("/export")
+	@Post("/export")
 	@SuccessResponse(200, "Export metrics")
 	@DescribeAction("metrics/export")
 	@DescribeResource("Organization", ({ query }) => Number(query.orgId))
@@ -132,15 +133,20 @@ export class MetricController extends BaseController {
 	@DescribeResource("Metric", ({ query }) => query.id?.map(Number))
 	@HashFields(["value", "metricCategoryCode", "metricTypeCode"])
 	@ValidateFuncArgs(MetricExportParamsValidator)
-	public async export(@Queries() query: MetricExportParamsInterface): Promise<string> {
-		const { region, orgId, accountId } = parseAccountArn(query.reportingPersonArn);
-		const result = await this.metricService.search(query);
+	public async export(
+		@Queries() query: MetricExportParamsInterface,
+		@Body() body: MetricExportBodyInterface
+	): Promise<string> {
+		const { region, orgId, accountId } = parseAccountArn(body.reportingPersonArn);
+		const { params, email } = await this.metricService.export(query, orgId, accountId);
 
 		await this.eventBus.publish({
 			arn: `${this.appPrefix}:${region}:${orgId}:${accountId}:events/export/created`,
 			data: {
-				params: result,
+				params,
 				language: this.i18n.locale,
+				columns: body.columns,
+				email,
 			},
 		});
 

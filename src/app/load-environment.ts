@@ -63,5 +63,11 @@ export function loadEnvironment() {
 		DEFAULT_TRANSLATE_DIRECTORY_PATH: joi.string().required(),
 		TRANSLATE_API_URL: joi.string().allow(""),
 		TRANSLATE_API_CLIENT_ID: joi.number().allow(""),
+		QUEUE_PROVIDER: joi.string().required(),
+		METRICS_API_SQS_QUEUE_NAME: joi.string().required(),
+		AWS_BUCKET: joi.string().required(),
+		AWS_LINK_EXPIRES: joi.number().required(),
+		EMAIL_TRANSPORT: joi.string().required(),
+		FROM_EMAIL: joi.string().required(),
 	});
 }
