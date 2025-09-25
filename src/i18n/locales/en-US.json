@@ -51,10 +51,12 @@
       "takenAtOffset": "Taken At Offset",
       "recordedAt": "Recorded At",
       "id": "ID",
-      "metadata.note": "Note",
-      "metadata.rawValue": "Raw Value",
-      "metadata.sensorStatus": "Sensor Status",
-      "metadata.sequenceNumber": "Sequence Number"
+      "metadata": {
+        "note": "Note",
+        "rawValue": "Raw Value",
+        "sensorStatus": "Sensor Status",
+        "sequenceNumber": "Sequence Number"
+      }
     },
     "letter": {
       "report": "Your report is ready",
