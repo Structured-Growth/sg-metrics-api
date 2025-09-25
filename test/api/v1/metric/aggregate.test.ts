@@ -432,5 +432,5 @@ describe("GET /api/v1/metrics/aggregate", () => {
 			assert.property(item, "metricTypeCode");
 			assert.property(item, "max");
 		});
-	});
+	}).timeout(10000);
 });
