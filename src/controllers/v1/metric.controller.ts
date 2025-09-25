@@ -120,17 +120,17 @@ export class MetricController extends BaseController {
 	/**
 	 * Export Metrics
 	 */
-	@OperationId("export")
+	@OperationId("Export")
 	@Post("/export")
 	@SuccessResponse(200, "Export metrics")
 	@DescribeAction("metrics/export")
-	@DescribeResource("Organization", ({ query }) => Number(query.orgId))
-	@DescribeResource("Account", ({ query }) => query.accountId?.map(Number))
-	@DescribeResource("User", ({ query }) => query.userId?.map(Number))
-	@DescribeResource("Device", ({ query }) => Number(query.deviceId))
-	@DescribeResource("MetricCategory", ({ query }) => Number(query.metricCategoryId))
-	@DescribeResource("MetricType", ({ query }) => query.metricTypeId?.map(Number))
-	@DescribeResource("Metric", ({ query }) => query.id?.map(Number))
+	@DescribeResource("Organization", ({ query, body }) => Number(query.orgId))
+	@DescribeResource("Account", ({ query, body }) => query.accountId?.map(Number))
+	@DescribeResource("User", ({ query, body }) => query.userId?.map(Number))
+	@DescribeResource("Device", ({ query, body }) => Number(query.deviceId))
+	@DescribeResource("MetricCategory", ({ query, body }) => Number(query.metricCategoryId))
+	@DescribeResource("MetricType", ({ query, body }) => query.metricTypeId?.map(Number))
+	@DescribeResource("Metric", ({ query, body }) => query.id?.map(Number))
 	@HashFields(["value", "metricCategoryCode", "metricTypeCode"])
 	@ValidateFuncArgs(MetricExportParamsValidator)
 	public async export(
