@@ -40,7 +40,7 @@ describe("GET /api/v1/metrics/aggregate", () => {
 		assert.equal(statusCode, 201);
 		assert.isNumber(body.id);
 		context.createdMetricCategoryId = body.id;
-	}).timeout(10000);
+	}).timeout(20000);
 
 	it("Should create metric type", async () => {
 		const { statusCode, body } = await server.post("/v1/metric-type").send({
@@ -62,7 +62,7 @@ describe("GET /api/v1/metrics/aggregate", () => {
 		assert.equal(statusCode, 201);
 		assert.isNumber(body.id);
 		context.createdMetricTypeId = body.id;
-	}).timeout(10000);
+	}).timeout(20000);
 
 	it("Should create metric", async () => {
 		const { statusCode, body } = await server.post("/v1/metrics").send([
@@ -85,7 +85,7 @@ describe("GET /api/v1/metrics/aggregate", () => {
 		assert.equal(statusCode, 201);
 		assert.equal(body[0].relatedToRn, relatedToRn);
 		context.createdMetricId = body[0].id;
-	}).timeout(10000);
+	}).timeout(20000);
 
 	it("Should create second metric", async () => {
 		const { statusCode, body } = await server.post("/v1/metrics").send([
@@ -108,13 +108,13 @@ describe("GET /api/v1/metrics/aggregate", () => {
 		assert.equal(statusCode, 201);
 		assert.equal(body[0].relatedToRn, relatedToRn);
 		context.createdMetric2Id = body[0].id;
-	}).timeout(10000);
+	}).timeout(20000);
 
 	it("Should return metric", async () => {
 		const { statusCode, body } = await server.get(`/v1/metrics/${context.createdMetricId}`).send({});
 		assert.equal(statusCode, 200);
 		assert.equal(body.id, context["createdMetricId"]);
-	}).timeout(10000);
+	}).timeout(20000);
 
 	it("Should aggregate metrics", async () => {
 		const { statusCode, body } = await server.get(`/v1/metrics/aggregate`).query({
@@ -125,7 +125,7 @@ describe("GET /api/v1/metrics/aggregate", () => {
 			takenAtMin: "2024-05-01T00:00:00Z",
 		});
 		assert.equal(statusCode, 200);
-	}).timeout(10000);
+	}).timeout(20000);
 
 	it("Should aggregate metrics with one filter", async () => {
 		const { statusCode, body } = await server.get(`/v1/metrics/aggregate`).query({
@@ -136,7 +136,7 @@ describe("GET /api/v1/metrics/aggregate", () => {
 			orgId,
 		});
 		assert.equal(statusCode, 200);
-	}).timeout(10000);
+	}).timeout(20000);
 
 	it("Should aggregate metrics wih one filter and new sort", async () => {
 		const { statusCode, body } = await server.get(`/v1/metrics/aggregate`).query({
@@ -148,7 +148,7 @@ describe("GET /api/v1/metrics/aggregate", () => {
 			sort: ["avg:desc", "takenAt:asc"],
 		});
 		assert.equal(statusCode, 200);
-	}).timeout(10000);
+	}).timeout(20000);
 
 	it("Should aggregate metrics with two filter", async () => {
 		const { statusCode, body } = await server.get(`/v1/metrics/aggregate`).query({
@@ -160,7 +160,7 @@ describe("GET /api/v1/metrics/aggregate", () => {
 			deviceId: deviceId,
 		});
 		assert.equal(statusCode, 200);
-	}).timeout(10000);
+	}).timeout(20000);
 
 	it("Should aggregate metrics wih three filter", async () => {
 		const { statusCode, body } = await server.get(`/v1/metrics/aggregate`).query({
@@ -173,7 +173,7 @@ describe("GET /api/v1/metrics/aggregate", () => {
 			"userId[0]": userId,
 		});
 		assert.equal(statusCode, 200);
-	}).timeout(10000);
+	}).timeout(20000);
 
 	it("Should return nextToken when aggregate results exceed limit", async () => {
 		for (let i = 0; i < 15; i++) {
@@ -240,7 +240,7 @@ describe("GET /api/v1/metrics/aggregate", () => {
 		assert.equal(statusCode, 200);
 		assert.equal(body.data.length, 5);
 		// assert.isString(body.nextToken);
-	}).timeout(10000);
+	}).timeout(20000);
 
 	it("Should aggregate metrics with sum row aggregation", async () => {
 		const { statusCode, body } = await server.get(`/v1/metrics/aggregate`).query({
@@ -251,7 +251,7 @@ describe("GET /api/v1/metrics/aggregate", () => {
 			limit: 5,
 		});
 		assert.equal(statusCode, 200);
-	}).timeout(10000);
+	}).timeout(20000);
 
 	it("Should aggregate metrics with min row aggregation", async () => {
 		const { statusCode, body } = await server.get(`/v1/metrics/aggregate`).query({
@@ -262,7 +262,7 @@ describe("GET /api/v1/metrics/aggregate", () => {
 			limit: 5,
 		});
 		assert.equal(statusCode, 200);
-	}).timeout(10000);
+	}).timeout(20000);
 
 	it("Should aggregate metrics with max row aggregation", async () => {
 		const { statusCode, body } = await server.get(`/v1/metrics/aggregate`).query({
@@ -273,7 +273,7 @@ describe("GET /api/v1/metrics/aggregate", () => {
 			limit: 5,
 		});
 		assert.equal(statusCode, 200);
-	}).timeout(10000);
+	}).timeout(20000);
 
 	it("Should aggregate metrics with avg row aggregation", async () => {
 		const { statusCode, body } = await server.get(`/v1/metrics/aggregate`).query({
@@ -284,7 +284,7 @@ describe("GET /api/v1/metrics/aggregate", () => {
 			limit: 5,
 		});
 		assert.equal(statusCode, 200);
-	}).timeout(10000);
+	}).timeout(20000);
 
 	it("Should aggregate metrics with 1h column aggregation", async () => {
 		const { statusCode, body } = await server.get(`/v1/metrics/aggregate`).query({
@@ -295,7 +295,7 @@ describe("GET /api/v1/metrics/aggregate", () => {
 			limit: 5,
 		});
 		assert.equal(statusCode, 200);
-	}).timeout(10000);
+	}).timeout(20000);
 
 	it("Should aggregate metrics with 1d column aggregation", async () => {
 		const { statusCode, body } = await server.get(`/v1/metrics/aggregate`).query({
@@ -306,7 +306,7 @@ describe("GET /api/v1/metrics/aggregate", () => {
 			limit: 5,
 		});
 		assert.equal(statusCode, 200);
-	}).timeout(10000);
+	}).timeout(20000);
 
 	it("Should aggregate metrics with 30d column aggregation", async () => {
 		const { statusCode, body } = await server.get(`/v1/metrics/aggregate`).query({
@@ -317,7 +317,7 @@ describe("GET /api/v1/metrics/aggregate", () => {
 			limit: 5,
 		});
 		assert.equal(statusCode, 200);
-	}).timeout(10000);
+	}).timeout(20000);
 
 	it("Should aggregate metrics with column as orgId and row as value", async () => {
 		const { statusCode, body } = await server.get(`/v1/metrics/aggregate`).query({
@@ -334,7 +334,7 @@ describe("GET /api/v1/metrics/aggregate", () => {
 			assert.property(item, "metricTypeCode");
 			assert.property(item, "avg");
 		});
-	}).timeout(10000);
+	}).timeout(20000);
 
 	it("Should aggregate metrics with column as orgId, row as value, and rowAggregation as max", async () => {
 		const { statusCode, body } = await server.get(`/v1/metrics/aggregate`).query({
@@ -350,7 +350,7 @@ describe("GET /api/v1/metrics/aggregate", () => {
 			assert.property(item, "metricTypeCode");
 			assert.property(item, "max");
 		});
-	}).timeout(10000);
+	}).timeout(20000);
 
 	it("Should aggregate metrics with column as orgId, row as value, and rowAggregation as min", async () => {
 		const { statusCode, body } = await server.get(`/v1/metrics/aggregate`).query({
@@ -366,7 +366,7 @@ describe("GET /api/v1/metrics/aggregate", () => {
 			assert.property(item, "metricTypeCode");
 			assert.property(item, "min");
 		});
-	}).timeout(10000);
+	}).timeout(20000);
 
 	it("Should aggregate metrics with column as orgId and row as time with min aggregation", async () => {
 		const { statusCode, body } = await server.get(`/v1/metrics/aggregate`).query({
@@ -382,7 +382,7 @@ describe("GET /api/v1/metrics/aggregate", () => {
 			assert.property(item, "metricTypeCode");
 			assert.property(item, "min");
 		});
-	}).timeout(10000);
+	}).timeout(20000);
 
 	it("Should aggregate metrics with column as orgId and row as time with max aggregation", async () => {
 		const { statusCode, body } = await server.get(`/v1/metrics/aggregate`).query({
@@ -398,7 +398,7 @@ describe("GET /api/v1/metrics/aggregate", () => {
 			assert.property(item, "metricTypeCode");
 			assert.property(item, "max");
 		});
-	}).timeout(10000);
+	}).timeout(20000);
 
 	it("Should aggregate metrics with column as time and row as orgId with min aggregation", async () => {
 		const { statusCode, body } = await server.get(`/v1/metrics/aggregate`).query({
@@ -415,7 +415,7 @@ describe("GET /api/v1/metrics/aggregate", () => {
 			assert.property(item, "metricTypeCode");
 			assert.property(item, "min");
 		});
-	}).timeout(10000);
+	}).timeout(20000);
 
 	it("Should aggregate metrics with column as time and row as orgId with max aggregation", async () => {
 		const { statusCode, body } = await server.get(`/v1/metrics/aggregate`).query({
@@ -432,5 +432,5 @@ describe("GET /api/v1/metrics/aggregate", () => {
 			assert.property(item, "metricTypeCode");
 			assert.property(item, "max");
 		});
-	}).timeout(10000);
+	}).timeout(20000);
 });

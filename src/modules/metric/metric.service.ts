@@ -496,7 +496,7 @@ export class MetricService {
 		const header = columns
 			.map((colKey) => {
 				try {
-					return escapeCsv(this.i18n.__(colKey));
+					return escapeCsv(this.i18n.__(`export.columns.${colKey}`));
 				} catch {
 					return escapeCsv(colKey);
 				}
