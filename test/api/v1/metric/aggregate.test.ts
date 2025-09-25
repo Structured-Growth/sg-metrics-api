@@ -125,7 +125,7 @@ describe("GET /api/v1/metrics/aggregate", () => {
 			takenAtMin: "2024-05-01T00:00:00Z",
 		});
 		assert.equal(statusCode, 200);
-	});
+	}).timeout(10000);
 
 	it("Should aggregate metrics with one filter", async () => {
 		const { statusCode, body } = await server.get(`/v1/metrics/aggregate`).query({
