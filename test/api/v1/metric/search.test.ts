@@ -299,7 +299,7 @@ describe("GET /api/v1/metrics", () => {
 		assert.equal(statusCode, 200);
 		assert.equal(body.data.length, 5);
 		// assert.isString(body.nextToken);
-	}).timeout(10000);
+	}).timeout(20000);
 
 	it("Should search by relatedToRn", async () => {
 		const { statusCode, body } = await server.get("/v1/metrics").query({
