@@ -464,14 +464,9 @@ export class MetricService {
 	}
 
 	public async exportGeneration(data: { params: MetricExportParamsInterface & {}; columns: string[]; email: string }) {
-		console.log("Start EXPORT GENERATION");
 		const { params, columns, email } = data;
-		console.log("PARAMS: ", params);
-		console.log("COLUMNS: ", columns);
-		console.log("EMAIL: ", email);
 		const { page: _ignoredPage, limit: _ignoredLimit, ...query } = params;
 
-		console.log("QUERY: ", query);
 		const PAGE_SIZE = 500;
 		let currentPage = 1;
 
@@ -541,7 +536,6 @@ export class MetricService {
 				total = batch.total ?? collected;
 
 				if (collected >= total) break;
-				console.log("CURRENT_PAGE: ", currentPage);
 				currentPage += 1;
 			} catch (err) {
 				console.log("Error receiving/processing batch of metrics", {
@@ -557,8 +551,6 @@ export class MetricService {
 		const csv = [header, ...rows].join("\r\n");
 		const buffer = Buffer.from(csv, "utf8");
 		const filename = `metrics_export_${new Date().toISOString().replace(/[:.]/g, "-")}.csv`;
-
-		console.log("FILENAME: ", filename);
 
 		const fullPath = `exports/metrics/${filename}`;
 
@@ -576,8 +568,6 @@ export class MetricService {
 			throw new ServerError(this.i18n.__("error.export.upload_failed"));
 		}
 
-		console.log("DOWNLOAD FIN");
-
 		let signedUrl: string;
 		try {
 			signedUrl = await this.s3.getSignedUrlPromise("getObject", {
@@ -589,8 +579,6 @@ export class MetricService {
 			console.log("Error creating presigned URL");
 			throw new ServerError(this.i18n.__("error.export.link_failed"));
 		}
-
-		console.log("URL FIN");
 
 		const mailOk = await this.mailer.send({
 			toEmail: email,
@@ -612,7 +600,7 @@ export class MetricService {
 		});
 
 		if (!mailOk) {
-			console.error("Failed to send email to user");
+			console.log("Failed to send email to user");
 			throw new ServerError(this.i18n.__("error.export.email_failed"));
 		}
 	}

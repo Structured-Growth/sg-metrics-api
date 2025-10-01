@@ -402,12 +402,15 @@ export class MetricController extends BaseController {
 				case "create":
 				case "update":
 				case "upsert":
+					const plain = {
+						...data.toJSON(),
+						metricTypeCode: (data as any).metricTypeCode,
+						metricCategoryCode: (data as any).metricCategoryCode,
+					};
+
 					return {
 						op,
-						data: {
-							...(pick(data.toJSON(), publicMetricAttributes) as PublicMetricAttributes),
-							arn: data.arn,
-						},
+						data: pick(plain, [...publicMetricAttributes, "metricTypeCode", "metricCategoryCode"]),
 					};
 				default:
 					return { op, data };
