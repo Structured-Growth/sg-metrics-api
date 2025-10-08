@@ -57,7 +57,8 @@
         "note": "Note",
         "rawValue": "Raw Value",
         "sensorStatus": "Sensor Status",
-        "sequenceNumber": "Sequence Number"
+        "sequenceNumber": "Sequence Number",
+        "algorithmStatus": "Algorithm Status"
       }
     },
     "letter": {
