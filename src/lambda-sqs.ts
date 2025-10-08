@@ -34,7 +34,6 @@ export const handler: Handler = async (event: SQSEvent, context: Context) => {
 
 			try {
 				const metricService = container.resolve<MetricService>("MetricService");
-				console.log("TEST_METRIC_SERVICE");
 				await metricService.exportGenerationStreamed({
 					params: body.detail.params,
 					columns: body.detail.columns,
