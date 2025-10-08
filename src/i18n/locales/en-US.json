@@ -35,7 +35,9 @@
       "metrics_batch": "Error receiving/processing batch of metrics",
       "upload_failed": "Error uploading report to S3",
       "link_failed": "Error creating presigned URL",
-      "email_failed": "Failed to send email to user"
+      "email_failed": "Failed to send email to user",
+      "codes_failed": "Export enrich codes fatal",
+      "upload_failed_stream": "Error exporting streamed CSV"
     }
   },
   "export": {
