@@ -3,7 +3,7 @@ import { getI18nInstance } from "@structured-growth/microservice-sdk";
 import { Handler, Context, SQSEvent } from "aws-lambda";
 import { container, Logger, BadRequestError, I18nType } from "@structured-growth/microservice-sdk";
 import { App } from "./app/app";
-import { MetricService } from "./modules/metric/metric.service";
+import { MetricExportService } from "./modules/metric/metric-export.service";
 
 const app = container.resolve<App>("App");
 const logger = container.resolve<Logger>("Logger");
@@ -33,8 +33,8 @@ export const handler: Handler = async (event: SQSEvent, context: Context) => {
 			});
 
 			try {
-				const metricService = container.resolve<MetricService>("MetricService");
-				await metricService.exportGenerationStreamed({
+				const metricExportService = container.resolve<MetricExportService>("MetricExportService");
+				await metricExportService.exportGenerationStreamed({
 					params: body.detail.params,
 					columns: body.detail.columns,
 					email: body.detail.email,

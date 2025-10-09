@@ -10,7 +10,7 @@ export const MetricExportParamsValidator = joi.object({
 		metricTypeCode: joi.array().items(joi.string().max(50).min(1)).label("validator.metrics.metricTypeCode"),
 		metricTypeVersion: joi.number().positive().label("validator.metrics.metricTypeVersion"),
 		accountId: joi.array().items(joi.number().positive()).label("validator.metrics.accountId"),
-		userId: joi.array().items(joi.number().positive()).label("validator.metrics.userId"),
+		userId: joi.array().items(joi.number().positive()).required().label("validator.metrics.userId"),
 		relatedToRn: joi.string().max(50).label("validator.metrics.relatedToRn"),
 		deviceId: joi.number().positive().label("validator.metrics.deviceId"),
 		batchId: joi.string().max(50).label("validator.metrics.batchId"),
