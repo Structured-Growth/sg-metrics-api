@@ -87,6 +87,7 @@
       "metricTypeVersion": "Metric Type Version",
       "accountId": "Account Id",
       "userId": "User Id",
+      "userIdExport": "To start generating an export, you must select the user ID in the filters.",
       "relatedToRn": "Related To",
       "deviceId": "Device ID",
       "batchId": "Batch id",
