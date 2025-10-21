@@ -36,6 +36,82 @@ import { MetricsBulkResultInterface } from "./interfaces/metrics-bulk-result.int
 import { MetricStatisticsBodyInterface } from "../../interfaces/metric-statistics-body.interface";
 import { MetricStatisticsResponseInterface } from "../../interfaces/metric-statistics-response.interface";
 
+type CacheEntry<V> = { v: V; exp: number };
+
+const TTL_MS = 3_600_000;
+const typeByIdCache = new Map<number, CacheEntry<MetricType>>();
+const typeByCodeCache = new Map<string, CacheEntry<MetricType>>();
+const catByIdCache = new Map<number, CacheEntry<{ id: number; code: string }>>();
+const catByCodeCache = new Map<string, CacheEntry<{ id: number; code: string }>>();
+
+function now() {
+	return Date.now();
+}
+function getFromCache<K, V>(m: Map<K, CacheEntry<V>>, key: K): V | undefined {
+	const e = m.get(key);
+	if (!e) return;
+	if (e.exp < now()) {
+		m.delete(key);
+		return;
+	}
+	return e.v;
+}
+function putToCache<K, V>(m: Map<K, CacheEntry<V>>, key: K, v: V, ttl = TTL_MS) {
+	m.set(key, { v, exp: now() + ttl });
+}
+
+async function getMetricTypesByCodesCached(
+	repo: MetricTypeRepository,
+	codes: string[],
+	transaction?: Transaction
+): Promise<MetricType[]> {
+	const result: MetricType[] = [];
+	const toFetch: string[] = [];
+
+	for (const code of codes) {
+		const hit = getFromCache(typeByCodeCache, code);
+		if (hit) result.push(hit);
+		else toFetch.push(code);
+	}
+
+	if (toFetch.length) {
+		const fetched = await repo.search({ code: toFetch }, transaction);
+		for (const t of fetched.data) {
+			putToCache(typeByCodeCache, t.code, t);
+			putToCache(typeByIdCache, t.id, t);
+			result.push(t);
+		}
+	}
+
+	return result;
+}
+
+async function getMetricCategoriesByIdsCached(
+	repo: MetricCategoryRepository,
+	ids: number[],
+	transaction?: Transaction
+): Promise<Map<number, { id: number; code: string }>> {
+	const map = new Map<number, { id: number; code: string }>();
+	const toFetch: number[] = [];
+
+	for (const id of ids) {
+		const hit = getFromCache(catByIdCache, id);
+		if (hit) map.set(id, hit);
+		else toFetch.push(id);
+	}
+
+	if (toFetch.length) {
+		const fetched = await repo.search({ id: toFetch }, transaction);
+		for (const c of fetched.data) {
+			const v = { id: c.id, code: c.code };
+			putToCache(catByIdCache, c.id, v);
+			putToCache(catByCodeCache, c.code, v);
+			map.set(c.id, v);
+		}
+	}
+	return map;
+}
+
 @autoInjectable()
 export class MetricService {
 	private i18n: I18nType;
@@ -108,13 +184,8 @@ export class MetricService {
 		const metricTypeCodes = map(params, "metricTypeCode").filter((i) => !!i);
 		let metricTypesMap: Record<string, MetricType> = {};
 		if (metricTypeCodes.length) {
-			const metricTypes = await this.metricTypeRepository.search(
-				{
-					code: metricTypeCodes,
-				},
-				transaction
-			);
-			metricTypesMap = keyBy(metricTypes.data, "code");
+			const metricTypes = await getMetricTypesByCodesCached(this.metricTypeRepository, metricTypeCodes, transaction);
+			metricTypesMap = keyBy(metricTypes, "code");
 		}
 
 		const data: MetricCreationAttributes[] = params.map((param) => {
@@ -154,7 +225,7 @@ export class MetricService {
 						transaction
 					);
 				} else {
-					const creationResult = await this.metricSqlRepository.create(data, transaction);
+					const creationResult = await this.metricSqlRepository.create([item], transaction);
 					createdMetrics.push(creationResult[0]);
 					return creationResult[0];
 				}
@@ -448,13 +519,35 @@ export class MetricService {
 		typeCodeMap: Map<number, string>;
 		categoryCodeMap: Map<number, string>;
 	}> {
-		const [types, categories] = await Promise.all([
-			this.metricTypeRepository.search({ id: uniq(metrics.map((m) => m.metricTypeId)) }, transaction),
-			this.metricCategoryRepository.search({ id: uniq(metrics.map((m) => m.metricCategoryId)) }, transaction),
-		]);
+		const typeIds = uniq(metrics.map((m) => m.metricTypeId));
+		const catIds = uniq(metrics.map((m) => m.metricCategoryId));
 
-		const typeCodeMap = new Map(types.data.map((type) => [type.id, type.code]));
-		const categoryCodeMap = new Map(categories.data.map((cat) => [cat.id, cat.code]));
+		const typeMissing: number[] = [];
+		for (const id of typeIds) {
+			if (!getFromCache(typeByIdCache, id)) typeMissing.push(id);
+		}
+
+		if (typeMissing.length) {
+			const types = await this.metricTypeRepository.search({ id: typeMissing }, transaction);
+			for (const t of types.data) {
+				putToCache(typeByIdCache, t.id, t);
+				putToCache(typeByCodeCache, t.code, t);
+			}
+		}
+
+		const catMap = await getMetricCategoriesByIdsCached(this.metricCategoryRepository, catIds, transaction);
+
+		const typeCodeMap = new Map<number, string>();
+		for (const id of typeIds) {
+			const t = getFromCache(typeByIdCache, id);
+			if (t) typeCodeMap.set(id, t.code);
+		}
+
+		const categoryCodeMap = new Map<number, string>();
+		for (const id of catIds) {
+			const c = catMap.get(id);
+			if (c) categoryCodeMap.set(id, c.code);
+		}
 
 		return { typeCodeMap, categoryCodeMap };
 	}
