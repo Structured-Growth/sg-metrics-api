@@ -96,6 +96,11 @@ export class MetricSqlRepository {
 		}
 	}
 
+	public async upsert(params: MetricCreationAttributes, transaction?: Transaction): Promise<MetricSQL> {
+			const [model] = await MetricSQL.upsert(params, { transaction });
+			return model
+	}
+
 	public async read(
 		id: string,
 		params?: {

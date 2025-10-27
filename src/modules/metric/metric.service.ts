@@ -1,12 +1,12 @@
 import {
 	autoInjectable,
 	EventbusService,
+	I18nType,
 	inject,
 	NotFoundError,
+	SearchResultInterface,
 	ServerError,
 	signedInternalFetch,
-	SearchResultInterface,
-	I18nType,
 } from "@structured-growth/microservice-sdk";
 import { v4 } from "uuid";
 import * as AWS from "aws-sdk";
@@ -14,8 +14,8 @@ import { MetricSqlRepository } from "./repositories/metric-sql.repository";
 import {
 	Metric,
 	MetricCreationAttributes,
-	MetricUpdateAttributes,
 	MetricExtended,
+	MetricUpdateAttributes,
 } from "../../../database/models/metric";
 import { MetricCreateBodyInterface } from "../../interfaces/metric-create-body.interface";
 import { MetricSearchParamsInterface } from "../../interfaces/metric-search-params.interface";
@@ -31,7 +31,7 @@ import MetricType from "../../../database/models/metric-type.sequelize";
 import { MetricCategoryRepository } from "../metric-category/metric-category.repository";
 import { MetricsBulkRequestInterface } from "../../interfaces/metrics-bulk.request.interface";
 import MetricSQL from "../../../database/models/metric-sql.sequelize";
-import { Transaction, Op } from "sequelize";
+import { Op, Transaction } from "sequelize";
 import { MetricsBulkResultInterface } from "./interfaces/metrics-bulk-result.interface";
 import { MetricStatisticsBodyInterface } from "../../interfaces/metric-statistics-body.interface";
 import { MetricStatisticsResponseInterface } from "../../interfaces/metric-statistics-response.interface";
@@ -211,31 +211,32 @@ export class MetricService {
 
 		const result = await Promise.all(
 			data.map(async (item: MetricCreationAttributes & { _hasMetadata?: boolean }) => {
-				const exists = item.id ? await this.metricSqlRepository.read(item.id, { transaction }) : null;
-				if (exists) {
-					const patch = pick(
-						item,
-						"value",
-						"takenAt",
-						"takenAtOffset",
-						"metricCategoryId",
-						"metricTypeId",
-						"metricTypeVersion"
-					) as Partial<MetricCreationAttributes>;
-
-					if (item._hasMetadata) {
-						patch.metadata = item.metadata;
-					}
-
-					return this.metricSqlRepository.update(item.id, patch, transaction);
-				} else {
-					const creationItem = { ...item };
-					delete creationItem._hasMetadata;
-
-					const creationResult = await this.metricSqlRepository.create([creationItem], transaction);
-					createdMetrics.push(creationResult[0]);
-					return creationResult[0];
-				}
+				return this.metricSqlRepository.upsert(item, transaction);
+				// const exists = item.id ? await this.metricSqlRepository.read(item.id, { transaction }) : null;
+				// if (exists) {
+				// 	const patch = pick(
+				// 		item,
+				// 		"value",
+				// 		"takenAt",
+				// 		"takenAtOffset",
+				// 		"metricCategoryId",
+				// 		"metricTypeId",
+				// 		"metricTypeVersion"
+				// 	) as Partial<MetricCreationAttributes>;
+				//
+				// 	if (item._hasMetadata) {
+				// 		patch.metadata = item.metadata;
+				// 	}
+				//
+				// 	return this.metricSqlRepository.update(item.id, patch, transaction);
+				// } else {
+				// 	const creationItem = { ...item };
+				// 	delete creationItem._hasMetadata;
+				//
+				// 	const creationResult = await this.metricSqlRepository.create([creationItem], transaction);
+				// 	createdMetrics.push(creationResult[0]);
+				// 	return creationResult[0];
+				// }
 			})
 		);
 
