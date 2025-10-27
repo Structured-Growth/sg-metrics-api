@@ -97,10 +97,7 @@ export class MetricSqlRepository {
 		}
 	}
 
-	public async upsert(
-		params: MetricsUpsertBodyInterface,
-		transaction?: Transaction
-	): Promise<{ model: MetricSQL; created: boolean }> {
+	public async upsert(params: MetricsUpsertBodyInterface, transaction?: Transaction): Promise<{ model: MetricSQL }> {
 		const payload = { ...params };
 
 		const hasMetadata = Object.prototype.hasOwnProperty.call(params, "metadata");
@@ -114,12 +111,12 @@ export class MetricSqlRepository {
 			if (payload[key] === undefined) delete payload[key];
 		}
 
-		const [model, created] = await MetricSQL.upsert(payload, {
+		const [model] = await MetricSQL.upsert(payload, {
 			transaction,
 			returning: true,
 		});
 
-		return { model, created };
+		return { model };
 	}
 
 	public async read(

@@ -207,23 +207,53 @@ export class MetricService {
 
 		const result = await Promise.all(
 			data.map(async (item) => {
-				const { model, created } = await this.metricSqlRepository.upsert(item, transaction);
-				if (created) createdMetrics.push(model);
+				const { model } = await this.metricSqlRepository.upsert(item, transaction);
+				createdMetrics.push(model);
 				return model;
 			})
 		);
 
 		if (createdMetrics.length > 0) {
-			this.eventBus
-				.publish({
-					arn: `${this.appPrefix}:${data[0].region}:${data[0].orgId}:${data[0].accountId}:events/metrics/created`,
-					data: {
-						metrics: createdMetrics.map((metric) => metric.toJSON()),
-					},
-				})
-				.catch((err) => {
-					console.log("Failed to publish metrics created event:", err);
-				});
+			type Group = { arn: string; items: Metric[] };
+			const groups = new Map<string, Group>();
+
+			const pick = (m: any, key: string) => (typeof m.get === "function" ? m.get(key) : m[key]);
+
+			for (const m of createdMetrics) {
+				const region = pick(m, "region");
+				const orgId = pick(m, "orgId");
+				const accountId = pick(m, "accountId");
+				const id = pick(m, "id");
+
+				if (!region || !orgId || !accountId || !id) continue;
+
+				const key = `${region}:${orgId}:${accountId}`;
+				let entry = groups.get(key);
+				if (!entry) {
+					entry = {
+						arn: `${this.appPrefix}:${region}:${orgId}:${accountId}:events/metrics/upsert`,
+						items: [],
+					};
+					groups.set(key, entry);
+				}
+				entry.items.push(m);
+			}
+
+			for (const { arn, items } of groups.values()) {
+				void this.eventBus
+					.publish({
+						arn,
+						data: {
+							metrics: items.map((metric) => metric.toJSON()),
+						},
+					})
+					.catch((err: unknown) => {
+						console.log(
+							"Failed to publish metrics upsert event:",
+							JSON.stringify({ arn, size: items.length, err: String(err) })
+						);
+					});
+			}
 		}
 
 		const resultMetrics = result.map((item) => new Metric(item.toJSON()));
