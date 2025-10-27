@@ -35,6 +35,7 @@ import { Op, Transaction } from "sequelize";
 import { MetricsBulkResultInterface } from "./interfaces/metrics-bulk-result.interface";
 import { MetricStatisticsBodyInterface } from "../../interfaces/metric-statistics-body.interface";
 import { MetricStatisticsResponseInterface } from "../../interfaces/metric-statistics-response.interface";
+import { MetricsUpsertBodyInterface } from "../../interfaces/metrics-upsert-body.interface";
 
 type CacheEntry<V> = { v: V; exp: number };
 
@@ -188,19 +189,14 @@ export class MetricService {
 			metricTypesMap = keyBy(metricTypes, "code");
 		}
 
-		const data: MetricCreationAttributes[] = params.map((param) => {
-			const hasMetadata = Object.prototype.hasOwnProperty.call(param, "metadata");
-
+		const data: MetricsUpsertBodyInterface[] = params.map((param) => {
 			return {
 				...param,
 				metricCategoryId: param.metricCategoryId || metricTypesMap[param.metricTypeCode]?.metricCategoryId,
 				metricTypeId: param.metricTypeId || metricTypesMap[param.metricTypeCode]?.id,
 				id: param.id || v4(),
-				recordedAt: new Date(),
 				isDeleted: false,
-				metadata: hasMetadata ? param.metadata : undefined,
-				_hasMetadata: hasMetadata,
-			} as MetricCreationAttributes & { _hasMetadata?: boolean };
+			};
 		});
 
 		if (!data.length) {
@@ -210,33 +206,10 @@ export class MetricService {
 		const createdMetrics: Metric[] = [];
 
 		const result = await Promise.all(
-			data.map(async (item: MetricCreationAttributes & { _hasMetadata?: boolean }) => {
-				return this.metricSqlRepository.upsert(item, transaction);
-				// const exists = item.id ? await this.metricSqlRepository.read(item.id, { transaction }) : null;
-				// if (exists) {
-				// 	const patch = pick(
-				// 		item,
-				// 		"value",
-				// 		"takenAt",
-				// 		"takenAtOffset",
-				// 		"metricCategoryId",
-				// 		"metricTypeId",
-				// 		"metricTypeVersion"
-				// 	) as Partial<MetricCreationAttributes>;
-				//
-				// 	if (item._hasMetadata) {
-				// 		patch.metadata = item.metadata;
-				// 	}
-				//
-				// 	return this.metricSqlRepository.update(item.id, patch, transaction);
-				// } else {
-				// 	const creationItem = { ...item };
-				// 	delete creationItem._hasMetadata;
-				//
-				// 	const creationResult = await this.metricSqlRepository.create([creationItem], transaction);
-				// 	createdMetrics.push(creationResult[0]);
-				// 	return creationResult[0];
-				// }
+			data.map(async (item) => {
+				const { model, created } = await this.metricSqlRepository.upsert(item, transaction);
+				if (created) createdMetrics.push(model);
+				return model;
 			})
 		);
 

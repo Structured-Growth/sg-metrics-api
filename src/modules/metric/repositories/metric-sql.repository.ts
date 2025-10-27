@@ -14,6 +14,7 @@ import { isUndefined, omitBy, round, snakeCase } from "lodash";
 import { MetricAggregateParamsInterface } from "../../../interfaces/metric-aggregate-params.interface";
 import { MetricAggregateResultInterface } from "../../../interfaces/metric-aggregate-result.interface";
 import { Sequelize } from "sequelize-typescript";
+import { MetricsUpsertBodyInterface } from "../../../interfaces/metrics-upsert-body.interface";
 
 @autoInjectable()
 export class MetricSqlRepository {
@@ -96,9 +97,29 @@ export class MetricSqlRepository {
 		}
 	}
 
-	public async upsert(params: MetricCreationAttributes, transaction?: Transaction): Promise<MetricSQL> {
-			const [model] = await MetricSQL.upsert(params, { transaction });
-			return model
+	public async upsert(
+		params: MetricsUpsertBodyInterface,
+		transaction?: Transaction
+	): Promise<{ model: MetricSQL; created: boolean }> {
+		const payload = { ...params };
+
+		const hasMetadata = Object.prototype.hasOwnProperty.call(params, "metadata");
+		if (!hasMetadata) {
+			delete payload.metadata;
+		}
+
+		delete payload.recordedAt;
+
+		for (const key of Object.keys(payload)) {
+			if (payload[key] === undefined) delete payload[key];
+		}
+
+		const [model, created] = await MetricSQL.upsert(payload, {
+			transaction,
+			returning: true,
+		});
+
+		return { model, created };
 	}
 
 	public async read(
