@@ -141,4 +141,107 @@ describe("POST /api/v1/metrics/bulk", () => {
 		]);
 		assert.equal(statusCode, 200);
 	}).timeout(300000);
+
+	it("Should handle two concurrent bulk requests each with upsert(update) on the same metric id", async () => {
+		const metricUuid4 = v4();
+
+		const base = await server.post("/v1/metrics/bulk").send([
+			{
+				op: "create",
+				data: {
+					id: metricUuid4,
+					orgId: orgId,
+					region: RegionEnum.US,
+					accountId: accountId,
+					userId: userId,
+					relatedToRn: `base-${relatedToRn}`,
+					metricCategoryId: context.createdMetricCategoryId,
+					metricTypeId: context.createdMetricTypeId,
+					metricTypeVersion: metricTypeVersion,
+					deviceId: deviceId,
+					batchId: `${batchId}-bulk-concurrent-init`,
+					value: value,
+					takenAt: "2024-05-16T14:30:00+01:00",
+					metadata: { base: true },
+				},
+			},
+		]);
+		assert.equal(base.statusCode, 200);
+
+		const bulk1 = [
+			{
+				op: "upsert",
+				data: {
+					id: metricUuid4,
+					orgId: orgId,
+					region: RegionEnum.US,
+					accountId: accountId,
+					userId: userId,
+					relatedToRn: `${relatedToRn}-bulk1`,
+					metricCategoryId: context.createdMetricCategoryId,
+					metricTypeId: context.createdMetricTypeId,
+					metricTypeVersion: metricTypeVersion,
+					deviceId: deviceId,
+					batchId: `${batchId}-bulk1`,
+					value: value + 10,
+					takenAt: "2024-05-16T14:30:00+01:00",
+				},
+			},
+		];
+
+		const newMeta = { concurrent: "bulk2", stamp: Date.now() };
+		const bulk2 = [
+			{
+				op: "upsert",
+				data: {
+					id: metricUuid4,
+					orgId: orgId,
+					region: RegionEnum.US,
+					accountId: accountId,
+					userId: userId,
+					relatedToRn: `${relatedToRn}-bulk2`,
+					metricCategoryId: context.createdMetricCategoryId,
+					metricTypeId: context.createdMetricTypeId,
+					metricTypeVersion: metricTypeVersion,
+					deviceId: deviceId,
+					batchId: `${batchId}-bulk2`,
+					value: value + 20,
+					takenAt: "2024-05-16T14:30:00+01:00",
+					metadata: newMeta,
+				},
+			},
+		];
+
+		const [r1, r2] = await Promise.all([
+			server.post("/v1/metrics/bulk").send(bulk1),
+			server.post("/v1/metrics/bulk").send(bulk2),
+		]);
+
+		assert.equal(r1.statusCode, 200);
+		assert.equal(r2.statusCode, 200);
+
+		const final = await server.post("/v1/metrics/upsert").send([
+			{
+				id: metricUuid4,
+				orgId: orgId,
+				region: RegionEnum.US,
+				accountId: accountId,
+				userId: userId,
+				relatedToRn: `${relatedToRn}-bulk-final`,
+				metricCategoryId: context.createdMetricCategoryId,
+				metricTypeId: context.createdMetricTypeId,
+				metricTypeVersion: metricTypeVersion,
+				deviceId: deviceId,
+				batchId: `${batchId}-bulk-final`,
+				value: value + 30,
+				takenAt: "2024-05-16T14:30:00+01:00",
+			},
+		]);
+		assert.equal(final.statusCode, 200);
+		assert.isArray(final.body);
+		const finalMetric = final.body[0];
+		assert.equal(finalMetric.id, metricUuid4);
+		assert.deepEqual(finalMetric.metadata, newMeta, "metadata must persist from bulk2 upsert");
+		assert.isUndefined((finalMetric as any)._hasMetadata);
+	}).timeout(300000);
 });
