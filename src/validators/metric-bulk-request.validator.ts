@@ -12,7 +12,10 @@ export const MetricBulkRequestValidator = joi.object({
 					op: joi.string().valid("create").required(),
 					data: joi
 						.object({
-							id: joi.string().uuid({ version: "uuidv4" }).label("validator.common.id"),
+							id: joi
+								.string()
+								.uuid({ version: ["uuidv3", "uuidv4"] })
+								.label("validator.common.id"),
 							orgId: joi.number().positive().required().label("validator.metrics.orgId"),
 							region: joi.string().min(2).required().label("validator.metrics.region"),
 							accountId: joi.number().positive().label("validator.metrics.accountId"),
@@ -68,7 +71,10 @@ export const MetricBulkRequestValidator = joi.object({
 					op: joi.string().valid("upsert").required(),
 					data: joi
 						.object({
-							id: joi.string().uuid({ version: "uuidv4" }).label("validator.common.id"),
+							id: joi
+								.string()
+								.uuid({ version: ["uuidv3", "uuidv4"] })
+								.label("validator.common.id"),
 							orgId: joi.number().positive().required().label("validator.metrics.orgId"),
 							region: joi.string().min(2).required().label("validator.metrics.region"),
 							accountId: joi.number().positive().label("validator.metrics.accountId"),

@@ -189,6 +189,8 @@ export class MetricService {
 		}
 
 		const data: MetricCreationAttributes[] = params.map((param) => {
+			const hasMetadata = Object.prototype.hasOwnProperty.call(param, "metadata");
+
 			return {
 				...param,
 				metricCategoryId: param.metricCategoryId || metricTypesMap[param.metricTypeCode]?.metricCategoryId,
@@ -196,8 +198,9 @@ export class MetricService {
 				id: param.id || v4(),
 				recordedAt: new Date(),
 				isDeleted: false,
-				metadata: param.metadata || {},
-			};
+				metadata: hasMetadata ? param.metadata : undefined,
+				_hasMetadata: hasMetadata,
+			} as MetricCreationAttributes & { _hasMetadata?: boolean };
 		});
 
 		if (!data.length) {
@@ -207,25 +210,29 @@ export class MetricService {
 		const createdMetrics: Metric[] = [];
 
 		const result = await Promise.all(
-			data.map(async (item) => {
+			data.map(async (item: MetricCreationAttributes & { _hasMetadata?: boolean }) => {
 				const exists = item.id ? await this.metricSqlRepository.read(item.id, { transaction }) : null;
 				if (exists) {
-					return this.metricSqlRepository.update(
-						item.id,
-						pick(
-							item,
-							"value",
-							"takenAt",
-							"takenAtOffset",
-							"metricCategoryId",
-							"metricTypeId",
-							"metricTypeVersion",
-							"metadata"
-						),
-						transaction
-					);
+					const patch = pick(
+						item,
+						"value",
+						"takenAt",
+						"takenAtOffset",
+						"metricCategoryId",
+						"metricTypeId",
+						"metricTypeVersion"
+					) as Partial<MetricCreationAttributes>;
+
+					if (item._hasMetadata) {
+						patch.metadata = item.metadata;
+					}
+
+					return this.metricSqlRepository.update(item.id, patch, transaction);
 				} else {
-					const creationResult = await this.metricSqlRepository.create([item], transaction);
+					const creationItem = { ...item };
+					delete creationItem._hasMetadata;
+
+					const creationResult = await this.metricSqlRepository.create([creationItem], transaction);
 					createdMetrics.push(creationResult[0]);
 					return creationResult[0];
 				}
@@ -233,12 +240,16 @@ export class MetricService {
 		);
 
 		if (createdMetrics.length > 0) {
-			await this.eventBus.publish({
-				arn: `${this.appPrefix}:${data[0].region}:${data[0].orgId}:${data[0].accountId}:events/metrics/created`,
-				data: {
-					metrics: createdMetrics.map((metric) => metric.toJSON()),
-				},
-			});
+			this.eventBus
+				.publish({
+					arn: `${this.appPrefix}:${data[0].region}:${data[0].orgId}:${data[0].accountId}:events/metrics/created`,
+					data: {
+						metrics: createdMetrics.map((metric) => metric.toJSON()),
+					},
+				})
+				.catch((err) => {
+					console.log("Failed to publish metrics created event:", err);
+				});
 		}
 
 		const resultMetrics = result.map((item) => new Metric(item.toJSON()));

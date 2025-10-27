@@ -4,6 +4,7 @@ import { container, webServer } from "@structured-growth/microservice-sdk";
 import { RegionEnum } from "@structured-growth/microservice-sdk";
 import { assert } from "chai";
 import { initTest } from "../../../common/init-test";
+import { v3 as uuidv3, v4 as uuidv4 } from "uuid";
 
 describe("POST /api/v1/metrics", () => {
 	const { server, context } = initTest();
@@ -18,6 +19,10 @@ describe("POST /api/v1/metrics", () => {
 	const deviceId = version - accountId;
 	const batchId = `batchId-${Date.now()}`;
 	const value = factor - metricTypeVersion;
+
+	const NAMESPACE = uuidv3.DNS;
+	const uuidV3 = uuidv3(`metric-${Date.now()}`, NAMESPACE);
+	const uuidV4 = uuidv4();
 
 	before(async () => {
 		process.env.TRANSLATE_API_URL = "";
@@ -136,9 +141,52 @@ describe("POST /api/v1/metrics", () => {
 		context.createdMetricId = body[0].id;
 	});
 
+	it("Should accept metric with UUIDv3 id", async () => {
+		const { statusCode, body } = await server.post("/v1/metrics").send([
+			{
+				id: uuidV3,
+				orgId: orgId,
+				region: RegionEnum.US,
+				accountId: accountId,
+				userId: userId,
+				relatedToRn: relatedToRn,
+				metricTypeCode: code,
+				metricTypeVersion: metricTypeVersion,
+				deviceId: deviceId,
+				batchId: batchId,
+				value: value,
+				takenAt: "2024-05-16T14:30:00+01:00",
+			},
+		]);
+		assert.equal(statusCode, 201);
+		assert.equal(body[0].metricTypeCode, code);
+	});
+
+	it("Should accept metric with UUIDv4 id", async () => {
+		const { statusCode, body } = await server.post("/v1/metrics").send([
+			{
+				id: uuidV4,
+				orgId: orgId,
+				region: RegionEnum.US,
+				accountId: accountId,
+				userId: userId,
+				relatedToRn: relatedToRn,
+				metricTypeCode: code,
+				metricTypeVersion: metricTypeVersion,
+				deviceId: deviceId,
+				batchId: batchId,
+				value: value,
+				takenAt: "2024-05-16T14:30:00+01:00",
+			},
+		]);
+		assert.equal(statusCode, 201);
+		assert.equal(body[0].metricTypeCode, code);
+	});
+
 	it("Should return validation error", async () => {
 		const { statusCode, body } = await server.post("/v1/metrics").send([
 			{
+				id: "not-a-uuid",
 				orgId: "main",
 				accountId: -1,
 				userId: -2,
@@ -155,6 +203,7 @@ describe("POST /api/v1/metrics", () => {
 		assert.equal(statusCode, 422);
 		assert.isDefined(body.validation);
 		assert.isString(body.message);
+		assert.isString(body.validation.body[0].id[0]);
 		assert.isString(body.validation.body[0].orgId[0]);
 		assert.isString(body.validation.body[0].accountId[0]);
 		assert.isString(body.validation.body[0].userId[0]);

@@ -195,6 +195,213 @@ describe("POST /api/v1/metrics/upsert", () => {
 		assert.equal(body[0].metadata.number, 1);
 	});
 
+	it("Should update metric without changing metadata when metadata is omitted", async () => {
+		const createResp = await server.post("/v1/metrics/upsert").send([
+			{
+				orgId: orgId,
+				region: RegionEnum.US,
+				accountId: accountId,
+				userId: userId,
+				relatedToRn: relatedToRn,
+				metricTypeCode: code,
+				metricTypeVersion: metricTypeVersion,
+				deviceId: deviceId,
+				batchId: `${batchId}-upd-omitted`,
+				value: value,
+				takenAt: "2024-05-16T14:30:00+01:00",
+				metadata: {
+					a: true,
+					b: "text",
+					c: 123,
+				},
+			},
+		]);
+		assert.equal(createResp.statusCode, 200);
+		const created = createResp.body[0];
+		assert.isDefined(created.id);
+		const metricId = created.id;
+		const originalMetadata = created.metadata;
+
+		const updateResp = await server.post("/v1/metrics/upsert").send([
+			{
+				id: metricId,
+				orgId: orgId,
+				region: RegionEnum.US,
+				accountId: accountId,
+				userId: userId,
+				relatedToRn: relatedToRn,
+				metricTypeId: context.createdMetricTypeId,
+				metricCategoryId: context.createdMetricCategoryId,
+				metricTypeVersion: metricTypeVersion,
+				deviceId: deviceId,
+				batchId: `${batchId}-upd-omitted`,
+				value: value + 1,
+				takenAt: "2024-05-16T14:30:00+01:00",
+			},
+		]);
+		assert.equal(updateResp.statusCode, 200);
+		const updated = updateResp.body[0];
+
+		assert.deepEqual(updated.metadata, originalMetadata);
+		assert.isUndefined((updated as any)._hasMetadata);
+	});
+
+	it("Should update metric metadata when metadata is provided", async () => {
+		const createResp = await server.post("/v1/metrics/upsert").send([
+			{
+				orgId: orgId,
+				region: RegionEnum.US,
+				accountId: accountId,
+				userId: userId,
+				relatedToRn: relatedToRn,
+				metricTypeCode: code,
+				metricTypeVersion: metricTypeVersion,
+				deviceId: deviceId,
+				batchId: `${batchId}-upd-provided`,
+				value: value,
+				takenAt: "2024-05-16T14:30:00+01:00",
+				metadata: {
+					m: "old",
+					n: 1,
+				},
+			},
+		]);
+		assert.equal(createResp.statusCode, 200);
+		const created = createResp.body[0];
+		const metricId = created.id;
+
+		const newMetadata = { m: "new", added: true };
+		const updateResp = await server.post("/v1/metrics/upsert").send([
+			{
+				id: metricId,
+				orgId: orgId,
+				region: RegionEnum.US,
+				accountId: accountId,
+				userId: userId,
+				relatedToRn: relatedToRn,
+				metricTypeId: context.createdMetricTypeId,
+				metricCategoryId: context.createdMetricCategoryId,
+				metricTypeVersion: metricTypeVersion,
+				deviceId: deviceId,
+				batchId: `${batchId}-upd-provided`,
+				value: value + 2,
+				takenAt: "2024-05-16T14:30:00+01:00",
+				metadata: newMetadata,
+			},
+		]);
+		assert.equal(updateResp.statusCode, 200);
+		const updated = updateResp.body[0];
+
+		assert.deepEqual(updated.metadata, newMetadata);
+		assert.isUndefined((updated as any)._hasMetadata);
+	});
+
+	it("Should handle concurrent upserts on the same metric id without errors", async () => {
+		const baseCreate = await server.post("/v1/metrics/upsert").send([
+			{
+				orgId: orgId,
+				region: RegionEnum.US,
+				accountId: accountId,
+				userId: userId,
+				relatedToRn: relatedToRn,
+				metricTypeCode: code,
+				metricTypeVersion: metricTypeVersion,
+				deviceId: deviceId,
+				batchId: `${batchId}-concurrent-base`,
+				value: value,
+				takenAt: "2024-05-16T14:30:00+01:00",
+				metadata: { base: 1 },
+			},
+		]);
+		assert.equal(baseCreate.statusCode, 200);
+		const created = baseCreate.body[0];
+		const metricId = created.id;
+		assert.isDefined(metricId);
+
+		const upd1 = [
+			{
+				id: metricId,
+				orgId: orgId,
+				region: RegionEnum.US,
+				accountId: accountId,
+				userId: userId,
+				relatedToRn: relatedToRn,
+				metricTypeId: context.createdMetricTypeId,
+				metricCategoryId: context.createdMetricCategoryId,
+				metricTypeVersion: metricTypeVersion,
+				deviceId: deviceId,
+				batchId: `${batchId}-concurrent-1`,
+				value: value + 10,
+				takenAt: "2024-05-16T14:30:00+01:00",
+			},
+		];
+
+		const newMetadata = { concurrent: "win", t: Date.now() };
+		const upd2 = [
+			{
+				id: metricId,
+				orgId: orgId,
+				region: RegionEnum.US,
+				accountId: accountId,
+				userId: userId,
+				relatedToRn: relatedToRn,
+				metricTypeId: context.createdMetricTypeId,
+				metricCategoryId: context.createdMetricCategoryId,
+				metricTypeVersion: metricTypeVersion,
+				deviceId: deviceId,
+				batchId: `${batchId}-concurrent-2`,
+				value: value + 20,
+				takenAt: "2024-05-16T14:30:00+01:00",
+				metadata: newMetadata,
+			},
+		];
+
+		const [r1, r2] = await Promise.all([
+			server.post("/v1/metrics/upsert").send(upd1),
+			server.post("/v1/metrics/upsert").send(upd2),
+		]);
+
+		assert.equal(r1.statusCode, 200);
+		assert.equal(r2.statusCode, 200);
+		assert.isArray(r1.body);
+		assert.isArray(r2.body);
+
+		const b1 = r1.body[0];
+		const b2 = r2.body[0];
+
+		assert.equal(b1.id, metricId);
+		assert.equal(b2.id, metricId);
+
+		assert.isUndefined((b1 as any)._hasMetadata);
+		assert.isUndefined((b2 as any)._hasMetadata);
+
+		const oneHasNew =
+			(b1.metadata && b1.metadata.concurrent === "win") || (b2.metadata && b2.metadata.concurrent === "win");
+		assert.isTrue(oneHasNew, "One of concurrent updates must set new metadata");
+
+		const finalMetadata = { final: true };
+		const finalResp = await server.post("/v1/metrics/upsert").send([
+			{
+				id: metricId,
+				orgId: orgId,
+				region: RegionEnum.US,
+				accountId: accountId,
+				userId: userId,
+				relatedToRn: relatedToRn,
+				metricTypeId: context.createdMetricTypeId,
+				metricCategoryId: context.createdMetricCategoryId,
+				metricTypeVersion: metricTypeVersion,
+				deviceId: deviceId,
+				batchId: `${batchId}-concurrent-final`,
+				value: value + 30,
+				takenAt: "2024-05-16T14:30:00+01:00",
+				metadata: finalMetadata,
+			},
+		]);
+		assert.equal(finalResp.statusCode, 200);
+		assert.deepEqual(finalResp.body[0].metadata, finalMetadata);
+	});
+
 	it("Should return error if there are to much fields", async () => {
 		const { statusCode, body } = await server.post("/v1/metrics/upsert").send([
 			{
