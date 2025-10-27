@@ -233,12 +233,16 @@ export class MetricService {
 		);
 
 		if (createdMetrics.length > 0) {
-			await this.eventBus.publish({
-				arn: `${this.appPrefix}:${data[0].region}:${data[0].orgId}:${data[0].accountId}:events/metrics/created`,
-				data: {
-					metrics: createdMetrics.map((metric) => metric.toJSON()),
-				},
-			});
+			this.eventBus
+				.publish({
+					arn: `${this.appPrefix}:${data[0].region}:${data[0].orgId}:${data[0].accountId}:events/metrics/created`,
+					data: {
+						metrics: createdMetrics.map((metric) => metric.toJSON()),
+					},
+				})
+				.catch((err) => {
+					console.log("Failed to publish metrics created event:", err);
+				});
 		}
 
 		const resultMetrics = result.map((item) => new Metric(item.toJSON()));
