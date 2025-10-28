@@ -29,13 +29,13 @@ import { keyBy, map, omit, pick, uniq } from "lodash";
 import { MetricTypeRepository } from "../metric-type/metric-type.repository";
 import MetricType from "../../../database/models/metric-type.sequelize";
 import { MetricCategoryRepository } from "../metric-category/metric-category.repository";
-import { MetricsBulkRequestInterface } from "../../interfaces/metrics-bulk.request.interface";
 import MetricSQL from "../../../database/models/metric-sql.sequelize";
 import { Op, Transaction } from "sequelize";
 import { MetricsBulkResultInterface } from "./interfaces/metrics-bulk-result.interface";
 import { MetricStatisticsBodyInterface } from "../../interfaces/metric-statistics-body.interface";
 import { MetricStatisticsResponseInterface } from "../../interfaces/metric-statistics-response.interface";
 import { MetricsUpsertBodyInterface } from "../../interfaces/metrics-upsert-body.interface";
+import { MetricsBulkDataInterface } from "./interfaces/metrics-bulk-data.interface";
 
 type CacheEntry<V> = { v: V; exp: number };
 
@@ -488,7 +488,7 @@ export class MetricService {
 		await this.metricSqlRepository.delete(id, transaction);
 	}
 
-	public async bulk(data: MetricsBulkRequestInterface): Promise<MetricsBulkResultInterface> {
+	public async bulk(data: MetricsBulkDataInterface): Promise<MetricsBulkResultInterface> {
 		const result: MetricsBulkResultInterface = [];
 		await MetricSQL.sequelize.transaction(async (transaction) => {
 			for (let operation of data) {

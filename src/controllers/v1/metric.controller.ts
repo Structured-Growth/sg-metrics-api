@@ -39,6 +39,7 @@ import { MetricsBulkResponseInterface } from "../../interfaces/metrics-bulk-resp
 import { MetricStatisticsBodyInterface } from "../../interfaces/metric-statistics-body.interface";
 import { MetricStatisticsResponseInterface } from "../../interfaces/metric-statistics-response.interface";
 import { parseAccountArn } from "../../helpers/parse-account-arn";
+import { MetricsBulkDataInterface } from "../../modules/metric/interfaces/metrics-bulk-data.interface";
 
 const publicMetricAttributes = [
 	"id",
@@ -395,7 +396,22 @@ export class MetricController extends BaseController {
 		@Queries() query: {},
 		@Body() body: MetricsBulkRequestInterface
 	): Promise<MetricsBulkResponseInterface> {
-		const result = await this.metricService.bulk(body);
+		let data = body.map((item) => {
+			return {
+				op: item.op,
+				data: {
+					...item.data,
+					...("takenAt" in item.data
+						? {
+								takenAt: "takenAt" in item.data ? new Date(item.data.takenAt) : undefined,
+								takenAtOffset: "takenAt" in item.data ? getTimezoneOffset(item.data.takenAt.toString()) : undefined,
+						  }
+						: {}),
+				},
+			};
+		}) as MetricsBulkDataInterface;
+
+		const result = await this.metricService.bulk(data);
 
 		return result.map(({ op, data }) => {
 			switch (op) {
