@@ -140,6 +140,7 @@ describe("POST /api/v1/metrics/bulk", () => {
 			},
 		]);
 		assert.equal(statusCode, 200);
+		assert.equal(body[0].data.takenAtOffset, 60);
 	}).timeout(300000);
 
 	it("Should handle two concurrent bulk requests each with upsert(update) on the same metric id", async () => {
