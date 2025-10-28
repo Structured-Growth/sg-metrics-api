@@ -396,16 +396,18 @@ export class MetricController extends BaseController {
 		@Queries() query: {},
 		@Body() body: MetricsBulkRequestInterface
 	): Promise<MetricsBulkResponseInterface> {
-		let data = body.map(item => {
+		let data = body.map((item) => {
 			return {
 				op: item.op,
 				data: {
 					...item.data,
-					...("takenAt" in item.data ? {
-						takenAt: "takenAt" in item.data ? new Date(item.data.takenAt) : undefined,
-						takenAtOffset: "takenAt" in item.data ? getTimezoneOffset(item.data.takenAt.toString()) : undefined,
-					} : {})
-				}
+					...("takenAt" in item.data
+						? {
+								takenAt: "takenAt" in item.data ? new Date(item.data.takenAt) : undefined,
+								takenAtOffset: "takenAt" in item.data ? getTimezoneOffset(item.data.takenAt.toString()) : undefined,
+						  }
+						: {}),
+				},
 			};
 		}) as MetricsBulkDataInterface;
 
