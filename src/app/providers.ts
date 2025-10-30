@@ -15,6 +15,7 @@ import {
 } from "@structured-growth/microservice-sdk";
 import { loadEnvironment } from "./load-environment";
 import { emailTransports, Mailer } from "@structured-growth/microservice-sdk";
+import { cacheTransports, Cache } from "@structured-growth/microservice-sdk";
 import { MetricService } from "../modules/metric/metric.service";
 import { MetricTypeService } from "../modules/metric-type/metric-type.service";
 import { MetricTypeRepository } from "../modules/metric-type/metric-type.repository";
@@ -63,6 +64,10 @@ container.register("LogWriter", logWriters[process.env.LOG_WRITER] || "ConsoleLo
 container.register("Logger", Logger);
 container.register("EmailTransport", emailTransports[process.env.EMAIL_TRANSPORT || "SesEmailTransport"]);
 container.register("Mailer", Mailer);
+container.register("CacheTransport", cacheTransports[process.env.CACHE_TRANSPORT || "MemoryCacheTransport"], {
+	lifecycle: Lifecycle.Singleton,
+});
+container.register("Cache", Cache, { lifecycle: Lifecycle.Singleton });
 container.register("App", App, { lifecycle: Lifecycle.Singleton });
 container.register("AuthService", AuthService);
 container.register("PolicyService", PolicyService);
