@@ -69,5 +69,12 @@ export function loadEnvironment() {
 		AWS_LINK_EXPIRES: joi.number().required(),
 		EMAIL_TRANSPORT: joi.string().required(),
 		FROM_EMAIL: joi.string().required(),
+		CACHE_TRANSPORT: joi.string().required(),
+		REDIS_URL: joi.string().allow(""),
+		REDIS_PASSWORD: joi.string().allow(""),
+		REDIS_USERNAME: joi.string().allow(""),
+		REDIS_DB: joi.number().allow(""),
+		REDIS_TLS: joi.bool().allow(""),
+		REDIS_KEY_PREFIX: joi.string().allow(""),
 	});
 }
