@@ -26,10 +26,12 @@ import {
 	MetricAggregateResultInterface,
 	MetricAggregationInterface,
 } from "../../interfaces/metric-aggregate-result.interface";
-import { keyBy, map, omit, pick, uniq } from "lodash";
+import { keyBy, map, omit, uniq } from "lodash";
 import { MetricTypeRepository } from "../metric-type/metric-type.repository";
+import { MetricTypeService } from "../metric-type/metric-type.service";
 import MetricType from "../../../database/models/metric-type.sequelize";
 import { MetricCategoryRepository } from "../metric-category/metric-category.repository";
+import { MetricCategoryService } from "../metric-category/metric-category.service";
 import MetricSQL from "../../../database/models/metric-sql.sequelize";
 import { Op, Transaction } from "sequelize";
 import { MetricsBulkResultInterface } from "./interfaces/metrics-bulk-result.interface";
@@ -52,7 +54,9 @@ export class MetricService {
 	constructor(
 		@inject("MetricSqlRepository") private metricSqlRepository: MetricSqlRepository,
 		@inject("MetricCategoryRepository") private metricCategoryRepository: MetricCategoryRepository,
+		@inject("MetricCategoryService") private metricCategoryService: MetricCategoryService,
 		@inject("MetricTypeRepository") private metricTypeRepository: MetricTypeRepository,
+		@inject("MetricTypeService") private metricTypeService: MetricTypeService,
 		@inject("EventbusService") private eventBus: EventbusService,
 		@inject("appPrefix") private appPrefix: string,
 		@inject("i18n") private getI18n: () => I18nType,
@@ -118,7 +122,7 @@ export class MetricService {
 		const metricTypeCodes = map(params, "metricTypeCode").filter((i) => !!i);
 		let metricTypesMap: Record<string, MetricType> = {};
 		if (metricTypeCodes.length) {
-			const metricTypes = await this.getMetricTypesByCodesCached(metricTypeCodes, transaction);
+			const metricTypes = await this.metricTypeService.getByCodesCached(metricTypeCodes, transaction);
 			metricTypesMap = keyBy(metricTypes, "code");
 		}
 
@@ -150,13 +154,13 @@ export class MetricService {
 			type Group = { arn: string; items: Metric[] };
 			const groups = new Map<string, Group>();
 
-			const pick = (m: any, key: string) => (typeof m.get === "function" ? m.get(key) : m[key]);
+			const pickVal = (m: any, key: string) => (typeof m.get === "function" ? m.get(key) : m[key]);
 
 			for (const m of createdMetrics) {
-				const region = pick(m, "region");
-				const orgId = pick(m, "orgId");
-				const accountId = pick(m, "accountId");
-				const id = pick(m, "id");
+				const region = pickVal(m, "region");
+				const orgId = pickVal(m, "orgId");
+				const accountId = pickVal(m, "accountId");
+				const id = pickVal(m, "id");
 
 				if (!region || !orgId || !accountId || !id) continue;
 
@@ -470,36 +474,8 @@ export class MetricService {
 		const typeIds = uniq(metrics.map((m) => m.metricTypeId));
 		const catIds = uniq(metrics.map((m) => m.metricCategoryId));
 
-		const typeKeys = typeIds.map(this.kt_id);
-		const typeCached = await this.cache.mget<MetricType>(typeKeys);
-		console.log("CACHED_TYPES_2: ", typeCached);
-
-		const typeNeedFetch: number[] = [];
-		const typeMapById = new Map<number, MetricType>();
-
-		for (let i = 0; i < typeIds.length; i++) {
-			const hit = typeCached[i];
-			if (hit) {
-				typeMapById.set(typeIds[i], hit);
-			} else {
-				typeNeedFetch.push(typeIds[i]);
-			}
-		}
-
-		if (typeNeedFetch.length > 0) {
-			const fetched = await this.metricTypeRepository.search({ id: typeNeedFetch }, transaction);
-			const toSet: Record<string, any> = {};
-			for (const t of fetched.data) {
-				typeMapById.set(t.id, t);
-				toSet[this.kt_id(t.id)] = t;
-				toSet[this.kt_code(t.code)] = t;
-			}
-			if (Object.keys(toSet).length > 0) {
-				await this.cache.mset(toSet, CACHE_TTL_SEC);
-			}
-		}
-
-		const catMap = await this.getMetricCategoriesByIdsCached(catIds, transaction);
+		const typeMapById = await this.metricTypeService.getByIdsCached(typeIds, transaction);
+		const catMap = await this.metricCategoryService.getByIdsCached(catIds, transaction);
 
 		const typeCodeMap = new Map<number, string>();
 		for (const id of typeIds) {
@@ -602,82 +578,5 @@ export class MetricService {
 			countCurrentPeriod,
 			startTimeCurrent,
 		};
-	}
-
-	private async getMetricTypesByCodesCached(codes: string[], transaction?: Transaction): Promise<MetricType[]> {
-		const keys = codes.map(this.kt_code);
-		const cached = await this.cache.mget<MetricType>(keys);
-		console.log("CACHED_TYPES: ", cached);
-
-		const needFetch: string[] = [];
-		const result: MetricType[] = [];
-
-		for (let i = 0; i < codes.length; i++) {
-			const hit = cached[i];
-			if (hit) {
-				result.push(hit);
-			} else {
-				needFetch.push(codes[i]);
-			}
-		}
-
-		if (needFetch.length > 0) {
-			const fetched = await this.metricTypeRepository.search({ code: needFetch }, transaction);
-
-			const promises = fetched.data.map(async (t) => {
-				await this.cache.mset(
-					{
-						[this.kt_code(t.code)]: t,
-						[this.kt_id(t.id)]: t,
-					},
-					CACHE_TTL_SEC
-				);
-
-				return t;
-			});
-
-			const stored = await Promise.all(promises);
-			result.push(...stored);
-		}
-
-		return result;
-	}
-
-	private async getMetricCategoriesByIdsCached(
-		ids: number[],
-		transaction?: Transaction
-	): Promise<Map<number, { id: number; code: string }>> {
-		const map = new Map<number, { id: number; code: string }>();
-		if (ids.length === 0) return map;
-
-		const keys = ids.map(this.kc_id);
-		const cached = await this.cache.mget<{ id: number; code: string }>(keys);
-		console.log("CACHED_CATEGORIES: ", cached);
-
-		const needFetch: number[] = [];
-		for (let i = 0; i < ids.length; i++) {
-			const val = cached[i];
-			if (val) {
-				map.set(ids[i], val);
-			} else {
-				needFetch.push(ids[i]);
-			}
-		}
-
-		if (needFetch.length > 0) {
-			const fetched = await this.metricCategoryRepository.search({ id: needFetch }, transaction);
-			const toSet: Record<string, any> = {};
-			for (const c of fetched.data) {
-				const v = { id: c.id, code: c.code };
-				map.set(c.id, v);
-				toSet[this.kc_id(c.id)] = v;
-				toSet[this.kc_code(c.code)] = v;
-			}
-			if (Object.keys(toSet).length > 0) {
-				await this.cache.mset(toSet, CACHE_TTL_SEC);
-			}
-		}
-
-		return map;
 	}
 }
