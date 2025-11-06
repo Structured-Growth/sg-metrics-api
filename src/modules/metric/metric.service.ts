@@ -30,10 +30,8 @@ import {
 	MetricAggregationInterface,
 } from "../../interfaces/metric-aggregate-result.interface";
 import { keyBy, map, omit, uniq } from "lodash";
-import { MetricTypeRepository } from "../metric-type/metric-type.repository";
 import { MetricTypeService } from "../metric-type/metric-type.service";
 import MetricType from "../../../database/models/metric-type.sequelize";
-import { MetricCategoryRepository } from "../metric-category/metric-category.repository";
 import { MetricCategoryService } from "../metric-category/metric-category.service";
 import MetricSQL from "../../../database/models/metric-sql.sequelize";
 import { Op, Transaction } from "sequelize";
@@ -50,9 +48,7 @@ export class MetricService {
 
 	constructor(
 		@inject("MetricSqlRepository") private metricSqlRepository: MetricSqlRepository,
-		@inject("MetricCategoryRepository") private metricCategoryRepository: MetricCategoryRepository,
 		@inject("MetricCategoryService") private metricCategoryService: MetricCategoryService,
-		@inject("MetricTypeRepository") private metricTypeRepository: MetricTypeRepository,
 		@inject("MetricTypeService") private metricTypeService: MetricTypeService,
 		@inject("EventbusService") private eventBus: EventbusService,
 		@inject("appPrefix") private appPrefix: string,
