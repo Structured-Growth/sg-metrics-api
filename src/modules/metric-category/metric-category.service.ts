@@ -10,14 +10,14 @@ import { SearchResultInterface, signedInternalFetch } from "@structured-growth/m
 import { MetricCategorySearchParamsInterface } from "../../interfaces/metric-category-search-params.interface";
 import { Transaction } from "sequelize";
 
-const CACHE_TTL_SEC = 3600;
-
 @autoInjectable()
 export class MetricCategoryService {
 	private i18n: I18nType;
 
-	private kcId = (id: number) => `metricCategory:id:${id}`;
-	private kcCode = (code: string) => `metricCategory:code:${code}`;
+	private readonly cacheTtlSec = 30 * 24 * 60 * 60;
+
+	private cacheKeyById = (id: number) => `metricCategory:id:${id}`;
+	private cacheKeyByCode = (code: string) => `metricCategory:code:${code}`;
 	constructor(
 		@inject("MetricCategoryRepository") private metricCategoryRepository: MetricCategoryRepository,
 		@inject("MetricTypeRepository") private metricTypeRepository: MetricTypeRepository,
@@ -101,7 +101,7 @@ export class MetricCategoryService {
 		);
 
 		if (params.code && params.code !== current.code) {
-			await this.cacheDelByCode(current.code);
+			await this.cache.del(this.cacheKeyByCode(current.code));
 		}
 		await this.cacheSet(updated);
 		return updated;
@@ -127,37 +127,27 @@ export class MetricCategoryService {
 
 		await this.metricCategoryRepository.delete(metricCategoryId);
 
-		await this.cacheDelById(metricCategoryId);
-		await this.cacheDelByCode(metricCategory.code);
+		await this.cache.del(this.cacheKeyById(metricCategoryId));
+		await this.cache.del(this.cacheKeyByCode(metricCategory.code));
 	}
 
 	private async cacheSet(c: MetricCategory): Promise<void> {
 		const v = { id: c.id, code: c.code };
 		await this.cache.mset(
 			{
-				[this.kcId(c.id)]: v,
-				[this.kcCode(c.code)]: v,
+				[this.cacheKeyById(c.id)]: v,
+				[this.cacheKeyByCode(c.code)]: v,
 			},
-			CACHE_TTL_SEC
+			this.cacheTtlSec
 		);
 	}
-	private async cacheDelById(id: number): Promise<void> {
-		await this.cache.del(this.kcId(id));
-	}
-	private async cacheDelByCode(code: string): Promise<void> {
-		await this.cache.del(this.kcCode(code));
-	}
 
-	public async getByIdsCached(
-		ids: number[],
-		transaction?: Transaction
-	): Promise<Map<number, { id: number; code: string }>> {
+	public async getByIds(ids: number[], transaction?: Transaction): Promise<Map<number, { id: number; code: string }>> {
 		const map = new Map<number, { id: number; code: string }>();
 		if (ids.length === 0) return map;
 
-		const keys = ids.map(this.kcId);
+		const keys = ids.map(this.cacheKeyById);
 		const cached = await this.cache.mget<{ id: number; code: string }>(keys);
-		console.log("CACHED_TYPE_ID: ", cached);
 
 		const needFetch: number[] = [];
 		for (let i = 0; i < ids.length; i++) {
@@ -172,27 +162,26 @@ export class MetricCategoryService {
 			for (const c of fetched.data) {
 				const v = { id: c.id, code: c.code };
 				map.set(c.id, v);
-				toSet[this.kcId(c.id)] = v;
-				toSet[this.kcCode(c.code)] = v;
+				toSet[this.cacheKeyById(c.id)] = v;
+				toSet[this.cacheKeyByCode(c.code)] = v;
 			}
 			if (Object.keys(toSet).length) {
-				await this.cache.mset(toSet, CACHE_TTL_SEC);
+				await this.cache.mset(toSet, this.cacheTtlSec);
 			}
 		}
 
 		return map;
 	}
 
-	public async getByCodesCached(
+	public async getByCodes(
 		codes: string[],
 		transaction?: Transaction
 	): Promise<Map<string, { id: number; code: string }>> {
 		const map = new Map<string, { id: number; code: string }>();
 		if (codes.length === 0) return map;
 
-		const keys = codes.map(this.kcCode);
+		const keys = codes.map(this.cacheKeyByCode);
 		const cached = await this.cache.mget<{ id: number; code: string }>(keys);
-		console.log("CACHED_TYPE_CODE: ", cached);
 
 		const needFetch: string[] = [];
 		for (let i = 0; i < codes.length; i++) {
@@ -207,11 +196,11 @@ export class MetricCategoryService {
 			for (const c of fetched.data) {
 				const v = { id: c.id, code: c.code };
 				map.set(c.code, v);
-				toSet[this.kcId(c.id)] = v;
-				toSet[this.kcCode(c.code)] = v;
+				toSet[this.cacheKeyById(c.id)] = v;
+				toSet[this.cacheKeyByCode(c.code)] = v;
 			}
 			if (Object.keys(toSet).length) {
-				await this.cache.mset(toSet, CACHE_TTL_SEC);
+				await this.cache.mset(toSet, this.cacheTtlSec);
 			}
 		}
 

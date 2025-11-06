@@ -6,6 +6,9 @@ import {
 	Cache,
 	ValidationError,
 	I18nType,
+	injectWithTransform,
+	LoggerTransform,
+	Logger,
 } from "@structured-growth/microservice-sdk";
 import MetricType, { MetricTypeUpdateAttributes } from "../../../database/models/metric-type.sequelize";
 import { MetricTypeCreateBodyInterface } from "../../interfaces/metric-type-create-body.interface";
@@ -18,14 +21,14 @@ import { MetricTypeSearchParamsInterface } from "../../interfaces/metric-type-se
 import { SearchResultInterface } from "@structured-growth/microservice-sdk";
 import { Transaction } from "sequelize";
 
-const CACHE_TTL_SEC = 3600;
-
 @autoInjectable()
 export class MetricTypeService {
 	private i18n: I18nType;
 
-	private ktId = (id: number) => `metricType:id:${id}`;
-	private ktCode = (code: string) => `metricType:code:${code}`;
+	private readonly cacheTtlSec = 30 * 24 * 60 * 60;
+
+	private cacheKeyById = (id: number) => `metricType:id:${id}`;
+	private cacheKeyByCode = (code: string) => `metricType:code:${code}`;
 
 	constructor(
 		@inject("MetricTypeRepository") private metricTypeRepository: MetricTypeRepository,
@@ -33,7 +36,8 @@ export class MetricTypeService {
 		@inject("MetricSqlRepository") private metricSqlRepository: MetricSqlRepository,
 		@inject("accountApiUrl") private accountApiUrl: string,
 		@inject("Cache") private cache: Cache,
-		@inject("i18n") private getI18n: () => I18nType
+		@inject("i18n") private getI18n: () => I18nType,
+		@injectWithTransform("Logger", LoggerTransform, { module: "MetricType" }) private logger?: Logger
 	) {
 		this.i18n = this.getI18n();
 	}
@@ -142,7 +146,7 @@ export class MetricTypeService {
 		);
 
 		if (params.code && params.code !== current.code) {
-			await this.cacheDelByCode(current.code);
+			await this.cache.del(this.cacheKeyByCode(current.code));
 		}
 
 		await this.cacheSet(updated);
@@ -169,33 +173,25 @@ export class MetricTypeService {
 
 		await this.metricTypeRepository.delete(metricTypeId);
 
-		await this.cacheDelById(metricTypeId);
-		await this.cacheDelByCode(metricType.code);
+		await this.cache.del(this.cacheKeyById(metricTypeId));
+		await this.cache.del(this.cacheKeyByCode(metricType.code));
 	}
 
 	private async cacheSet(t: MetricType): Promise<void> {
 		await this.cache.mset(
 			{
-				[this.ktId(t.id)]: t,
-				[this.ktCode(t.code)]: t,
+				[this.cacheKeyById(t.id)]: t,
+				[this.cacheKeyByCode(t.code)]: t,
 			},
-			CACHE_TTL_SEC
+			this.cacheTtlSec
 		);
 	}
 
-	private async cacheDelById(id: number): Promise<void> {
-		await this.cache.del(this.ktId(id));
-	}
-
-	private async cacheDelByCode(code: string): Promise<void> {
-		await this.cache.del(this.ktCode(code));
-	}
-
-	public async getByCodesCached(codes: string[], transaction?: Transaction): Promise<MetricType[]> {
+	public async getByCodes(codes: string[], transaction?: Transaction): Promise<MetricType[]> {
 		if (codes.length === 0) return [];
-		const keys = codes.map(this.ktCode);
+		const keys = codes.map(this.cacheKeyByCode);
 		const cached = await this.cache.mget<MetricType>(keys);
-		console.log("CACHED_TYPE_CODE: ", cached);
+		this.logger.info("CACHED_TYPE_CODE: ", cached);
 
 		const needFetch: string[] = [];
 		const result: MetricType[] = [];
@@ -210,24 +206,24 @@ export class MetricTypeService {
 			const toSet: Record<string, any> = {};
 			for (const t of fetched.data) {
 				result.push(t);
-				toSet[this.ktCode(t.code)] = t;
-				toSet[this.ktId(t.id)] = t;
+				toSet[this.cacheKeyByCode(t.code)] = t;
+				toSet[this.cacheKeyById(t.id)] = t;
 			}
+			this.logger.info("METRIC_TYPE_REPOSITORY_SEARCH");
 			if (Object.keys(toSet).length) {
-				await this.cache.mset(toSet, CACHE_TTL_SEC);
+				await this.cache.mset(toSet, this.cacheTtlSec);
 			}
 		}
 
 		return result;
 	}
 
-	public async getByIdsCached(ids: number[], transaction?: Transaction): Promise<Map<number, MetricType>> {
+	public async getByIds(ids: number[], transaction?: Transaction): Promise<Map<number, MetricType>> {
 		const map = new Map<number, MetricType>();
 		if (ids.length === 0) return map;
 
-		const keys = ids.map(this.ktId);
+		const keys = ids.map(this.cacheKeyById);
 		const cached = await this.cache.mget<MetricType>(keys);
-		console.log("CACHED_TYPE_ID: ", cached);
 
 		const needFetch: number[] = [];
 		for (let i = 0; i < ids.length; i++) {
@@ -241,11 +237,11 @@ export class MetricTypeService {
 			const toSet: Record<string, any> = {};
 			for (const t of fetched.data) {
 				map.set(t.id, t);
-				toSet[this.ktId(t.id)] = t;
-				toSet[this.ktCode(t.code)] = t;
+				toSet[this.cacheKeyById(t.id)] = t;
+				toSet[this.cacheKeyByCode(t.code)] = t;
 			}
 			if (Object.keys(toSet).length) {
-				await this.cache.mset(toSet, CACHE_TTL_SEC);
+				await this.cache.mset(toSet, this.cacheTtlSec);
 			}
 		}
 
