@@ -301,7 +301,7 @@ export class MetricService {
 	public async read(id: string, transaction?: Transaction): Promise<MetricExtended | null> {
 		const metric = await this.metricSqlRepository.read(id, { transaction });
 		if (!metric) {
-			throw new NotFoundError(`${this.i18n.__("error.metric.name")} ${id} ${this.i18n.__("error.common.not_found")}`);
+			return null;
 		}
 
 		const metricJson = metric.toJSON();
@@ -379,8 +379,16 @@ export class MetricService {
 		}) as MetricExtended;
 	}
 
-	public async delete(id: string, transaction?: Transaction): Promise<void> {
+	public async delete(id: string, transaction?: Transaction): Promise<{ id: string; deleted: boolean }> {
+		const metricAurora = await this.metricSqlRepository.read(id, { transaction });
+
+		if (!metricAurora) {
+			return { id, deleted: false };
+		}
+
 		await this.metricSqlRepository.delete(id, transaction);
+
+		return { id, deleted: true };
 	}
 
 	public async bulk(data: MetricsBulkDataInterface): Promise<MetricsBulkResultInterface> {
@@ -410,30 +418,15 @@ export class MetricService {
 						});
 						break;
 					case "delete":
-						const id = operation.data.id;
-
-						try {
-							await this.delete(id, transaction);
-							result.push({
-								op: "delete",
-								data: {
-									id,
-									deleted: true,
-								},
-							});
-						} catch (err) {
-							if (err instanceof NotFoundError) {
-								result.push({
-									op: "delete",
-									data: {
-										id,
-										deleted: false,
-									},
-								});
-								break;
-							}
-							throw err;
-						}
+						const { id, deleted } = await this.delete(operation.data.id, transaction);
+						result.push({
+							op: "delete",
+							data: {
+								id,
+								deleted,
+							},
+						});
+						break;
 				}
 			}
 		});

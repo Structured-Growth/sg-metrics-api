@@ -13,6 +13,7 @@ import {
 	MaskFields,
 } from "@structured-growth/microservice-sdk";
 import { MetricAttributes } from "../../../database/models/metric";
+import { MetricSqlRepository } from "../../modules/metric/repositories/metric-sql.repository";
 import { MetricService } from "../../modules/metric/metric.service";
 import { MetricSearchParamsInterface } from "../../interfaces/metric-search-params.interface";
 import { MetricCreateBodyInterface } from "../../interfaces/metric-create-body.interface";
@@ -76,6 +77,7 @@ interface MetricCreateBodyWithoutOffset extends Omit<MetricCreateBodyInterface, 
 export class MetricController extends BaseController {
 	private i18n: I18nType;
 	constructor(
+		@inject("MetricSqlRepository") private metricSqlRepository: MetricSqlRepository,
 		@inject("MetricService") private metricService: MetricService,
 		@inject("i18n") private getI18n: () => I18nType
 	) {
@@ -239,13 +241,13 @@ export class MetricController extends BaseController {
 	@HashFields(["value", "metricCategoryCode", "metricTypeCode"])
 	public async get(@Path() metricId: string): Promise<PublicMetricAttributesExtended> {
 		const metric = await this.metricService.read(metricId);
-		this.response.status(200);
 		if (!metric) {
 			throw new NotFoundError(
 				`${this.i18n.__("error.metric.name")} ${metricId} ${this.i18n.__("error.common.not_found")}`
 			);
 		}
 
+		this.response.status(200);
 		return {
 			...(pick(metric.toJSON(), publicMetricAttributes) as PublicMetricAttributes),
 			arn: metric.arn,
@@ -353,7 +355,7 @@ export class MetricController extends BaseController {
 			);
 		}
 
-		await this.metricService.delete(metricId);
+		await this.metricSqlRepository.delete(metricId);
 
 		await this.eventBus.publish(
 			new EventMutation(this.principal.arn, metric.arn, `${this.appPrefix}:metrics/delete`, JSON.stringify({}))
@@ -410,7 +412,6 @@ export class MetricController extends BaseController {
 				},
 			};
 		}) as MetricsBulkDataInterface;
-
 		const result = await this.metricService.bulk(data);
 
 		return result.map(({ op, data }) => {
