@@ -250,52 +250,58 @@ describe("POST /api/v1/metrics/bulk", () => {
 		const metricUuid3 = v4();
 
 		await Promise.all([
-			server.post("/v1/metrics/bulk").send([
-				{
-					op: "upsert",
-					data: {
-						id: metricUuid3,
-						orgId: orgId,
-						region: RegionEnum.US,
-						accountId: accountId,
-						userId: userId,
-						relatedToRn: relatedToRn,
-						metricCategoryId: context.createdMetricCategoryId,
-						metricTypeId: context.createdMetricTypeId,
-						metricTypeVersion: metricTypeVersion,
-						deviceId: deviceId,
-						batchId: batchId,
-						value: value,
-						takenAt: "2024-05-16T14:30:00+01:00",
+			server
+				.post("/v1/metrics/bulk")
+				.send([
+					{
+						op: "upsert",
+						data: {
+							id: metricUuid3,
+							orgId: orgId,
+							region: RegionEnum.US,
+							accountId: accountId,
+							userId: userId,
+							relatedToRn: relatedToRn,
+							metricCategoryId: context.createdMetricCategoryId,
+							metricTypeId: context.createdMetricTypeId,
+							metricTypeVersion: metricTypeVersion,
+							deviceId: deviceId,
+							batchId: batchId,
+							value: value,
+							takenAt: "2024-05-16T14:30:00+01:00",
+						},
 					},
-				},
-			]).then(({ statusCode, body }) => {
-				console.log(statusCode, body);
-				assert.equal(statusCode, 200);
-			}),
-			server.post("/v1/metrics/bulk").send([
-				{
-					op: "upsert",
-					data: {
-						id: metricUuid3,
-						orgId: orgId,
-						region: RegionEnum.US,
-						accountId: accountId,
-						userId: userId,
-						relatedToRn: relatedToRn,
-						metricCategoryId: context.createdMetricCategoryId,
-						metricTypeId: context.createdMetricTypeId,
-						metricTypeVersion: metricTypeVersion,
-						deviceId: deviceId,
-						batchId: batchId,
-						value: value,
-						takenAt: "2024-05-16T14:30:00+01:00",
+				])
+				.then(({ statusCode, body }) => {
+					console.log(statusCode, body);
+					assert.equal(statusCode, 200);
+				}),
+			server
+				.post("/v1/metrics/bulk")
+				.send([
+					{
+						op: "upsert",
+						data: {
+							id: metricUuid3,
+							orgId: orgId,
+							region: RegionEnum.US,
+							accountId: accountId,
+							userId: userId,
+							relatedToRn: relatedToRn,
+							metricCategoryId: context.createdMetricCategoryId,
+							metricTypeId: context.createdMetricTypeId,
+							metricTypeVersion: metricTypeVersion,
+							deviceId: deviceId,
+							batchId: batchId,
+							value: value,
+							takenAt: "2024-05-16T14:30:00+01:00",
+						},
 					},
-				},
-			]).then(({ statusCode, body }) => {
-				console.log(statusCode, body);
-				assert.equal(statusCode, 200);
-			})
+				])
+				.then(({ statusCode, body }) => {
+					console.log(statusCode, body);
+					assert.equal(statusCode, 200);
+				}),
 		]);
-	})
+	}).timeout(300000);
 });

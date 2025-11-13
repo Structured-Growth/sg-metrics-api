@@ -8,6 +8,9 @@ import {
 	SearchResultInterface,
 	ServerError,
 	signedInternalFetch,
+	injectWithTransform,
+	LoggerTransform,
+	Logger,
 } from "@structured-growth/microservice-sdk";
 import { v4 } from "uuid";
 import * as AWS from "aws-sdk";
@@ -26,10 +29,10 @@ import {
 	MetricAggregateResultInterface,
 	MetricAggregationInterface,
 } from "../../interfaces/metric-aggregate-result.interface";
-import { keyBy, map, omit, pick, uniq } from "lodash";
-import { MetricTypeRepository } from "../metric-type/metric-type.repository";
+import { keyBy, map, omit, uniq } from "lodash";
+import { MetricTypeService } from "../metric-type/metric-type.service";
 import MetricType from "../../../database/models/metric-type.sequelize";
-import { MetricCategoryRepository } from "../metric-category/metric-category.repository";
+import { MetricCategoryService } from "../metric-category/metric-category.service";
 import MetricSQL from "../../../database/models/metric-sql.sequelize";
 import { Op, Transaction } from "sequelize";
 import { MetricsBulkResultInterface } from "./interfaces/metrics-bulk-result.interface";
@@ -38,26 +41,21 @@ import { MetricStatisticsResponseInterface } from "../../interfaces/metric-stati
 import { MetricsUpsertBodyInterface } from "../../interfaces/metrics-upsert-body.interface";
 import { MetricsBulkDataInterface } from "./interfaces/metrics-bulk-data.interface";
 
-const CACHE_TTL_SEC = 3600;
-
 @autoInjectable()
 export class MetricService {
 	private i18n: I18nType;
 	private s3: AWS.S3;
 
-	private kt_id = (id: number) => `metricType:id:${id}`;
-	private kt_code = (code: string) => `metricType:code:${code}`;
-	private kc_id = (id: number) => `metricCategory:id:${id}`;
-	private kc_code = (code: string) => `metricCategory:code:${code}`;
 	constructor(
 		@inject("MetricSqlRepository") private metricSqlRepository: MetricSqlRepository,
-		@inject("MetricCategoryRepository") private metricCategoryRepository: MetricCategoryRepository,
-		@inject("MetricTypeRepository") private metricTypeRepository: MetricTypeRepository,
+		@inject("MetricCategoryService") private metricCategoryService: MetricCategoryService,
+		@inject("MetricTypeService") private metricTypeService: MetricTypeService,
 		@inject("EventbusService") private eventBus: EventbusService,
 		@inject("appPrefix") private appPrefix: string,
 		@inject("i18n") private getI18n: () => I18nType,
 		@inject("Cache") private cache: Cache,
-		@inject("accountApiUrl") private accountApiUrl: string
+		@inject("accountApiUrl") private accountApiUrl: string,
+		@injectWithTransform("Logger", LoggerTransform, { module: "Metric" }) private logger?: Logger
 	) {
 		this.i18n = this.getI18n();
 		this.s3 = new AWS.S3();
@@ -68,13 +66,8 @@ export class MetricService {
 		const metricTypeCodes = map(params, "metricTypeCode").filter((i) => !!i);
 		let metricTypesMap: Record<string, MetricType> = {};
 		if (metricTypeCodes.length) {
-			const metricTypes = await this.metricTypeRepository.search(
-				{
-					code: metricTypeCodes,
-				},
-				transaction
-			);
-			metricTypesMap = keyBy(metricTypes.data, "code");
+			const metricTypes = await this.metricTypeService.getByCodes(metricTypeCodes, transaction);
+			metricTypesMap = keyBy(metricTypes, "code");
 		}
 
 		const data: MetricCreationAttributes[] = params.map((param) => {
@@ -114,13 +107,16 @@ export class MetricService {
 	}
 
 	public async upsert(params: MetricCreateBodyInterface[], transaction?: Transaction): Promise<MetricExtended[]> {
+		this.logger.info("START UPSERT");
 		// check if there are metrics with metricTypeCode and populate them with metricTypeId and metricCategoryId
 		const metricTypeCodes = map(params, "metricTypeCode").filter((i) => !!i);
+		this.logger.info("FILTER_METRIC_TYPE_CODES");
 		let metricTypesMap: Record<string, MetricType> = {};
 		if (metricTypeCodes.length) {
-			const metricTypes = await this.getMetricTypesByCodesCached(metricTypeCodes, transaction);
+			const metricTypes = await this.metricTypeService.getByCodes(metricTypeCodes, transaction);
 			metricTypesMap = keyBy(metricTypes, "code");
 		}
+		this.logger.info("GET_BY_CODES_CACHED");
 
 		const data: MetricsUpsertBodyInterface[] = params.map((param) => {
 			return {
@@ -131,6 +127,8 @@ export class MetricService {
 				isDeleted: false,
 			};
 		});
+
+		this.logger.info("CREATE_DATA_METRICS_UPSERT");
 
 		if (!data.length) {
 			return [];
@@ -146,52 +144,19 @@ export class MetricService {
 			})
 		);
 
+		this.logger.info("METRICS_UPSERT_REPOSITORY");
+
 		if (createdMetrics.length > 0) {
-			type Group = { arn: string; items: Metric[] };
-			const groups = new Map<string, Group>();
-
-			const pick = (m: any, key: string) => (typeof m.get === "function" ? m.get(key) : m[key]);
-
-			for (const m of createdMetrics) {
-				const region = pick(m, "region");
-				const orgId = pick(m, "orgId");
-				const accountId = pick(m, "accountId");
-				const id = pick(m, "id");
-
-				if (!region || !orgId || !accountId || !id) continue;
-
-				const key = `${region}:${orgId}:${accountId}`;
-				let entry = groups.get(key);
-				if (!entry) {
-					entry = {
-						arn: `${this.appPrefix}:${region}:${orgId}:${accountId}:events/metrics/upsert`,
-						items: [],
-					};
-					groups.set(key, entry);
-				}
-				entry.items.push(m);
-			}
-
-			for (const { arn, items } of groups.values()) {
-				void this.eventBus
-					.publish({
-						arn,
-						data: {
-							metrics: items.map((metric) => metric.toJSON()),
-						},
-					})
-					.catch((err: unknown) => {
-						console.log(
-							"Failed to publish metrics upsert event:",
-							JSON.stringify({ arn, size: items.length, err: String(err) })
-						);
-					});
-			}
+			this.publishGroupedMetricEvents(createdMetrics);
 		}
+
+		this.logger.info("EVENTBUS_DONE");
 
 		const resultMetrics = result.map((item) => new Metric(item.toJSON()));
 
 		const { typeCodeMap, categoryCodeMap } = await this.getMetricCodeMaps(resultMetrics, transaction);
+
+		this.logger.info("GET_METRIC_CODE_MAPS_DONE");
 
 		return resultMetrics.map(
 			(metric) =>
@@ -209,19 +174,18 @@ export class MetricService {
 	> {
 		// get metric category id by its code, if provided
 		if (params.metricCategoryCode) {
-			const metricCategory = await this.metricCategoryRepository.findByCode(params.metricCategoryCode);
-			if (metricCategory) {
-				params.metricCategoryId = metricCategory.id;
+			const catMap = await this.metricCategoryService.getByCodes([params.metricCategoryCode]);
+			const found = catMap.get(params.metricCategoryCode);
+			if (found) {
+				params.metricCategoryId = found.id;
 			}
 		}
 
 		// get metric type ids by theirs codes, if provided
 		if (params.metricTypeCode?.length > 0) {
-			const metricTypes = await this.metricTypeRepository.search({
-				code: params.metricTypeCode,
-			});
-			const metricTypesIds = map(metricTypes.data, "id");
-			params.metricTypeId = uniq([...(params.metricTypeId || []), ...metricTypesIds]);
+			const types = await this.metricTypeService.getByCodes(uniq(params.metricTypeCode));
+			const typeIds = types.map((t) => t.id);
+			params.metricTypeId = uniq([...(params.metricTypeId || []), ...typeIds]);
 		}
 
 		let metrics = await this.metricSqlRepository.search(params);
@@ -272,19 +236,19 @@ export class MetricService {
 
 		// get metric category id by its code, if provided
 		if (params.metricCategoryCode) {
-			const metricCategory = await this.metricCategoryRepository.findByCode(params.metricCategoryCode);
-			if (metricCategory) {
-				params.metricCategoryId = metricCategory.id;
+			const catMap = await this.metricCategoryService.getByCodes([params.metricCategoryCode]);
+			const found = catMap.get(params.metricCategoryCode);
+			if (found) {
+				params.metricCategoryId = found.id;
 			}
 		}
 
 		// get metric type ids by theirs codes, if provided
 		if (params.metricTypeCode?.length > 0) {
-			const metricTypes = await this.metricTypeRepository.search({
-				code: params.metricTypeCode,
-			});
-			const metricTypesIds = map(metricTypes.data, "id");
-			params.metricTypeId = uniq([...(params.metricTypeId || []), ...metricTypesIds]);
+			const codes = uniq(params.metricTypeCode);
+			const types = await this.metricTypeService.getByCodes(codes);
+			const typeIds = types.map((t) => t.id);
+			params.metricTypeId = uniq([...(params.metricTypeId || []), ...typeIds]);
 		}
 
 		return { params, email: emailsData.data[0].email };
@@ -306,32 +270,26 @@ export class MetricService {
 
 		// get metric category id by its code, if provided
 		if (params.metricCategoryCode) {
-			const metricCategory = await this.metricCategoryRepository.findByCode(params.metricCategoryCode);
-			if (metricCategory) {
-				params.metricCategoryId = metricCategory.id;
-			}
+			const catMap = await this.metricCategoryService.getByCodes([params.metricCategoryCode]);
+			const found = catMap.get(params.metricCategoryCode);
+			if (found) params.metricCategoryId = found.id;
 		}
 
 		// get metric type ids by theirs codes, if provided
 		if (params.metricTypeCode?.length > 0) {
-			const metricTypes = await this.metricTypeRepository.search({
-				code: params.metricTypeCode,
-			});
-			const metricTypesIds = map(metricTypes.data, "id");
-			params.metricTypeId = uniq([...(params.metricTypeId || []), ...metricTypesIds]);
+			const types = await this.metricTypeService.getByCodes(uniq(params.metricTypeCode));
+			const typeIds = types.map((t) => t.id);
+			params.metricTypeId = uniq([...(params.metricTypeId || []), ...typeIds]);
 		}
 
 		const result = await this.metricSqlRepository.aggregate(params);
 
-		const metricTypeCodes = await this.metricTypeRepository.search({
-			id: uniq(result.data.map((item) => item.metricTypeId)),
-		});
-
-		const typeCodeMap = new Map(metricTypeCodes.data.map((mt) => [mt.id, mt.code]));
+		const ids = uniq(result.data.map((i) => i.metricTypeId));
+		const typeMap = await this.metricTypeService.getByIds(ids);
 
 		const enrichedData = result.data.map((item) => ({
 			...item,
-			metricTypeCode: typeCodeMap.get(item.metricTypeId),
+			metricTypeCode: typeMap.get(item.metricTypeId)?.code,
 		}));
 
 		return {
@@ -343,15 +301,20 @@ export class MetricService {
 	public async read(id: string, transaction?: Transaction): Promise<MetricExtended | null> {
 		const metric = await this.metricSqlRepository.read(id, { transaction });
 		if (!metric) {
-			throw new NotFoundError(`${this.i18n.__("error.metric.name")} ${id} ${this.i18n.__("error.common.not_found")}`);
+			return null;
 		}
 
 		const metricJson = metric.toJSON();
+		const typeId = metricJson.metricTypeId;
+		const catId = metricJson.metricCategoryId;
 
-		const [metricType, metricCategory] = await Promise.all([
-			this.metricTypeRepository.read(metricJson.metricTypeId),
-			this.metricCategoryRepository.read(metricJson.metricCategoryId),
+		const [typeMap, catMap] = await Promise.all([
+			this.metricTypeService.getByIds([typeId], transaction),
+			this.metricCategoryService.getByIds([catId], transaction),
 		]);
+
+		const metricType = typeMap.get(typeId);
+		const metricCategory = catMap.get(catId);
 
 		return Object.assign(new Metric(metricJson), {
 			metricTypeCode: metricType?.code,
@@ -373,9 +336,8 @@ export class MetricService {
 		let metricType: MetricType | undefined;
 
 		if (metricTypeCode && metricTypeVersion) {
-			const metricTypeResult = await this.metricTypeRepository.search({ code: [metricTypeCode] }, transaction);
-
-			metricType = metricTypeResult.data?.[0];
+			const types = await this.metricTypeService.getByCodes([metricTypeCode], transaction);
+			metricType = types[0];
 			metricTypeId = metricType?.id;
 
 			if (!metricTypeId) {
@@ -400,15 +362,15 @@ export class MetricService {
 		let metricCategoryCode: string | undefined;
 
 		if (metricType) {
-			const category = await this.metricCategoryRepository.read(metricType.metricCategoryId);
-			metricCategoryCode = category?.code;
+			const catMap = await this.metricCategoryService.getByIds([metricType.metricCategoryId], transaction);
+			metricCategoryCode = catMap.get(metricType.metricCategoryId)?.code;
 		} else {
-			const [type, category] = await Promise.all([
-				this.metricTypeRepository.read(metric.metricTypeId),
-				this.metricCategoryRepository.read(metric.metricCategoryId),
+			const [typeMap, catMap] = await Promise.all([
+				this.metricTypeService.getByIds([metric.metricTypeId], transaction),
+				this.metricCategoryService.getByIds([metric.metricCategoryId], transaction),
 			]);
-			metricTypeCode = type?.code;
-			metricCategoryCode = category?.code;
+			metricTypeCode = typeMap.get(metric.metricTypeId)?.code;
+			metricCategoryCode = catMap.get(metric.metricCategoryId)?.code;
 		}
 
 		return Object.assign(metric, {
@@ -417,8 +379,16 @@ export class MetricService {
 		}) as MetricExtended;
 	}
 
-	public async delete(id: string, transaction?: Transaction): Promise<void> {
+	public async delete(id: string, transaction?: Transaction): Promise<{ id: string; deleted: boolean }> {
+		const metricAurora = await this.metricSqlRepository.read(id, { transaction });
+
+		if (!metricAurora) {
+			return { id, deleted: false };
+		}
+
 		await this.metricSqlRepository.delete(id, transaction);
+
+		return { id, deleted: true };
 	}
 
 	public async bulk(data: MetricsBulkDataInterface): Promise<MetricsBulkResultInterface> {
@@ -448,10 +418,13 @@ export class MetricService {
 						});
 						break;
 					case "delete":
-						await this.delete(operation.data.id, transaction);
+						const { id, deleted } = await this.delete(operation.data.id, transaction);
 						result.push({
 							op: "delete",
-							data: { id: operation.data.id },
+							data: {
+								id,
+								deleted,
+							},
 						});
 						break;
 				}
@@ -467,39 +440,14 @@ export class MetricService {
 		typeCodeMap: Map<number, string>;
 		categoryCodeMap: Map<number, string>;
 	}> {
+		this.logger.info("GET_METRIC_CODE_MAPS_START");
 		const typeIds = uniq(metrics.map((m) => m.metricTypeId));
 		const catIds = uniq(metrics.map((m) => m.metricCategoryId));
 
-		const typeKeys = typeIds.map(this.kt_id);
-		const typeCached = await this.cache.mget<MetricType>(typeKeys);
-		console.log("CACHED_TYPES_2: ", typeCached);
-
-		const typeNeedFetch: number[] = [];
-		const typeMapById = new Map<number, MetricType>();
-
-		for (let i = 0; i < typeIds.length; i++) {
-			const hit = typeCached[i];
-			if (hit) {
-				typeMapById.set(typeIds[i], hit);
-			} else {
-				typeNeedFetch.push(typeIds[i]);
-			}
-		}
-
-		if (typeNeedFetch.length > 0) {
-			const fetched = await this.metricTypeRepository.search({ id: typeNeedFetch }, transaction);
-			const toSet: Record<string, any> = {};
-			for (const t of fetched.data) {
-				typeMapById.set(t.id, t);
-				toSet[this.kt_id(t.id)] = t;
-				toSet[this.kt_code(t.code)] = t;
-			}
-			if (Object.keys(toSet).length > 0) {
-				await this.cache.mset(toSet, CACHE_TTL_SEC);
-			}
-		}
-
-		const catMap = await this.getMetricCategoriesByIdsCached(catIds, transaction);
+		const typeMapById = await this.metricTypeService.getByIds(typeIds, transaction);
+		this.logger.info("GET_METRIC_CODE_TYPE_MAP_BY_ID");
+		const catMap = await this.metricCategoryService.getByIds(catIds, transaction);
+		this.logger.info("GET_METRIC_CODE_CAT_MAP");
 
 		const typeCodeMap = new Map<number, string>();
 		for (const id of typeIds) {
@@ -604,80 +552,46 @@ export class MetricService {
 		};
 	}
 
-	private async getMetricTypesByCodesCached(codes: string[], transaction?: Transaction): Promise<MetricType[]> {
-		const keys = codes.map(this.kt_code);
-		const cached = await this.cache.mget<MetricType>(keys);
-		console.log("CACHED_TYPES: ", cached);
+	private publishGroupedMetricEvents(metrics: Metric[]): void {
+		type Group = { arn: string; items: Metric[] };
+		const groups = new Map<string, Group>();
 
-		const needFetch: string[] = [];
-		const result: MetricType[] = [];
+		const pickVal = (m: any, key: string) => (typeof m.get === "function" ? m.get(key) : m[key]);
 
-		for (let i = 0; i < codes.length; i++) {
-			const hit = cached[i];
-			if (hit) {
-				result.push(hit);
-			} else {
-				needFetch.push(codes[i]);
+		for (const m of metrics) {
+			const region = pickVal(m, "region");
+			const orgId = pickVal(m, "orgId");
+			const accountId = pickVal(m, "accountId");
+			const id = pickVal(m, "id");
+
+			if (!region || !orgId || !accountId || !id) continue;
+
+			const key = `${region}:${orgId}:${accountId}`;
+			let entry = groups.get(key);
+			if (!entry) {
+				entry = {
+					arn: `${this.appPrefix}:${region}:${orgId}:${accountId}:events/metrics/upsert`,
+					items: [],
+				};
+				groups.set(key, entry);
 			}
+			entry.items.push(m);
 		}
 
-		if (needFetch.length > 0) {
-			const fetched = await this.metricTypeRepository.search({ code: needFetch }, transaction);
-
-			const promises = fetched.data.map(async (t) => {
-				await this.cache.mset(
-					{
-						[this.kt_code(t.code)]: t,
-						[this.kt_id(t.id)]: t,
+		for (const { arn, items } of groups.values()) {
+			void this.eventBus
+				.publish({
+					arn,
+					data: {
+						metrics: items.map((metric) => metric.toJSON()),
 					},
-					CACHE_TTL_SEC
-				);
-
-				return t;
-			});
-
-			const stored = await Promise.all(promises);
-			result.push(...stored);
+				})
+				.catch((err: unknown) => {
+					console.log(
+						"Failed to publish metrics upsert event:",
+						JSON.stringify({ arn, size: items.length, err: String(err) })
+					);
+				});
 		}
-
-		return result;
-	}
-
-	private async getMetricCategoriesByIdsCached(
-		ids: number[],
-		transaction?: Transaction
-	): Promise<Map<number, { id: number; code: string }>> {
-		const map = new Map<number, { id: number; code: string }>();
-		if (ids.length === 0) return map;
-
-		const keys = ids.map(this.kc_id);
-		const cached = await this.cache.mget<{ id: number; code: string }>(keys);
-		console.log("CACHED_CATEGORIES: ", cached);
-
-		const needFetch: number[] = [];
-		for (let i = 0; i < ids.length; i++) {
-			const val = cached[i];
-			if (val) {
-				map.set(ids[i], val);
-			} else {
-				needFetch.push(ids[i]);
-			}
-		}
-
-		if (needFetch.length > 0) {
-			const fetched = await this.metricCategoryRepository.search({ id: needFetch }, transaction);
-			const toSet: Record<string, any> = {};
-			for (const c of fetched.data) {
-				const v = { id: c.id, code: c.code };
-				map.set(c.id, v);
-				toSet[this.kc_id(c.id)] = v;
-				toSet[this.kc_code(c.code)] = v;
-			}
-			if (Object.keys(toSet).length > 0) {
-				await this.cache.mset(toSet, CACHE_TTL_SEC);
-			}
-		}
-
-		return map;
 	}
 }

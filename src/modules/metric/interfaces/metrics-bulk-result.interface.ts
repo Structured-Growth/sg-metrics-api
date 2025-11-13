@@ -17,6 +17,7 @@ export type MetricsBulkResultInterface = (
 			op: "delete";
 			data: {
 				id: Metric["id"];
+				deleted: boolean;
 			};
 	  }
 )[];
