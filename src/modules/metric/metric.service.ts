@@ -410,12 +410,30 @@ export class MetricService {
 						});
 						break;
 					case "delete":
-						await this.delete(operation.data.id, transaction);
-						result.push({
-							op: "delete",
-							data: { id: operation.data.id },
-						});
-						break;
+						const id = operation.data.id;
+
+						try {
+							await this.delete(id, transaction);
+							result.push({
+								op: "delete",
+								data: {
+									id,
+									deleted: true,
+								},
+							});
+						} catch (err) {
+							if (err instanceof NotFoundError) {
+								result.push({
+									op: "delete",
+									data: {
+										id,
+										deleted: false,
+									},
+								});
+								break;
+							}
+							throw err;
+						}
 				}
 			}
 		});
