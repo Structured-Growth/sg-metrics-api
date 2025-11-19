@@ -24,7 +24,7 @@ module.exports = async () => {
 			evict: Number(process.env.DB_POOL_EVICT ?? 10000),
 			maxUses: Number(process.env.DB_POOL_MAX_USES ?? 0),
 		},
-		benchmark: true,
+		benchmark: false,
 		logging: false,
 		migrationStorageTableSchema: process.env.DB_MIGRATION_TABLE_SCHEMA,
 		migrationStorageTableName: process.env.DB_MIGRATION_TABLE_NAME,
