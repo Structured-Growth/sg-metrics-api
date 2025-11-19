@@ -98,6 +98,8 @@ export class MetricSqlRepository {
 	}
 
 	public async upsert(params: MetricsUpsertBodyInterface, transaction?: Transaction): Promise<{ model: MetricSQL }> {
+		const t0 = Date.now();
+
 		const payload = { ...params };
 
 		const hasMetadata = Object.prototype.hasOwnProperty.call(params, "metadata");
@@ -111,9 +113,18 @@ export class MetricSqlRepository {
 			if (payload[key] === undefined) delete payload[key];
 		}
 
+		const t1 = Date.now();
+
 		const [model] = await MetricSQL.upsert(payload, {
 			transaction,
 			returning: true,
+		});
+
+		const t2 = Date.now();
+		console.log("[MetricSqlRepository] UPSERT_TIMING", {
+			prepMs: t1 - t0,
+			upsertMs: t2 - t1,
+			totalMs: t2 - t0,
 		});
 
 		return { model };

@@ -107,16 +107,14 @@ export class MetricService {
 	}
 
 	public async upsert(params: MetricCreateBodyInterface[], transaction?: Transaction): Promise<MetricExtended[]> {
-		this.logger.info("START UPSERT");
+		const t0 = Date.now();
 		// check if there are metrics with metricTypeCode and populate them with metricTypeId and metricCategoryId
 		const metricTypeCodes = map(params, "metricTypeCode").filter((i) => !!i);
-		this.logger.info("FILTER_METRIC_TYPE_CODES");
 		let metricTypesMap: Record<string, MetricType> = {};
 		if (metricTypeCodes.length) {
 			const metricTypes = await this.metricTypeService.getByCodes(metricTypeCodes, transaction);
 			metricTypesMap = keyBy(metricTypes, "code");
 		}
-		this.logger.info("GET_BY_CODES_CACHED");
 
 		const data: MetricsUpsertBodyInterface[] = params.map((param) => {
 			return {
@@ -128,13 +126,13 @@ export class MetricService {
 			};
 		});
 
-		this.logger.info("CREATE_DATA_METRICS_UPSERT");
-
 		if (!data.length) {
 			return [];
 		}
 
 		const createdMetrics: Metric[] = [];
+
+		const t3 = Date.now();
 
 		const result = await Promise.all(
 			data.map(async (item) => {
@@ -144,19 +142,19 @@ export class MetricService {
 			})
 		);
 
-		this.logger.info("METRICS_UPSERT_REPOSITORY");
+		const t4 = Date.now();
+		this.logger.info("MetricService", "UPSERT_AFTER_REPOSITORY", {
+			ms: t4 - t3,
+			totalMs: t4 - t0,
+		});
 
 		if (createdMetrics.length > 0) {
 			this.publishGroupedMetricEvents(createdMetrics);
 		}
 
-		this.logger.info("EVENTBUS_DONE");
-
 		const resultMetrics = result.map((item) => new Metric(item.toJSON()));
 
 		const { typeCodeMap, categoryCodeMap } = await this.getMetricCodeMaps(resultMetrics, transaction);
-
-		this.logger.info("GET_METRIC_CODE_MAPS_DONE");
 
 		return resultMetrics.map(
 			(metric) =>
@@ -393,7 +391,11 @@ export class MetricService {
 
 	public async bulk(data: MetricsBulkDataInterface): Promise<MetricsBulkResultInterface> {
 		const result: MetricsBulkResultInterface = [];
+		const t0 = Date.now();
+
 		await MetricSQL.sequelize.transaction(async (transaction) => {
+			const tTxStart = Date.now();
+			this.logger.info("MetricService", "BULK_TX_START", { msFromServiceStart: tTxStart - t0 });
 			for (let operation of data) {
 				switch (operation.op) {
 					case "create":
