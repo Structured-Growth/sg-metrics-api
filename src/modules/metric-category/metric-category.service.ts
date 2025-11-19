@@ -1,4 +1,13 @@
-import { autoInjectable, inject, NotFoundError, I18nType, Cache } from "@structured-growth/microservice-sdk";
+import {
+	autoInjectable,
+	inject,
+	NotFoundError,
+	I18nType,
+	Cache,
+	injectWithTransform,
+	LoggerTransform,
+	Logger,
+} from "@structured-growth/microservice-sdk";
 import MetricCategory, { MetricCategoryUpdateAttributes } from "../../../database/models/metric-category.sequelize";
 import { MetricCategoryCreateBodyInterface } from "../../interfaces/metric-category-create-body.interface";
 import { MetricCategoryUpdateBodyInterface } from "../../interfaces/metric-category-update-body.interface";
@@ -22,8 +31,9 @@ export class MetricCategoryService {
 		@inject("MetricCategoryRepository") private metricCategoryRepository: MetricCategoryRepository,
 		@inject("MetricTypeRepository") private metricTypeRepository: MetricTypeRepository,
 		@inject("accountApiUrl") private accountApiUrl: string,
+		@inject("i18n") private getI18n: () => I18nType,
 		@inject("Cache") private cache: Cache,
-		@inject("i18n") private getI18n: () => I18nType
+		@injectWithTransform("Logger", LoggerTransform, { module: "Metric" }) private logger?: Logger
 	) {
 		this.i18n = this.getI18n();
 	}

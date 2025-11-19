@@ -1,5 +1,6 @@
 branches:
   - main
+  - { name: dev, channel: demo, prerelease: demo }
 plugins:
   - '@semantic-release/commit-analyzer'
   - - '@semantic-release/release-notes-generator'
@@ -54,3 +55,7 @@ plugins:
         platform: linux/amd64
       dockerArgs:
         github_token: "{{env.GITHUB_TOKEN}}"
+      dockerTags:
+        - '{{#if prerelease.[0]}}{{prerelease.[0]}}{{else}}latest{{/if}}'
+        - '{{#if prerelease.[0]}}{{major}}-{{prerelease.[0]}}{{else}}{{major}}-latest{{/if}}'
+        - '{{version}}'

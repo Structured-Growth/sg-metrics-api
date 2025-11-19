@@ -6,10 +6,10 @@ import { program } from "commander";
 import { Message } from "aws-sdk/clients/sqs";
 import { min } from "lodash";
 
-const cluster = require('node:cluster');
-const http = require('node:http');
-const numCPUs = require('node:os').availableParallelism();
-const process = require('node:process');
+const cluster = require("node:cluster");
+const http = require("node:http");
+const numCPUs = require("node:os").availableParallelism();
+const process = require("node:process");
 
 program.option("-e, --env-file <envFile>", "path to .env file", ".env");
 
@@ -22,7 +22,7 @@ program
 			for (let i = 0; i < min([numCPUs, 4]); i++) {
 				cluster.fork();
 			}
-			cluster.on('exit', (worker, code, signal) => {
+			cluster.on("exit", (worker, code, signal) => {
 				console.log(`worker ${worker.process.pid} died`);
 			});
 		} else {
