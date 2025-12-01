@@ -10,7 +10,7 @@ describe("GET /api/v1/metrics/aggregate", () => {
 	const code = `code-${Date.now()}`;
 	const userId = parseInt(Date.now().toString().slice(5));
 	const relatedToRn = `relatedTo-${Date.now()}`;
-	const orgId = parseInt(Date.now().toString().slice(0, 3));
+	const orgId = (Date.now() % 30000) + 100;
 	const factor = parseInt(Date.now().toString().slice(0, 2));
 	const version = orgId - factor;
 	const accountId = orgId - factor - factor;
@@ -118,6 +118,7 @@ describe("GET /api/v1/metrics/aggregate", () => {
 
 	it("Should aggregate metrics", async () => {
 		const { statusCode, body } = await server.get(`/v1/metrics/aggregate`).query({
+			orgId,
 			column: "time",
 			columnAggregation: "1d",
 			row: "value",
@@ -152,6 +153,7 @@ describe("GET /api/v1/metrics/aggregate", () => {
 
 	it("Should aggregate metrics with two filter", async () => {
 		const { statusCode, body } = await server.get(`/v1/metrics/aggregate`).query({
+			orgId,
 			column: "time",
 			columnAggregation: "1d",
 			row: "value",
@@ -164,6 +166,7 @@ describe("GET /api/v1/metrics/aggregate", () => {
 
 	it("Should aggregate metrics wih three filter", async () => {
 		const { statusCode, body } = await server.get(`/v1/metrics/aggregate`).query({
+			orgId,
 			column: "time",
 			columnAggregation: "1d",
 			row: "value",
@@ -176,10 +179,12 @@ describe("GET /api/v1/metrics/aggregate", () => {
 	}).timeout(20000);
 
 	it("Should return nextToken when aggregate results exceed limit", async () => {
+		const baseDate = new Date();
+
 		for (let i = 0; i < 15; i++) {
 			const metricValue = value + i;
 			const takenAtTime = new Date();
-			takenAtTime.setMinutes(takenAtTime.getMinutes() + i);
+			takenAtTime.setDate(baseDate.getDate() + i);
 
 			const takenAtFormatted = takenAtTime.toISOString().replace(/\.\d{3}Z$/, "+00:00");
 
@@ -203,6 +208,7 @@ describe("GET /api/v1/metrics/aggregate", () => {
 		}
 
 		let { statusCode, body } = await server.get("/v1/metrics/aggregate").query({
+			orgId,
 			column: "time",
 			columnAggregation: "1d",
 			row: "value",
@@ -216,6 +222,7 @@ describe("GET /api/v1/metrics/aggregate", () => {
 		const firstNextToken = body.nextToken;
 
 		({ statusCode, body } = await server.get("/v1/metrics/aggregate").query({
+			orgId,
 			column: "time",
 			columnAggregation: "1d",
 			row: "value",
@@ -230,6 +237,7 @@ describe("GET /api/v1/metrics/aggregate", () => {
 		const secondNextToken = body.nextToken;
 
 		({ statusCode, body } = await server.get("/v1/metrics/aggregate").query({
+			orgId,
 			column: "time",
 			columnAggregation: "1d",
 			row: "value",
@@ -244,6 +252,7 @@ describe("GET /api/v1/metrics/aggregate", () => {
 
 	it("Should aggregate metrics with sum row aggregation", async () => {
 		const { statusCode, body } = await server.get(`/v1/metrics/aggregate`).query({
+			orgId,
 			column: "time",
 			columnAggregation: "1d",
 			row: "value",
@@ -255,6 +264,7 @@ describe("GET /api/v1/metrics/aggregate", () => {
 
 	it("Should aggregate metrics with min row aggregation", async () => {
 		const { statusCode, body } = await server.get(`/v1/metrics/aggregate`).query({
+			orgId,
 			column: "time",
 			columnAggregation: "1d",
 			row: "value",
@@ -266,6 +276,7 @@ describe("GET /api/v1/metrics/aggregate", () => {
 
 	it("Should aggregate metrics with max row aggregation", async () => {
 		const { statusCode, body } = await server.get(`/v1/metrics/aggregate`).query({
+			orgId,
 			column: "time",
 			columnAggregation: "1d",
 			row: "value",
@@ -277,6 +288,7 @@ describe("GET /api/v1/metrics/aggregate", () => {
 
 	it("Should aggregate metrics with avg row aggregation", async () => {
 		const { statusCode, body } = await server.get(`/v1/metrics/aggregate`).query({
+			orgId,
 			column: "time",
 			columnAggregation: "1d",
 			row: "value",
@@ -288,6 +300,7 @@ describe("GET /api/v1/metrics/aggregate", () => {
 
 	it("Should aggregate metrics with 1h column aggregation", async () => {
 		const { statusCode, body } = await server.get(`/v1/metrics/aggregate`).query({
+			orgId,
 			column: "time",
 			columnAggregation: "1h",
 			row: "value",
@@ -299,6 +312,7 @@ describe("GET /api/v1/metrics/aggregate", () => {
 
 	it("Should aggregate metrics with 1d column aggregation", async () => {
 		const { statusCode, body } = await server.get(`/v1/metrics/aggregate`).query({
+			orgId,
 			column: "time",
 			columnAggregation: "1d",
 			row: "value",
@@ -310,6 +324,7 @@ describe("GET /api/v1/metrics/aggregate", () => {
 
 	it("Should aggregate metrics with 30d column aggregation", async () => {
 		const { statusCode, body } = await server.get(`/v1/metrics/aggregate`).query({
+			orgId,
 			column: "time",
 			columnAggregation: "30d",
 			row: "value",
@@ -321,6 +336,7 @@ describe("GET /api/v1/metrics/aggregate", () => {
 
 	it("Should aggregate metrics with column as orgId and row as value", async () => {
 		const { statusCode, body } = await server.get(`/v1/metrics/aggregate`).query({
+			orgId,
 			column: "orgId",
 			row: "value",
 			rowAggregation: "avg",
@@ -338,6 +354,7 @@ describe("GET /api/v1/metrics/aggregate", () => {
 
 	it("Should aggregate metrics with column as orgId, row as value, and rowAggregation as max", async () => {
 		const { statusCode, body } = await server.get(`/v1/metrics/aggregate`).query({
+			orgId,
 			column: "orgId",
 			row: "value",
 			rowAggregation: "max",
@@ -354,6 +371,7 @@ describe("GET /api/v1/metrics/aggregate", () => {
 
 	it("Should aggregate metrics with column as orgId, row as value, and rowAggregation as min", async () => {
 		const { statusCode, body } = await server.get(`/v1/metrics/aggregate`).query({
+			orgId,
 			column: "orgId",
 			row: "value",
 			rowAggregation: "min",
@@ -370,6 +388,7 @@ describe("GET /api/v1/metrics/aggregate", () => {
 
 	it("Should aggregate metrics with column as orgId and row as time with min aggregation", async () => {
 		const { statusCode, body } = await server.get(`/v1/metrics/aggregate`).query({
+			orgId,
 			column: "orgId",
 			row: "time",
 			rowAggregation: "min",
@@ -386,6 +405,7 @@ describe("GET /api/v1/metrics/aggregate", () => {
 
 	it("Should aggregate metrics with column as orgId and row as time with max aggregation", async () => {
 		const { statusCode, body } = await server.get(`/v1/metrics/aggregate`).query({
+			orgId,
 			column: "orgId",
 			row: "time",
 			rowAggregation: "max",
@@ -402,6 +422,7 @@ describe("GET /api/v1/metrics/aggregate", () => {
 
 	it("Should aggregate metrics with column as time and row as orgId with min aggregation", async () => {
 		const { statusCode, body } = await server.get(`/v1/metrics/aggregate`).query({
+			orgId,
 			column: "time",
 			columnAggregation: "1d",
 			row: "orgId",
@@ -419,6 +440,7 @@ describe("GET /api/v1/metrics/aggregate", () => {
 
 	it("Should aggregate metrics with column as time and row as orgId with max aggregation", async () => {
 		const { statusCode, body } = await server.get(`/v1/metrics/aggregate`).query({
+			orgId,
 			column: "time",
 			columnAggregation: "1d",
 			row: "orgId",
