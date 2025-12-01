@@ -433,4 +433,25 @@ describe("GET /api/v1/metrics/aggregate", () => {
 			assert.property(item, "max");
 		});
 	}).timeout(20000);
+
+	it("Should aggregate metrics sorted by column when sortBy is column", async () => {
+		const { statusCode, body } = await server.get(`/v1/metrics/aggregate`).query({
+			column: "time",
+			columnAggregation: "1d",
+			row: "value",
+			rowAggregation: "avg",
+			orgId,
+			sortBy: "column",
+			"sort[]": "avg:asc",
+		});
+
+		assert.equal(statusCode, 200);
+		assert.isArray(body.data);
+		assert.isAtLeast(body.data.length, 2);
+
+		const firstTakenAt = new Date(body.data[0].takenAt).getTime();
+		const lastTakenAt = new Date(body.data[body.data.length - 1].takenAt).getTime();
+
+		assert.isAtMost(firstTakenAt, lastTakenAt);
+	}).timeout(20000);
 });

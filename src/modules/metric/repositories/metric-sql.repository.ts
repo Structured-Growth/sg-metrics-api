@@ -168,14 +168,32 @@ export class MetricSqlRepository {
 		await metricAurora.save({ transaction });
 	}
 
-	private buildQuery(params: MetricSearchParamsInterface) {
+	private buildQuery(
+		params:
+			| MetricSearchParamsInterface
+			| (MetricAggregateParamsInterface & { page?: number; limit?: number; sort?: any })
+	) {
 		const page = Number(params.page || 1);
 		const limit = Number(params.limit || 20);
 		const offset = (page - 1) * limit;
 		const where = {
 			isDeleted: false,
 		};
-		const order = params.sort ? (params.sort.map((item) => item.split(":")) as any) : [["takenAt", "desc"]];
+		const sortItems = (params as any).sort && (params as any).sort.length ? (params as any).sort : ["takenAt:desc"];
+
+		const sortBy = (params as any).sortBy;
+		const column = (params as any).column;
+
+		const order = sortItems.map((item: string) => {
+			const [field, dirRaw] = item.split(":");
+			const dir = (dirRaw || "asc").toUpperCase() as "ASC" | "DESC";
+
+			if (sortBy === "column" && column) {
+				return [column, dir];
+			}
+
+			return [field, dir];
+		});
 
 		if (params.id?.length > 0) {
 			where["id"] = {

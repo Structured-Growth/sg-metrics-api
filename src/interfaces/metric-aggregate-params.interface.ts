@@ -13,4 +13,5 @@ export interface MetricAggregateParamsInterface extends Omit<MetricSearchParamsI
 	 * @default "takenAt:desc"
 	 */
 	sort?: string[];
+	sortBy?: "row" | "column";
 }

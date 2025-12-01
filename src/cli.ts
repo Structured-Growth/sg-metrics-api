@@ -19,7 +19,7 @@ program
 	.action(async () => {
 		if (cluster.isPrimary) {
 			console.log(`Primary ${process.pid} is running`);
-			for (let i = 0; i < min([numCPUs, 4]); i++) {
+			for (let i = 0; i < min([numCPUs, 1]); i++) {
 				cluster.fork();
 			}
 			cluster.on("exit", (worker, code, signal) => {

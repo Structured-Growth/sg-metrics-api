@@ -46,6 +46,7 @@ export const MetricAggregateParamsValidator = joi.object({
 					)
 			)
 			.label("validator.common.sort"),
+		sortBy: joi.string().valid("row", "column").default("row").label("validator.common.sortBy"),
 		column: joi
 			.string()
 			.valid(
