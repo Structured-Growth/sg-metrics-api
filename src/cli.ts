@@ -10,6 +10,7 @@ const cluster = require("node:cluster");
 const http = require("node:http");
 const numCPUs = require("node:os").availableParallelism();
 const process = require("node:process");
+const maxWorkers = Math.max(Number(process.env.MAX_WORKERS) || 1, 1);
 
 program.option("-e, --env-file <envFile>", "path to .env file", ".env");
 
@@ -19,7 +20,7 @@ program
 	.action(async () => {
 		if (cluster.isPrimary) {
 			console.log(`Primary ${process.pid} is running`);
-			for (let i = 0; i < min([numCPUs, 1]); i++) {
+			for (let i = 0; i < min([numCPUs, maxWorkers]); i++) {
 				cluster.fork();
 			}
 			cluster.on("exit", (worker, code, signal) => {
