@@ -1,0 +1,61 @@
+name: Release Demo
+
+on:
+  push:
+    branches:
+      - dev
+
+permissions:
+  contents: write
+  packages: write
+  pull-requests: write
+  issues: read
+
+jobs:
+  # 1. demo release
+  release:
+    name: Demo Release
+    runs-on: ubuntu-latest
+    env:
+      DOCKER_REGISTRY_USER: ${{ secrets.DOCKER_REGISTRY_USER }}
+      DOCKER_REGISTRY_PASSWORD: ${{ secrets.DOCKER_REGISTRY_PASSWORD }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v2
+        with:
+          node-version: '20'
+
+      - name: Install dependencies
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: npm i
+
+      - name: Update routes
+        run: npm run routes
+
+      - name: Build
+        run: npm run build
+
+      - name: Semantic release (demo)
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          NPM_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: node_modules/.bin/semantic-release
+    if: success()
+
+  # 2. slack notification about created demo
+  notify-slack:
+    needs: [ release ]
+    name: Notify Slack (demo)
+    uses: ./.github/workflows/slack-notification-rel-demo.yml
+    with:
+      env: "Create Demo Release"
+      workflow_run_id: ${{ github.run_id }}
+    secrets:
+      SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+    if: success()

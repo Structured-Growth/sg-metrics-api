@@ -4,6 +4,13 @@ import { AppMock } from "./app/app.mock";
 import { container, generateApiDocs, Lifecycle, QueueService } from "@structured-growth/microservice-sdk";
 import { program } from "commander";
 import { Message } from "aws-sdk/clients/sqs";
+import { min } from "lodash";
+
+const cluster = require("node:cluster");
+const http = require("node:http");
+const numCPUs = require("node:os").availableParallelism();
+const process = require("node:process");
+const maxWorkers = Math.max(Number(process.env.MAX_WORKERS) || 1, 1);
 
 program.option("-e, --env-file <envFile>", "path to .env file", ".env");
 
@@ -11,8 +18,19 @@ program
 	.command("web")
 	.description("Runs a web server")
 	.action(async () => {
-		const { startWebServer } = await require("./api");
-		await startWebServer();
+		if (cluster.isPrimary) {
+			console.log(`Primary ${process.pid} is running`);
+			for (let i = 0; i < min([numCPUs, maxWorkers]); i++) {
+				cluster.fork();
+			}
+			cluster.on("exit", (worker, code, signal) => {
+				console.log(`worker ${worker.process.pid} died`);
+			});
+		} else {
+			const { startWebServer } = await require("./api");
+			await startWebServer();
+			console.log(`Worker ${process.pid} started`);
+		}
 	});
 
 program

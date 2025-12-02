@@ -191,7 +191,6 @@ export class MetricTypeService {
 		if (codes.length === 0) return [];
 		const keys = codes.map(this.cacheKeyByCode);
 		const cached = await this.cache.mget<MetricType>(keys);
-		this.logger.info("CACHED_TYPE_CODE: ", cached);
 
 		const needFetch: string[] = [];
 		const result: MetricType[] = [];
@@ -209,7 +208,6 @@ export class MetricTypeService {
 				toSet[this.cacheKeyByCode(t.code)] = t;
 				toSet[this.cacheKeyById(t.id)] = t;
 			}
-			this.logger.info("METRIC_TYPE_REPOSITORY_SEARCH");
 			if (Object.keys(toSet).length) {
 				await this.cache.mset(toSet, this.cacheTtlSec);
 			}

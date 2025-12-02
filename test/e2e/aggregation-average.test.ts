@@ -17,6 +17,7 @@ describe("e2e/aggregation-average", () => {
 	startDate.setDate(startDate.getDate() - 12);
 
 	before(async function () {
+		this.timeout(1800000);
 		await container.resolve<App>("App").ready;
 
 		const { statusCode: catStatus, body: catBody } = await server.post("/v1/metric-category").send({

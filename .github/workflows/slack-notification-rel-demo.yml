@@ -1,0 +1,139 @@
+name: Slack notification (demo release)
+
+on:
+  workflow_call:
+    inputs:
+      env:
+        required: true
+        type: string
+      workflow_run_id:
+        required: true
+        type: string
+    secrets:
+      SLACK_WEBHOOK_URL:
+        required: true
+
+jobs:
+  notification:
+    name: Slack notification (demo)
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Generate URLs for artifacts
+        id: urls
+        run: |
+          echo "run_link=https://github.com/${{ github.repository }}/actions/runs/${{ inputs.workflow_run_id }}" >> $GITHUB_ENV
+
+      - name: Read version from package.json
+        id: version
+        run: |
+          VERSION=$(jq -r '.version' package.json || echo "unknown")
+          echo "version=$VERSION" >> $GITHUB_ENV
+          echo "release_link=https://github.com/${{ github.repository }}/releases/tag/v$VERSION" >> $GITHUB_ENV
+
+      - name: Generate Metadata
+        id: message
+        run: |
+          FULL_MESSAGE="${{ github.event.head_commit.message }}"
+
+          BRANCH_PART=$(echo "$FULL_MESSAGE" | sed -n 's/^Merge pull request #[0-9]\+ from [^\/]*\/\([^[:space:]]\+\).*/\1/p' | head -n1 || true)
+          TICKET=$(echo "$BRANCH_PART" | sed 's#.*/##' )
+
+          if [ -z "$TICKET" ]; then
+            TICKET=$(echo "$FULL_MESSAGE" | sed -n 's/^\[\([^]]\+\)\].*/\1/p' | head -n1 || true)
+          fi
+
+          if [ -z "$TICKET" ]; then
+            TICKET="Unknown"
+          fi
+
+          echo "source_branch=$TICKET" >> "$GITHUB_ENV"
+          echo "target_branch=dev" >> "$GITHUB_ENV"
+
+          CLEAN_MESSAGE=$(echo "$FULL_MESSAGE" \
+            | sed 's/^\[[^]]\+\]:\s*//' \
+            | tr '\n' ' ' \
+            | sed 's/  */ /g' \
+            | sed 's/^ *//;s/ *$//')
+
+          if [ -z "$CLEAN_MESSAGE" ]; then
+            CLEAN_MESSAGE="$FULL_MESSAGE"
+          fi
+
+          echo "pr_title=$CLEAN_MESSAGE" >> "$GITHUB_ENV"
+
+      - name: Send Slack Notification
+        uses: slackapi/slack-github-action@v1.18.0
+        with:
+          payload: |
+            {
+              "text": "${{ inputs.env }}",
+              "blocks": [
+                {
+                  "type": "header",
+                  "text": {
+                    "type": "plain_text",
+                    "text": "Create Demo Release ${{ github.repository }}",
+                    "emoji": true
+                  }
+                },
+                {
+                  "type": "section",
+                  "fields": [
+                    {
+                      "type": "mrkdwn",
+                      "text": "*Source branch:*"
+                    },
+                    {
+                      "type": "plain_text",
+                      "text": "${{ env.source_branch }}"
+                    }
+                  ]
+                },
+                {
+                  "type": "section",
+                  "fields": [
+                    {
+                      "type": "mrkdwn",
+                      "text": "*Target:*"
+                    },
+                    {
+                      "type": "plain_text",
+                      "text": "${{ env.target_branch }}"
+                    }
+                  ]
+                },
+                {
+                  "type": "section",
+                  "fields": [
+                    {
+                      "type": "mrkdwn",
+                      "text": "*Sender:*"
+                    },
+                    {
+                      "type": "mrkdwn",
+                      "text": "<${{ github.event.sender.html_url }}|${{ github.event.sender.login }}>"
+                    }
+                  ]
+                },
+                {
+                  "type": "section",
+                  "fields": [
+                    {
+                      "type": "mrkdwn",
+                      "text": "*Message:*"
+                    },
+                    {
+                      "type": "mrkdwn",
+                      "text": "${{ env.pr_title }}"
+                    }
+                  ]
+                }
+              ]
+            }
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+          SLACK_WEBHOOK_TYPE: INCOMING_WEBHOOK

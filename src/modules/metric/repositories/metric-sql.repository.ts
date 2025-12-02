@@ -98,6 +98,8 @@ export class MetricSqlRepository {
 	}
 
 	public async upsert(params: MetricsUpsertBodyInterface, transaction?: Transaction): Promise<{ model: MetricSQL }> {
+		const t0 = Date.now();
+
 		const payload = { ...params };
 
 		const hasMetadata = Object.prototype.hasOwnProperty.call(params, "metadata");
@@ -111,9 +113,18 @@ export class MetricSqlRepository {
 			if (payload[key] === undefined) delete payload[key];
 		}
 
+		const t1 = Date.now();
+
 		const [model] = await MetricSQL.upsert(payload, {
 			transaction,
 			returning: true,
+		});
+
+		const t2 = Date.now();
+		console.log("[MetricSqlRepository] UPSERT_TIMING", {
+			prepMs: t1 - t0,
+			upsertMs: t2 - t1,
+			totalMs: t2 - t0,
 		});
 
 		return { model };
@@ -157,14 +168,32 @@ export class MetricSqlRepository {
 		await metricAurora.save({ transaction });
 	}
 
-	private buildQuery(params: MetricSearchParamsInterface) {
+	private buildQuery(
+		params:
+			| MetricSearchParamsInterface
+			| (MetricAggregateParamsInterface & { page?: number; limit?: number; sort?: any })
+	) {
 		const page = Number(params.page || 1);
 		const limit = Number(params.limit || 20);
 		const offset = (page - 1) * limit;
 		const where = {
 			isDeleted: false,
 		};
-		const order = params.sort ? (params.sort.map((item) => item.split(":")) as any) : [["takenAt", "desc"]];
+		const sortItems = (params as any).sort && (params as any).sort.length ? (params as any).sort : ["takenAt:desc"];
+
+		const sortBy = (params as any).sortBy;
+		const column = (params as any).column;
+
+		const order = sortItems.map((item: string) => {
+			const [field, dirRaw] = item.split(":");
+			const dir = (dirRaw || "asc").toUpperCase() as "ASC" | "DESC";
+
+			if (sortBy === "column" && column) {
+				return [column, dir];
+			}
+
+			return [field, dir];
+		});
 
 		if (params.id?.length > 0) {
 			where["id"] = {
