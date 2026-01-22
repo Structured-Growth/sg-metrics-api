@@ -9,11 +9,11 @@ import {
 	SearchResultInterface,
 	ValidateFuncArgs,
 	I18nType,
+	EventMutation,
 } from "@structured-growth/microservice-sdk";
 import { pick } from "lodash";
 import { ReportAttributes } from "../../../database/models/report.sequelize";
 import { ReportsRepository } from "../../modules/reports/reports.repository";
-import { ReportsService } from "../../modules/reports/reports.service";
 import { ReportCreateBodyInterface } from "../../interfaces/report-create-body.interface";
 import { ReportSearchParamsInterface } from "../../interfaces/report-search-params.interface";
 import { ReportUpdateBodyInterface } from "../../interfaces/report-update-body.interface";
@@ -88,6 +88,10 @@ export class ReportsController extends BaseController {
 		const report = await this.reportsRepository.create(body);
 		this.response.status(201);
 
+		await this.eventBus.publish(
+			new EventMutation(this.principal.arn, report.arn, `${this.appPrefix}:reports/create`, JSON.stringify(body))
+		);
+
 		return {
 			...(pick(report.toJSON(), publicReportAttributes) as PublicReportAttributes),
 			arn: report.arn,
@@ -134,6 +138,10 @@ export class ReportsController extends BaseController {
 	): Promise<PublicReportAttributes> {
 		const report = await this.reportsRepository.update(reportId, body);
 
+		await this.eventBus.publish(
+			new EventMutation(this.principal.arn, report.arn, `${this.appPrefix}:reports/update`, JSON.stringify(body))
+		);
+
 		return {
 			...(pick(report.toJSON(), publicReportAttributes) as PublicReportAttributes),
 			arn: report.arn,
@@ -150,7 +158,19 @@ export class ReportsController extends BaseController {
 	@DescribeResource("Report", ({ params }) => Number(params.reportId))
 	@ValidateFuncArgs(ReportDeleteParamsValidator)
 	async delete(@Path() reportId: number): Promise<void> {
+		const report = await this.reportsRepository.read(reportId);
+
+		if (!report) {
+			throw new NotFoundError(
+				`${this.i18n.__("error.report.name")} ${reportId} ${this.i18n.__("error.common.not_found")}`
+			);
+		}
+
 		await this.reportsRepository.delete(reportId);
+		await this.eventBus.publish(
+			new EventMutation(this.principal.arn, report.arn, `${this.appPrefix}:reports/delete`, JSON.stringify({}))
+		);
+
 		this.response.status(204);
 	}
 }
