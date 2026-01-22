@@ -107,7 +107,6 @@ export class MetricService {
 	}
 
 	public async upsert(params: MetricCreateBodyInterface[], transaction?: Transaction): Promise<MetricExtended[]> {
-		const t0 = Date.now();
 		// check if there are metrics with metricTypeCode and populate them with metricTypeId and metricCategoryId
 		const metricTypeCodes = map(params, "metricTypeCode").filter((i) => !!i);
 		let metricTypesMap: Record<string, MetricType> = {};
@@ -132,8 +131,6 @@ export class MetricService {
 
 		const createdMetrics: Metric[] = [];
 
-		const t3 = Date.now();
-
 		const result = await Promise.all(
 			data.map(async (item) => {
 				const { model } = await this.metricSqlRepository.upsert(item, transaction);
@@ -141,12 +138,6 @@ export class MetricService {
 				return model;
 			})
 		);
-
-		const t4 = Date.now();
-		this.logger.info("MetricService", "UPSERT_AFTER_REPOSITORY", {
-			ms: t4 - t3,
-			totalMs: t4 - t0,
-		});
 
 		if (createdMetrics.length > 0) {
 			this.publishGroupedMetricEvents(createdMetrics);
@@ -391,11 +382,9 @@ export class MetricService {
 
 	public async bulk(data: MetricsBulkDataInterface): Promise<MetricsBulkResultInterface> {
 		const result: MetricsBulkResultInterface = [];
-		const t0 = Date.now();
 
 		await MetricSQL.sequelize.transaction(async (transaction) => {
 			const tTxStart = Date.now();
-			this.logger.info("MetricService", "BULK_TX_START", { msFromServiceStart: tTxStart - t0 });
 			for (let operation of data) {
 				switch (operation.op) {
 					case "create":
@@ -442,14 +431,11 @@ export class MetricService {
 		typeCodeMap: Map<number, string>;
 		categoryCodeMap: Map<number, string>;
 	}> {
-		this.logger.info("GET_METRIC_CODE_MAPS_START");
 		const typeIds = uniq(metrics.map((m) => m.metricTypeId));
 		const catIds = uniq(metrics.map((m) => m.metricCategoryId));
 
 		const typeMapById = await this.metricTypeService.getByIds(typeIds, transaction);
-		this.logger.info("GET_METRIC_CODE_TYPE_MAP_BY_ID");
 		const catMap = await this.metricCategoryService.getByIds(catIds, transaction);
-		this.logger.info("GET_METRIC_CODE_CAT_MAP");
 
 		const typeCodeMap = new Map<number, string>();
 		for (const id of typeIds) {
