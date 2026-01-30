@@ -63,8 +63,8 @@ export class MetricCategoryController extends BaseController {
 	@Get("/")
 	@SuccessResponse(200, "Returns list of categories")
 	@DescribeAction("metric-category/search")
-	@DescribeResource("Organization", ({ query }) => Number(query.orgId))
-	@DescribeResource("Account", ({ query }) => Number(query.accountId))
+	@DescribeResource("Organization", ({ query }) => [Number(query.orgId)])
+	@DescribeResource("Account", ({ query }) => [Number(query.accountId)])
 	@DescribeResource("MetricCategory", ({ query }) => query.id?.map(Number))
 	@HashFields(["title", "code"])
 	@ValidateFuncArgs(MetricCategorySearchParamsValidator)
@@ -98,7 +98,7 @@ export class MetricCategoryController extends BaseController {
 	@Post("/")
 	@SuccessResponse(201, "Returns created category")
 	@DescribeAction("metric-category/create")
-	@DescribeResource("Organization", ({ body }) => Number(body.orgId))
+	@DescribeResource("Organization", ({ body }) => [Number(body.orgId)])
 	@HashFields(["title", "code"])
 	@ValidateFuncArgs(MetricCategoryCreateParamsValidator)
 	async create(
@@ -131,7 +131,7 @@ export class MetricCategoryController extends BaseController {
 	@Get("/:metricCategoryId")
 	@SuccessResponse(200, "Returns category")
 	@DescribeAction("metric-category/read")
-	@DescribeResource("MetricCategory", ({ params }) => Number(params.metricCategoryId))
+	@DescribeResource("MetricCategory", ({ params }) => [Number(params.metricCategoryId)])
 	@HashFields(["title", "code"])
 	async get(@Path() metricCategoryId: number): Promise<PublicMetricCategoryAttributes> {
 		const metricCategory = await this.metricCategoryRepository.read(metricCategoryId);
@@ -156,7 +156,7 @@ export class MetricCategoryController extends BaseController {
 	@Put("/:metricCategoryId")
 	@SuccessResponse(200, "Returns updated category")
 	@DescribeAction("metric-category/update")
-	@DescribeResource("MetricCategory", ({ params }) => Number(params.metricCategoryId))
+	@DescribeResource("MetricCategory", ({ params }) => [Number(params.metricCategoryId)])
 	@HashFields(["title", "code"])
 	@ValidateFuncArgs(MetricCategoryUpdateSearchParamsValidator)
 	async update(
@@ -190,7 +190,7 @@ export class MetricCategoryController extends BaseController {
 	@Delete("/:metricCategoryId")
 	@SuccessResponse(204, "Returns nothing")
 	@DescribeAction("metric-category/delete")
-	@DescribeResource("MetricCategory", ({ params }) => Number(params.metricCategoryId))
+	@DescribeResource("MetricCategory", ({ params }) => [Number(params.metricCategoryId)])
 	async delete(@Path() metricCategoryId: number): Promise<void> {
 		const metricCategory = await this.metricCategoryRepository.read(metricCategoryId);
 

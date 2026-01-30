@@ -67,8 +67,8 @@ export class MetricTypeController extends BaseController {
 	@Get("/")
 	@SuccessResponse(200, "Returns list of metric types")
 	@DescribeAction("metric-type/search")
-	@DescribeResource("Organization", ({ query }) => Number(query.orgId))
-	@DescribeResource("Account", ({ query }) => Number(query.accountId))
+	@DescribeResource("Organization", ({ query }) => [Number(query.orgId)])
+	@DescribeResource("Account", ({ query }) => [Number(query.accountId)])
 	@DescribeResource("MetricType", ({ query }) => query.id?.map(Number))
 	@HashFields(["title", "code", "unit", "factor"])
 	@ValidateFuncArgs(MetricTypeSearchParamsValidator)
@@ -98,9 +98,9 @@ export class MetricTypeController extends BaseController {
 	@Post("/")
 	@SuccessResponse(201, "Returns created model")
 	@DescribeAction("metric-type/create")
-	@DescribeResource("Organization", ({ body }) => Number(body.orgId))
-	@DescribeResource("Account", ({ body }) => Number(body.accountId))
-	@DescribeResource("MetricCategory", ({ body }) => Number(body.metricCategoryId))
+	@DescribeResource("Organization", ({ body }) => [Number(body.orgId)])
+	@DescribeResource("Account", ({ body }) => [Number(body.accountId)])
+	@DescribeResource("MetricCategory", ({ body }) => [Number(body.metricCategoryId)])
 	@HashFields(["title", "code", "unit", "factor"])
 	@ValidateFuncArgs(MetricTypeCreateParamsValidator)
 	async create(@Queries() query: {}, @Body() body: MetricTypeCreateBodyInterface): Promise<PublicMetricTypeAttributes> {
@@ -130,7 +130,7 @@ export class MetricTypeController extends BaseController {
 	@Get("/:metricTypeId")
 	@SuccessResponse(200, "Returns model")
 	@DescribeAction("metric-type/read")
-	@DescribeResource("MetricType", ({ params }) => Number(params.metricTypeId))
+	@DescribeResource("MetricType", ({ params }) => [Number(params.metricTypeId)])
 	@HashFields(["title", "code", "unit", "factor"])
 	async get(@Path() metricTypeId: number): Promise<PublicMetricTypeAttributes> {
 		const metricType = await this.metricTypeRepository.read(metricTypeId);
@@ -155,7 +155,7 @@ export class MetricTypeController extends BaseController {
 	@Put("/:metricTypeId")
 	@SuccessResponse(200, "Returns updated model")
 	@DescribeAction("metric-type/update")
-	@DescribeResource("MetricType", ({ params }) => Number(params.metricTypeId))
+	@DescribeResource("MetricType", ({ params }) => [Number(params.metricTypeId)])
 	@HashFields(["title", "code", "unit", "factor"])
 	@ValidateFuncArgs(MetricTypeUpdateParamsValidator)
 	async update(
@@ -189,7 +189,7 @@ export class MetricTypeController extends BaseController {
 	@Delete("/:metricTypeId")
 	@SuccessResponse(204, "Returns nothing")
 	@DescribeAction("metric-type/delete")
-	@DescribeResource("MetricType", ({ params }) => Number(params.metricTypeId))
+	@DescribeResource("MetricType", ({ params }) => [Number(params.metricTypeId)])
 	async delete(@Path() metricTypeId: number): Promise<void> {
 		const metricType = await this.metricTypeRepository.read(metricTypeId);
 
