@@ -1,0 +1,83 @@
+name: Release Feature
+
+on:
+  push:
+    branches:
+      - "feature-SG-*"
+
+permissions:
+  contents: write
+  packages: write
+  pull-requests: write
+  issues: read
+
+jobs:
+  # 1. prettier check
+  prettier-check:
+    name: Prettier check
+    uses: ./.github/workflows/prettier.yml
+    if: success()
+
+  # 2. run unit test
+  unit-tests:
+    needs: [ prettier-check ]
+    name: Unit tests
+    uses: ./.github/workflows/unit-tests.yml
+    secrets:
+      EC2_PUBLIC_IP: ${{ secrets.EC2_PUBLIC_IP }}
+      EC2_SSH_PRIVATE_KEY: ${{ secrets.EC2_SSH_PRIVATE_KEY }}
+      NPM_AUTH_TOKEN: ${{ secrets.NPM_AUTH_TOKEN }}
+      DB_ENDPOINT: ${{ secrets.DB_ENDPOINT }}
+      DB_PORT: ${{ secrets.DB_PORT }}
+      DB_NAME: ${{ secrets.DB_NAME }}
+      DB_MASTER_USERNAME: ${{ secrets.DB_MASTER_USERNAME }}
+      DB_MASTER_PASSWORD: ${{ secrets.DB_MASTER_PASSWORD }}
+      DB_SCHEMA: ${{ secrets.DB_SCHEMA }}
+
+  # 3. run unit test
+  release:
+    needs: [ prettier-check, unit-tests ]
+    name: Feature Release
+    runs-on: ubuntu-latest
+    env:
+      DOCKER_REGISTRY_USER: ${{ secrets.DOCKER_REGISTRY_USER }}
+      DOCKER_REGISTRY_PASSWORD: ${{ secrets.DOCKER_REGISTRY_PASSWORD }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v2
+        with:
+          node-version: '20'
+
+      - name: Install dependencies
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: npm i
+
+      - name: Update routes
+        run: npm run routes
+
+      - name: Build
+        run: npm run build
+
+      - name: Semantic release (feature)
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          NPM_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: node_modules/.bin/semantic-release
+
+  # 3. slack notification about created demo
+  notify-slack:
+    needs: [ prettier-check, unit-tests, release ]
+    name: Notify Slack (demo)
+    uses: ./.github/workflows/slack-notification-rel-beta.yml
+    with:
+      env: "Create Feature Release"
+      workflow_run_id: ${{ github.run_id }}
+    secrets:
+      SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+    if: success()
