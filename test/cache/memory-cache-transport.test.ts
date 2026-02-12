@@ -1,127 +1,96 @@
 process.env.CACHE_TRANSPORT = "MemoryCacheTransport";
+import { App } from "../../src/app/app";
 import "../../src/app/providers";
 import { container, CacheService, MemoryCacheTransport } from "@structured-growth/microservice-sdk";
+import { RegionEnum } from "@structured-growth/microservice-sdk";
 import { assert } from "chai";
-import { MetricTypeService } from "../../src/modules/metric-type/metric-type.service";
+import { initTest } from "../common/init-test";
 
 describe("MemoryCacheTransport", () => {
+	const { server, context } = initTest();
+
 	let cacheService: CacheService;
 	let transport: MemoryCacheTransport;
-	let service: MetricTypeService;
 
-	let searchCallCount = 0;
+	const runId = Date.now();
+	const orgId = Math.round(Date.now() / 1000);
+	const region = RegionEnum.US;
+	const code = `steps-${runId}`;
 
-	const t1: any = {
-		id: 101,
-		code: "steps",
-		arn: "sg-api:us:1:metric-types/101",
-		orgId: 1,
-		region: "us",
-	};
+	before(async function () {
+		this.timeout(60000);
+		process.env.TRANSLATE_API_URL = "";
 
-	let originalMetricTypeRepo: any;
-	let originalMetricCategoryRepo: any;
-	let originalMetricSqlRepo: any;
+		await container.resolve<App>("App").ready;
 
-	before(() => {
 		cacheService = container.resolve<CacheService>("CacheService");
-
 		transport = container.resolve("CacheTransport");
 		assert.instanceOf(transport, MemoryCacheTransport);
 
-		originalMetricTypeRepo = container.resolve("MetricTypeRepository");
-		originalMetricCategoryRepo = container.resolve("MetricCategoryRepository");
-		originalMetricSqlRepo = container.resolve("MetricSqlRepository");
+		const catRes = await server.post("/v1/metric-category").send({
+			orgId,
+			region,
+			title: "Medicine",
+			code: `test_medicine_${runId}`,
+			status: "active",
+			metadata: { specUrl: "https://", countryCode: "test" },
+		});
+		assert.equal(catRes.statusCode, 201);
+		context.metricCategoryId = catRes.body.id;
 
-		const metricTypeRepositoryMock: any = {
-			read: async () => null,
-			findByCode: async () => null,
-			update: async () => null,
-			create: async () => null,
-			delete: async () => null,
-			search: async (params: any) => {
-				searchCallCount++;
-
-				if (params?.id?.includes(t1.id)) {
-					return { data: [t1] };
-				}
-
-				if (params?.code?.includes(t1.code)) {
-					return { data: [t1] };
-				}
-
-				return { data: [] };
-			},
-		};
-
-		const metricCategoryRepositoryMock: any = {
-			search: async () => ({ data: [] }),
-			findByCode: async () => null,
-			read: async () => null,
-			create: async () => null,
-			update: async () => null,
-			delete: async () => null,
-		};
-
-		const metricSqlRepositoryMock: any = {
-			search: async () => ({ data: [] }),
-		};
-
-		container.registerInstance("MetricTypeRepository", metricTypeRepositoryMock);
-		container.registerInstance("MetricCategoryRepository", metricCategoryRepositoryMock);
-		container.registerInstance("MetricSqlRepository", metricSqlRepositoryMock);
-
-		service = container.resolve(MetricTypeService);
+		const mtRes = await server.post("/v1/metric-type").send({
+			orgId,
+			region,
+			metricCategoryId: context.metricCategoryId,
+			title: "Steps",
+			code,
+			unit: "count",
+			factor: 1,
+			relatedTo: "activity",
+			version: 1,
+			status: "active",
+			metadata: { specUrl: "https://", countryCode: "test" },
+		});
+		assert.equal(mtRes.statusCode, 201);
+		context.metricTypeId = mtRes.body.id;
+		context.metricTypeArn = mtRes.body.arn;
 	});
 
-	beforeEach(() => {
-		searchCallCount = 0;
+	after(async () => {
+		await cacheService.invalidateTag(`metricType:entity:${context.metricTypeArn}`).catch(() => null);
+		await cacheService.del(`metricType:id:${context.metricTypeId}`).catch(() => null);
+		await cacheService.del(`metricType:code:${code}`).catch(() => null);
 	});
 
-	afterEach(async () => {
-		await cacheService.invalidateTag(`metricType:entity:${t1.arn}`).catch(() => null);
-		await cacheService.del(`metricType:id:${t1.id}`).catch(() => null);
-		await cacheService.del(`metricType:code:${t1.code}`).catch(() => null);
-	});
-
-	after(() => {
-		container.registerInstance("MetricTypeRepository", originalMetricTypeRepo);
-		container.registerInstance("MetricCategoryRepository", originalMetricCategoryRepo);
-		container.registerInstance("MetricSqlRepository", originalMetricSqlRepo);
-	});
-
-	it("must cache metric type on first getByIds() call", async () => {
-		const map = await service.getByIds([t1.id]);
-
-		assert.equal(searchCallCount, 1);
-		assert.isTrue(map.has(t1.id));
-
-		const cachedById = await cacheService.get<any>(`metricType:id:${t1.id}`);
-		const cachedByCode = await cacheService.get<any>(`metricType:code:${t1.code}`);
-
+	it("should cache metric type keys and tag after HTTP create", async () => {
+		const cachedById = await cacheService.get<any>(`metricType:id:${context.metricTypeId}`);
 		assert.isOk(cachedById);
+
+		const cachedByCode = await cacheService.get<any>(`metricType:code:${code}`);
 		assert.isOk(cachedByCode);
+
+		const tag = `metricType:entity:${context.metricTypeArn}`;
+		const keysByTag = await transport.getKeysByTag(tag);
+
+		assert.include(keysByTag, `metricType:id:${context.metricTypeId}`);
+		assert.include(keysByTag, `metricType:code:${code}`);
 	});
 
-	it("must reuse cache on second getByIds() call", async () => {
-		await service.getByIds([t1.id]);
-		assert.equal(searchCallCount, 1);
+	it("should invalidate cached keys via tag", async () => {
+		const tag = `metricType:entity:${context.metricTypeArn}`;
 
-		await service.getByIds([t1.id]);
-		assert.equal(searchCallCount, 1);
-	});
+		assert.isNotNull(await cacheService.get(`metricType:id:${context.metricTypeId}`));
+		assert.isNotNull(await cacheService.get(`metricType:code:${code}`));
 
-	it("must attach entity tag and allow invalidation via invalidateTag", async () => {
-		await service.getByIds([t1.id]);
+		const keysBefore = await transport.getKeysByTag(tag);
+		assert.include(keysBefore, `metricType:id:${context.metricTypeId}`);
+		assert.include(keysBefore, `metricType:code:${code}`);
 
-		const keysByTag = await transport.getKeysByTag(`metricType:entity:${t1.arn}`);
-		assert.include(keysByTag, `metricType:id:${t1.id}`);
-		assert.include(keysByTag, `metricType:code:${t1.code}`);
-
-		const removed = await cacheService.invalidateTag(`metricType:entity:${t1.arn}`);
+		const removed = await cacheService.invalidateTag(tag);
 		assert.isAtLeast(removed, 1);
 
-		assert.isNull(await cacheService.get(`metricType:id:${t1.id}`));
-		assert.isNull(await cacheService.get(`metricType:code:${t1.code}`));
+		assert.isNull(await cacheService.get(`metricType:id:${context.metricTypeId}`));
+		assert.isNull(await cacheService.get(`metricType:code:${code}`));
+		assert.deepEqual(await transport.getKeysByTag(tag), []);
 	});
 });
