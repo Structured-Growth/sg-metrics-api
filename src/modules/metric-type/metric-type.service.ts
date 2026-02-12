@@ -3,7 +3,7 @@ import {
 	inject,
 	NotFoundError,
 	signedInternalFetch,
-	Cache,
+	CacheService,
 	ValidationError,
 	I18nType,
 	injectWithTransform,
@@ -30,12 +30,14 @@ export class MetricTypeService {
 	private cacheKeyById = (id: number) => `metricType:id:${id}`;
 	private cacheKeyByCode = (code: string) => `metricType:code:${code}`;
 
+	private entityTag = (arn: string) => `metricType:entity:${arn}`;
+
 	constructor(
 		@inject("MetricTypeRepository") private metricTypeRepository: MetricTypeRepository,
 		@inject("MetricCategoryRepository") private metricCategoryRepository: MetricCategoryRepository,
 		@inject("MetricSqlRepository") private metricSqlRepository: MetricSqlRepository,
 		@inject("accountApiUrl") private accountApiUrl: string,
-		@inject("Cache") private cache: Cache,
+		@inject("CacheService") private cacheService: CacheService,
 		@inject("i18n") private getI18n: () => I18nType,
 		@injectWithTransform("Logger", LoggerTransform, { module: "MetricType" }) private logger?: Logger
 	) {
@@ -126,6 +128,9 @@ export class MetricTypeService {
 				);
 			}
 		}
+
+		await this.cacheService.invalidateTag(this.entityTag(current.arn)).catch(() => null);
+
 		const updated = await this.metricTypeRepository.update(
 			metricTypeId,
 			omitBy(
@@ -144,10 +149,6 @@ export class MetricTypeService {
 				isUndefined
 			) as MetricTypeUpdateAttributes
 		);
-
-		if (params.code && params.code !== current.code) {
-			await this.cache.del(this.cacheKeyByCode(current.code));
-		}
 
 		await this.cacheSet(updated);
 
@@ -172,17 +173,15 @@ export class MetricTypeService {
 		}
 
 		await this.metricTypeRepository.delete(metricTypeId);
-
-		await this.cache.del(this.cacheKeyById(metricTypeId));
-		await this.cache.del(this.cacheKeyByCode(metricType.code));
 	}
 
 	private async cacheSet(t: MetricType): Promise<void> {
-		await this.cache.mset(
+		await this.cacheService.msetWithTags(
 			{
 				[this.cacheKeyById(t.id)]: t,
 				[this.cacheKeyByCode(t.code)]: t,
 			},
+			[this.entityTag(t.arn)],
 			this.cacheTtlSec
 		);
 	}
@@ -190,7 +189,7 @@ export class MetricTypeService {
 	public async getByCodes(codes: string[], transaction?: Transaction): Promise<MetricType[]> {
 		if (codes.length === 0) return [];
 		const keys = codes.map(this.cacheKeyByCode);
-		const cached = await this.cache.mget<MetricType>(keys);
+		const cached = await this.cacheService.mget<MetricType>(keys);
 
 		const needFetch: string[] = [];
 		const result: MetricType[] = [];
@@ -202,15 +201,12 @@ export class MetricTypeService {
 
 		if (needFetch.length > 0) {
 			const fetched = await this.metricTypeRepository.search({ code: needFetch }, transaction);
-			const toSet: Record<string, any> = {};
+
 			for (const t of fetched.data) {
 				result.push(t);
-				toSet[this.cacheKeyByCode(t.code)] = t;
-				toSet[this.cacheKeyById(t.id)] = t;
 			}
-			if (Object.keys(toSet).length) {
-				await this.cache.mset(toSet, this.cacheTtlSec);
-			}
+
+			await Promise.allSettled(fetched.data.map((t) => this.cacheSet(t)));
 		}
 
 		return result;
@@ -221,7 +217,7 @@ export class MetricTypeService {
 		if (ids.length === 0) return map;
 
 		const keys = ids.map(this.cacheKeyById);
-		const cached = await this.cache.mget<MetricType>(keys);
+		const cached = await this.cacheService.mget<MetricType>(keys);
 
 		const needFetch: number[] = [];
 		for (let i = 0; i < ids.length; i++) {
@@ -232,15 +228,12 @@ export class MetricTypeService {
 
 		if (needFetch.length > 0) {
 			const fetched = await this.metricTypeRepository.search({ id: needFetch }, transaction);
-			const toSet: Record<string, any> = {};
+
 			for (const t of fetched.data) {
 				map.set(t.id, t);
-				toSet[this.cacheKeyById(t.id)] = t;
-				toSet[this.cacheKeyByCode(t.code)] = t;
 			}
-			if (Object.keys(toSet).length) {
-				await this.cache.mset(toSet, this.cacheTtlSec);
-			}
+
+			await Promise.allSettled(fetched.data.map((t) => this.cacheSet(t)));
 		}
 
 		return map;
