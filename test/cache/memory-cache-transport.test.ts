@@ -19,11 +19,19 @@ describe("MemoryCacheTransport", () => {
 		region: "us",
 	};
 
+	let originalMetricTypeRepo: any;
+	let originalMetricCategoryRepo: any;
+	let originalMetricSqlRepo: any;
+
 	before(() => {
 		cacheService = container.resolve<CacheService>("CacheService");
 
 		transport = container.resolve("CacheTransport");
 		assert.instanceOf(transport, MemoryCacheTransport);
+
+		originalMetricTypeRepo = container.resolve("MetricTypeRepository");
+		originalMetricCategoryRepo = container.resolve("MetricCategoryRepository");
+		originalMetricSqlRepo = container.resolve("MetricSqlRepository");
 
 		const metricTypeRepositoryMock: any = {
 			read: async () => null,
@@ -46,9 +54,22 @@ describe("MemoryCacheTransport", () => {
 			},
 		};
 
+		const metricCategoryRepositoryMock: any = {
+			search: async () => ({ data: [] }),
+			findByCode: async () => null,
+			read: async () => null,
+			create: async () => null,
+			update: async () => null,
+			delete: async () => null,
+		};
+
+		const metricSqlRepositoryMock: any = {
+			search: async () => ({ data: [] }),
+		};
+
 		container.registerInstance("MetricTypeRepository", metricTypeRepositoryMock);
-		container.registerInstance("MetricCategoryRepository", { search: async () => ({ data: [] }) });
-		container.registerInstance("MetricSqlRepository", { search: async () => ({ data: [] }) });
+		container.registerInstance("MetricCategoryRepository", metricCategoryRepositoryMock);
+		container.registerInstance("MetricSqlRepository", metricSqlRepositoryMock);
 
 		service = container.resolve(MetricTypeService);
 	});
@@ -61,6 +82,12 @@ describe("MemoryCacheTransport", () => {
 		await cacheService.invalidateTag(`metricType:entity:${t1.arn}`).catch(() => null);
 		await cacheService.del(`metricType:id:${t1.id}`).catch(() => null);
 		await cacheService.del(`metricType:code:${t1.code}`).catch(() => null);
+	});
+
+	after(() => {
+		container.registerInstance("MetricTypeRepository", originalMetricTypeRepo);
+		container.registerInstance("MetricCategoryRepository", originalMetricCategoryRepo);
+		container.registerInstance("MetricSqlRepository", originalMetricSqlRepo);
 	});
 
 	it("must cache metric type on first getByIds() call", async () => {
