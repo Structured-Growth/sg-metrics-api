@@ -15,7 +15,7 @@ import {
 } from "@structured-growth/microservice-sdk";
 import { loadEnvironment } from "./load-environment";
 import { emailTransports, Mailer } from "@structured-growth/microservice-sdk";
-import { cacheTransports, Cache } from "@structured-growth/microservice-sdk";
+import { cacheTransports, CacheService } from "@structured-growth/microservice-sdk";
 import { MetricService } from "../modules/metric/metric.service";
 import { MetricTypeService } from "../modules/metric-type/metric-type.service";
 import { MetricTypeRepository } from "../modules/metric-type/metric-type.repository";
@@ -49,13 +49,14 @@ container.register("internalRequestsAllowed", { useValue: process.env.INTERNAL_R
 container.register("internalAuthenticationJwtSecret", { useValue: process.env.INTERNAL_AUTHENTICATION_JWT_SECRET });
 container.register("oAuthServiceGetUserUrl", { useValue: process.env.OAUTH_USER_URL });
 container.register("policiesServiceUrl", { useValue: process.env.POLICY_SERVICE_URL });
+container.register("sqsQueueUrl", { useValue: process.env.SQS_QUEUE_URL });
 
 container.register("accountApiUrl", { useValue: process.env.ACCOUNT_API_URL });
 
 container.register("metricsApiQueueName", { useValue: process.env.PLATFORM_API_SQS_QUEUE_NAME });
 
-container.register("QueueProvider", queueProviders.AwsSqsQueueProvider);
-container.register("QueueService", QueueService);
+container.register("QueueProvider", queueProviders[process.env.QUEUE_PROVIDER || "TestQueueProvider"]);
+container.register("QueueService", QueueService, { lifecycle: Lifecycle.Singleton });
 
 // services
 container.register("LogWriter", logWriters[process.env.LOG_WRITER] || "ConsoleLogWriter", {
@@ -67,7 +68,7 @@ container.register("Mailer", Mailer);
 container.register("CacheTransport", cacheTransports[process.env.CACHE_TRANSPORT || "MemoryCacheTransport"], {
 	lifecycle: Lifecycle.Singleton,
 });
-container.register("Cache", Cache, { lifecycle: Lifecycle.Singleton });
+container.register("CacheService", CacheService, { lifecycle: Lifecycle.Singleton });
 container.register("App", App, { lifecycle: Lifecycle.Singleton });
 container.register("AuthService", AuthService);
 container.register("PolicyService", PolicyService);

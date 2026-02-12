@@ -3,7 +3,7 @@ import {
 	inject,
 	NotFoundError,
 	I18nType,
-	Cache,
+	CacheService,
 	injectWithTransform,
 	LoggerTransform,
 	Logger,
@@ -27,12 +27,15 @@ export class MetricCategoryService {
 
 	private cacheKeyById = (id: number) => `metricCategory:id:${id}`;
 	private cacheKeyByCode = (code: string) => `metricCategory:code:${code}`;
+
+	private entityTag = (arn: string) => `metricCategory:entity:${arn}`;
+
 	constructor(
 		@inject("MetricCategoryRepository") private metricCategoryRepository: MetricCategoryRepository,
 		@inject("MetricTypeRepository") private metricTypeRepository: MetricTypeRepository,
 		@inject("accountApiUrl") private accountApiUrl: string,
 		@inject("i18n") private getI18n: () => I18nType,
-		@inject("Cache") private cache: Cache,
+		@inject("CacheService") private cacheService: CacheService,
 		@injectWithTransform("Logger", LoggerTransform, { module: "Metric" }) private logger?: Logger
 	) {
 		this.i18n = this.getI18n();
@@ -97,6 +100,9 @@ export class MetricCategoryService {
 				);
 			}
 		}
+
+		await this.cacheService.invalidateTag(this.entityTag(current.arn)).catch(() => null);
+
 		const updated = await this.metricCategoryRepository.update(
 			metricCategoryId,
 			omitBy(
@@ -110,9 +116,6 @@ export class MetricCategoryService {
 			) as MetricCategoryUpdateAttributes
 		);
 
-		if (params.code && params.code !== current.code) {
-			await this.cache.del(this.cacheKeyByCode(current.code));
-		}
 		await this.cacheSet(updated);
 		return updated;
 	}
@@ -136,28 +139,30 @@ export class MetricCategoryService {
 		}
 
 		await this.metricCategoryRepository.delete(metricCategoryId);
-
-		await this.cache.del(this.cacheKeyById(metricCategoryId));
-		await this.cache.del(this.cacheKeyByCode(metricCategory.code));
 	}
 
 	private async cacheSet(c: MetricCategory): Promise<void> {
-		const v = { id: c.id, code: c.code };
-		await this.cache.mset(
+		const v = { id: c.id, code: c.code, arn: c.arn };
+
+		await this.cacheService.msetWithTags(
 			{
 				[this.cacheKeyById(c.id)]: v,
 				[this.cacheKeyByCode(c.code)]: v,
 			},
+			[this.entityTag(c.arn)],
 			this.cacheTtlSec
 		);
 	}
 
-	public async getByIds(ids: number[], transaction?: Transaction): Promise<Map<number, { id: number; code: string }>> {
-		const map = new Map<number, { id: number; code: string }>();
+	public async getByIds(
+		ids: number[],
+		transaction?: Transaction
+	): Promise<Map<number, { id: number; code: string; arn: string }>> {
+		const map = new Map<number, { id: number; code: string; arn: string }>();
 		if (ids.length === 0) return map;
 
 		const keys = ids.map(this.cacheKeyById);
-		const cached = await this.cache.mget<{ id: number; code: string }>(keys);
+		const cached = await this.cacheService.mget<{ id: number; code: string; arn: string }>(keys);
 
 		const needFetch: number[] = [];
 		for (let i = 0; i < ids.length; i++) {
@@ -168,15 +173,12 @@ export class MetricCategoryService {
 
 		if (needFetch.length > 0) {
 			const fetched = await this.metricCategoryRepository.search({ id: needFetch }, transaction);
-			const toSet: Record<string, any> = {};
+
 			for (const c of fetched.data) {
-				const v = { id: c.id, code: c.code };
+				const v = { id: c.id, code: c.code, arn: c.arn };
 				map.set(c.id, v);
-				toSet[this.cacheKeyById(c.id)] = v;
-				toSet[this.cacheKeyByCode(c.code)] = v;
-			}
-			if (Object.keys(toSet).length) {
-				await this.cache.mset(toSet, this.cacheTtlSec);
+
+				await this.cacheSet(c);
 			}
 		}
 
@@ -186,12 +188,12 @@ export class MetricCategoryService {
 	public async getByCodes(
 		codes: string[],
 		transaction?: Transaction
-	): Promise<Map<string, { id: number; code: string }>> {
-		const map = new Map<string, { id: number; code: string }>();
+	): Promise<Map<string, { id: number; code: string; arn: string }>> {
+		const map = new Map<string, { id: number; code: string; arn: string }>();
 		if (codes.length === 0) return map;
 
 		const keys = codes.map(this.cacheKeyByCode);
-		const cached = await this.cache.mget<{ id: number; code: string }>(keys);
+		const cached = await this.cacheService.mget<{ id: number; code: string; arn: string }>(keys);
 
 		const needFetch: string[] = [];
 		for (let i = 0; i < codes.length; i++) {
@@ -202,15 +204,12 @@ export class MetricCategoryService {
 
 		if (needFetch.length > 0) {
 			const fetched = await this.metricCategoryRepository.search({ code: needFetch }, transaction);
-			const toSet: Record<string, any> = {};
+
 			for (const c of fetched.data) {
-				const v = { id: c.id, code: c.code };
+				const v = { id: c.id, code: c.code, arn: c.arn };
 				map.set(c.code, v);
-				toSet[this.cacheKeyById(c.id)] = v;
-				toSet[this.cacheKeyByCode(c.code)] = v;
-			}
-			if (Object.keys(toSet).length) {
-				await this.cache.mset(toSet, this.cacheTtlSec);
+
+				await this.cacheSet(c);
 			}
 		}
 
