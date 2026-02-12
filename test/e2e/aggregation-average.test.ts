@@ -7,7 +7,6 @@ import { initTest } from "../common/init-test";
 import { filter, min, round, uniqBy } from "lodash";
 import { MetricAttributes } from "../../database/models/metric";
 
-// Test
 describe("e2e/aggregation-average", () => {
 	const { server, context } = initTest();
 	const orgId = Math.round(new Date().getTime() / 1000);
