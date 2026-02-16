@@ -22,4 +22,6 @@ export interface MetricSearchParamsInterface
 	recordedAtMin?: Date;
 	recordedAtMax?: Date;
 	nextToken?: string;
+	q?: string;
+	metadata?: Record<string, string | number | boolean>;
 }

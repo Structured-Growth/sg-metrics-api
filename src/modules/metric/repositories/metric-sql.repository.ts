@@ -169,6 +169,7 @@ export class MetricSqlRepository {
 			isDeleted: false,
 		};
 		const sortItems = (params as any).sort && (params as any).sort.length ? (params as any).sort : ["takenAt:desc"];
+		const metadata = (params as any).metadata;
 
 		const sortBy = (params as any).sortBy;
 		const column = (params as any).column;
@@ -183,6 +184,34 @@ export class MetricSqlRepository {
 
 			return [field, dir];
 		});
+
+		const qRaw = (params as any).q;
+		const q = typeof qRaw === "string" ? qRaw.trim() : "";
+
+		if (q) {
+			const like = q.includes("*") ? q.replace(/\*/g, "%") : `%${q}%`;
+
+			const or: any[] = [];
+
+			const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(q);
+
+			if (isUuid && !q.includes("*")) {
+				or.push({ id: q });
+			} else {
+				or.push({ id: { [Op.iLike]: like } });
+			}
+
+			const asNumber = Number(q);
+			const isFiniteInt = Number.isFinite(asNumber) && Number.isInteger(asNumber);
+
+			if (isFiniteInt) {
+				or.push({ userId: asNumber });
+				or.push({ deviceId: asNumber });
+			}
+
+			where[Op.and] = where[Op.and] ?? [];
+			where[Op.and].push({ [Op.or]: or });
+		}
 
 		if (params.id?.length > 0) {
 			where["id"] = {
@@ -226,6 +255,29 @@ export class MetricSqlRepository {
 				},
 				isUndefined
 			));
+
+		if (metadata && typeof metadata === "object") {
+			where[Op.and] = where[Op.and] ?? [];
+
+			for (const [keyRaw, valRaw] of Object.entries(metadata)) {
+				if (valRaw === null || valRaw === undefined) continue;
+
+				const key = String(keyRaw).replace(/[^a-zA-Z0-9_]/g, "");
+				if (!key) continue;
+
+				const v = String(valRaw).trim();
+				if (!v) continue;
+
+				const left = Sequelize.literal(`("metadata"->>'${key}')`);
+
+				if (v.includes("*")) {
+					const like = v.replace(/\*/g, "%");
+					where[Op.and].push(Sequelize.where(left, { [Op.iLike]: like }));
+				} else {
+					where[Op.and].push(Sequelize.where(left, { [Op.eq]: v }));
+				}
+			}
+		}
 
 		return { where, page, limit, offset, order };
 	}

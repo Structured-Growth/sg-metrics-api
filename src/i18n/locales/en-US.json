@@ -106,7 +106,9 @@
       "rowAggregation": "Aggregate Row",
       "takenAt": "Taken At",
       "reportingPersonArn": "Reporting Person ARN",
-      "columns": "Columns"
+      "columns": "Columns",
+			"q": "Query",
+			"metadata": "Metadata"
     },
     "metricCategory": {
       "orgId": "Organization Id",
