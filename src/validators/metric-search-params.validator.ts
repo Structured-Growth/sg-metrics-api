@@ -27,9 +27,6 @@ export const MetricSearchParamsValidator = joi.object({
 		page: joi.number().positive().label("validator.common.page"),
 		nextToken: joi.string().label("validator.metrics.nextToken"),
 		q: joi.string().min(1).max(200).label("validator.metrics.q"),
-		metadata: joi
-			.object()
-			.pattern(joi.string().max(64), joi.alternatives(joi.string().max(200), joi.number(), joi.boolean()))
-			.label("validator.devices.metadata"),
+		metadata: joi.string().max(2000).label("validator.devices.metadata"),
 	}),
 });

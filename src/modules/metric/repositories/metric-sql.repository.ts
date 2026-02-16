@@ -169,7 +169,6 @@ export class MetricSqlRepository {
 			isDeleted: false,
 		};
 		const sortItems = (params as any).sort && (params as any).sort.length ? (params as any).sort : ["takenAt:desc"];
-		const metadata = (params as any).metadata;
 
 		const sortBy = (params as any).sortBy;
 		const column = (params as any).column;
@@ -256,10 +255,23 @@ export class MetricSqlRepository {
 				isUndefined
 			));
 
-		if (metadata && typeof metadata === "object") {
+		const metadataRaw = (params as any).metadata;
+		const metadataStr = typeof metadataRaw === "string" ? metadataRaw.trim() : "";
+		let metadataObj: Record<string, unknown> | null = null;
+
+		if (metadataStr) {
+			if (metadataStr.startsWith("{") && metadataStr.endsWith("}")) {
+				const parsed = JSON.parse(metadataStr);
+				if (parsed && typeof parsed === "object" && !Array.isArray(parsed)) {
+					metadataObj = parsed as Record<string, unknown>;
+				}
+			}
+		}
+
+		if (metadataObj) {
 			where[Op.and] = where[Op.and] ?? [];
 
-			for (const [keyRaw, valRaw] of Object.entries(metadata)) {
+			for (const [keyRaw, valRaw] of Object.entries(metadataObj)) {
 				if (valRaw === null || valRaw === undefined) continue;
 
 				const key = String(keyRaw).replace(/[^a-zA-Z0-9_]/g, "");
