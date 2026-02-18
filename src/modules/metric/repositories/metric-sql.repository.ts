@@ -184,6 +184,34 @@ export class MetricSqlRepository {
 			return [field, dir];
 		});
 
+		const qRaw = (params as any).q;
+		const q = typeof qRaw === "string" ? qRaw.trim() : "";
+
+		if (q) {
+			const like = q.includes("*") ? q.replace(/\*/g, "%") : `%${q}%`;
+
+			const or: any[] = [];
+
+			const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(q);
+
+			if (isUuid && !q.includes("*")) {
+				or.push({ id: q });
+			} else {
+				or.push({ id: { [Op.iLike]: like } });
+			}
+
+			const asNumber = Number(q);
+			const isFiniteInt = Number.isFinite(asNumber) && Number.isInteger(asNumber);
+
+			if (isFiniteInt) {
+				or.push({ userId: asNumber });
+				or.push({ deviceId: asNumber });
+			}
+
+			where[Op.and] = where[Op.and] ?? [];
+			where[Op.and].push({ [Op.or]: or });
+		}
+
 		if (params.id?.length > 0) {
 			where["id"] = {
 				[Op.or]: params.id.map((str) => ({ [Op.iLike]: str.replace(/\*/g, "%") })),
@@ -226,6 +254,42 @@ export class MetricSqlRepository {
 				},
 				isUndefined
 			));
+
+		const metadataRaw = (params as any).metadata;
+		const metadataStr = typeof metadataRaw === "string" ? metadataRaw.trim() : "";
+		let metadataObj: Record<string, unknown> | null = null;
+
+		if (metadataStr) {
+			if (metadataStr.startsWith("{") && metadataStr.endsWith("}")) {
+				const parsed = JSON.parse(metadataStr);
+				if (parsed && typeof parsed === "object" && !Array.isArray(parsed)) {
+					metadataObj = parsed as Record<string, unknown>;
+				}
+			}
+		}
+
+		if (metadataObj) {
+			where[Op.and] = where[Op.and] ?? [];
+
+			for (const [keyRaw, valRaw] of Object.entries(metadataObj)) {
+				if (valRaw === null || valRaw === undefined) continue;
+
+				const key = String(keyRaw).replace(/[^a-zA-Z0-9_]/g, "");
+				if (!key) continue;
+
+				const v = String(valRaw).trim();
+				if (!v) continue;
+
+				const left = Sequelize.literal(`("metadata"->>'${key}')`);
+
+				if (v.includes("*")) {
+					const like = v.replace(/\*/g, "%");
+					where[Op.and].push(Sequelize.where(left, { [Op.iLike]: like }));
+				} else {
+					where[Op.and].push(Sequelize.where(left, { [Op.eq]: v }));
+				}
+			}
+		}
 
 		return { where, page, limit, offset, order };
 	}
