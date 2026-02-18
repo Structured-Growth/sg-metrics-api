@@ -10,14 +10,20 @@ export async function startWebServer() {
 	const app = container.resolve<App>("App");
 	const logger = container.resolve<Logger>("Logger");
 
+	const isLambdaRuntime = Boolean(process.env.AWS_LAMBDA_FUNCTION_NAME);
+
 	await app.ready;
+
+	if (isLambdaRuntime) {
+		logger.info("Running in AWS Lambda runtime");
+	}
 
 	const shouldStartSqsListener = process.env.START_SQS_LISTENER_ON_WEBSERVER_STARTUP === "true";
 
-	if (!shouldStartSqsListener) {
-		logger.info("SQS subscriber is disabled (lambda runtime or START_SQS_LISTENER_ON_WEBSERVER_STARTUP != true)");
-	} else {
+	if (shouldStartSqsListener && !isLambdaRuntime) {
 		startSqsListener();
+	} else {
+		logger.info("SQS subscriber is disabled");
 	}
 
 	server.listen(port);

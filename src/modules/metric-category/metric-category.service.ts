@@ -101,7 +101,9 @@ export class MetricCategoryService {
 			}
 		}
 
-		await this.cacheService.invalidateTag(this.entityTag(current.arn)).catch(() => null);
+		this.cacheService
+			.invalidateTag(this.entityTag(current.arn))
+			.catch((err) => this.logger?.warn("Cache invalidation failed", err));
 
 		const updated = await this.metricCategoryRepository.update(
 			metricCategoryId,

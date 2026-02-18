@@ -233,7 +233,13 @@ export class MetricTypeService {
 				map.set(t.id, t);
 			}
 
-			await Promise.allSettled(fetched.data.map((t) => this.cacheSet(t)));
+			const results = await Promise.allSettled(fetched.data.map((t) => this.cacheSet(t)));
+
+			for (const r of results) {
+				if (r.status === "rejected") {
+					this.logger?.warn("Cache set failed", r.reason);
+				}
+			}
 		}
 
 		return map;
