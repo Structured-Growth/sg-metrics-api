@@ -83,5 +83,7 @@ export function loadEnvironment() {
 		REDIS_TLS: joi.bool().allow(""),
 		REDIS_KEY_PREFIX: joi.string().allow(""),
 		MAX_WORKERS: joi.number().positive().required(),
+		START_SQS_LISTENER_ON_WEBSERVER_STARTUP: joi.bool().required(),
+		SQS_QUEUE_URL: joi.string().required(),
 	});
 }
