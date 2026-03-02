@@ -3,7 +3,7 @@ import {
 	EventbusService,
 	I18nType,
 	inject,
-	Cache,
+	CacheService,
 	NotFoundError,
 	SearchResultInterface,
 	ServerError,
@@ -53,7 +53,7 @@ export class MetricService {
 		@inject("EventbusService") private eventBus: EventbusService,
 		@inject("appPrefix") private appPrefix: string,
 		@inject("i18n") private getI18n: () => I18nType,
-		@inject("Cache") private cache: Cache,
+		@inject("CacheService") private cacheService: CacheService,
 		@inject("accountApiUrl") private accountApiUrl: string,
 		@injectWithTransform("Logger", LoggerTransform, { module: "Metric" }) private logger?: Logger
 	) {
