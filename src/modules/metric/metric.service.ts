@@ -368,7 +368,7 @@ export class MetricService {
 		}) as MetricExtended;
 	}
 
-	public async delete(id: string, transaction?: Transaction): Promise<{ id: string; deleted: boolean }> {
+	public async delete(id: string, transaction?: Transaction): Promise<{ id: string; arn?: string; deleted: boolean }> {
 		const metricAurora = await this.metricSqlRepository.read(id, { transaction });
 
 		if (!metricAurora) {
@@ -377,7 +377,7 @@ export class MetricService {
 
 		await this.metricSqlRepository.delete(id, transaction);
 
-		return { id, deleted: true };
+		return { id, arn: metricAurora.arn, deleted: true };
 	}
 
 	public async bulk(data: MetricsBulkDataInterface): Promise<MetricsBulkResultInterface> {
@@ -409,11 +409,12 @@ export class MetricService {
 						});
 						break;
 					case "delete":
-						const { id, deleted } = await this.delete(operation.data.id, transaction);
+						const { id, arn, deleted } = await this.delete(operation.data.id, transaction);
 						result.push({
 							op: "delete",
 							data: {
 								id,
+								arn,
 								deleted,
 							},
 						});
