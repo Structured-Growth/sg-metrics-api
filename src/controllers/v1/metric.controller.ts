@@ -210,14 +210,27 @@ export class MetricController extends BaseController {
 		@Queries() query: {},
 		@Body() body: MetricCreateBodyWithoutOffset[]
 	): Promise<PublicMetricAttributesExtended[]> {
-		const metrics = await this.metricService.create(
-			body.map((item) => {
-				return {
-					...item,
-					takenAt: new Date(item.takenAt),
-					takenAtOffset: getTimezoneOffset(item.takenAt.toString()),
-				};
-			})
+		const payload = body.map((item) => {
+			return {
+				...item,
+				takenAt: new Date(item.takenAt),
+				takenAtOffset: getTimezoneOffset(item.takenAt.toString()),
+			};
+		});
+
+		const metrics = await this.metricService.create(payload);
+
+		await Promise.all(
+			metrics.map((metric, index) =>
+				this.eventBus.publish(
+					new EventMutation(
+						this.principal.arn,
+						metric.arn,
+						`${this.appPrefix}:metrics/create`,
+						JSON.stringify(payload[index])
+					)
+				)
+			)
 		);
 
 		this.response.status(201);
@@ -317,14 +330,27 @@ export class MetricController extends BaseController {
 		@Queries() query: {},
 		@Body() body: MetricCreateBodyWithoutOffset[]
 	): Promise<PublicMetricAttributesExtended[]> {
-		const metrics = await this.metricService.upsert(
-			body.map((item) => {
-				return {
-					...item,
-					takenAt: new Date(item.takenAt),
-					takenAtOffset: getTimezoneOffset(item.takenAt.toString()),
-				};
-			})
+		const payload = body.map((item) => {
+			return {
+				...item,
+				takenAt: new Date(item.takenAt),
+				takenAtOffset: getTimezoneOffset(item.takenAt.toString()),
+			};
+		});
+
+		const metrics = await this.metricService.upsert(payload);
+
+		await Promise.all(
+			metrics.map((metric, index) =>
+				this.eventBus.publish(
+					new EventMutation(
+						this.principal.arn,
+						metric.arn,
+						`${this.appPrefix}:metrics/upsert`,
+						JSON.stringify(payload[index])
+					)
+				)
+			)
 		);
 
 		this.response.status(200);
@@ -413,6 +439,30 @@ export class MetricController extends BaseController {
 			};
 		}) as MetricsBulkDataInterface;
 		const result = await this.metricService.bulk(data);
+
+		void Promise.all(
+			result.map(({ op, data: metric }, index) => {
+				if (op !== "create" && op !== "update" && op !== "delete" && op !== "upsert") {
+					return Promise.resolve();
+				}
+
+				const resourceArn = (metric as any).arn;
+				if (!resourceArn) {
+					return Promise.resolve();
+				}
+
+				return this.eventBus.publish(
+					new EventMutation(
+						this.principal.arn,
+						resourceArn,
+						`${this.appPrefix}:metrics/${op}`,
+						JSON.stringify(data[index].data)
+					)
+				);
+			})
+		).catch((err) => {
+			this.logger?.error("Failed to publish metrics mutation events from bulk", err);
+		});
 
 		return result.map(({ op, data }) => {
 			switch (op) {
