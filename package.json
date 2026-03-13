@@ -17,6 +17,7 @@
     "routes": "npm run routes.v1",
     "routes.v1": "tsoa routes -c tsoa.v1.json",
     "docs": "npm run apidocs.v1 && npm run redoc.v1",
+		"docs:docker": "cp .env.example .env && npm run docs && rm -f .env",
     "apidocs.v1": "npm run dev-cli docs",
     "redoc.v1": "redocly build-docs -o .docs/openapi.v1/index.html .docs/openapi.v1/swagger.json",
     "prettier": "prettier --check src"
