@@ -4,6 +4,7 @@ import { container, webServer } from "@structured-growth/microservice-sdk";
 import { RegionEnum } from "@structured-growth/microservice-sdk";
 import { assert } from "chai";
 import { initTest } from "../../../common/init-test";
+import { setCustomFieldValidationPayload } from "../../../common/mock-custom-field-validation";
 
 describe("POST /api/v1/metric-type", () => {
 	const { server, context } = initTest();
@@ -114,5 +115,34 @@ describe("POST /api/v1/metric-type", () => {
 		assert.isString(body.validation.body.relatedTo[0]);
 		assert.isString(body.validation.body.version[0]);
 		assert.isString(body.validation.body.status[0]);
+	}).timeout(1800000);
+
+	it("Should return validation error for invalid custom fields", async () => {
+		setCustomFieldValidationPayload({
+			valid: false,
+			errors: {
+				specUrl: ["must be a valid url"],
+			},
+		});
+
+		const { statusCode, body } = await server.post("/v1/metric-type").send({
+			orgId: orgId,
+			region: RegionEnum.US,
+			metricCategoryId: context["createdMetricCategoryId"],
+			title: `${code}-invalid-custom-fields`,
+			code: `${code}-invalid-custom-fields`,
+			unit: code,
+			factor: factor,
+			relatedTo: code,
+			version: version,
+			status: "inactive",
+			metadata: {
+				specUrl: 123,
+			},
+		});
+
+		assert.equal(statusCode, 422);
+		assert.equal(body.name, "ValidationError");
+		assert.isString(body.validation.body.metadata.specUrl[0]);
 	}).timeout(1800000);
 });

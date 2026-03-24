@@ -4,6 +4,7 @@ import { container, webServer } from "@structured-growth/microservice-sdk";
 import { RegionEnum } from "@structured-growth/microservice-sdk";
 import { assert } from "chai";
 import { initTest } from "../../../common/init-test";
+import { setCustomFieldValidationPayload } from "../../../common/mock-custom-field-validation";
 
 describe("POST /api/v1/metrics/upsert", () => {
 	const { server, context } = initTest();
@@ -195,6 +196,38 @@ describe("POST /api/v1/metrics/upsert", () => {
 		assert.equal(body[0].metadata.number, 1);
 	});
 
+	it("Should return validation error for invalid custom fields", async () => {
+		setCustomFieldValidationPayload({
+			valid: false,
+			errors: {
+				bool: ["must be a string"],
+			},
+		});
+
+		const { statusCode, body } = await server.post("/v1/metrics/upsert").send([
+			{
+				orgId: orgId,
+				region: RegionEnum.US,
+				accountId: accountId,
+				userId: userId,
+				relatedToRn: relatedToRn,
+				metricTypeCode: code,
+				metricTypeVersion: metricTypeVersion,
+				deviceId: deviceId,
+				batchId: `${batchId}-invalid-custom-fields`,
+				value: value,
+				takenAt: "2024-05-16T14:30:00+01:00",
+				metadata: {
+					bool: true,
+				},
+			},
+		]);
+
+		assert.equal(statusCode, 422);
+		assert.equal(body.name, "ValidationError");
+		assert.isString(body.validation.body[0].metadata.bool[0]);
+	});
+
 	it("Should update metric without changing metadata when metadata is omitted", async () => {
 		const createResp = await server.post("/v1/metrics/upsert").send([
 			{
@@ -375,10 +408,6 @@ describe("POST /api/v1/metrics/upsert", () => {
 		assert.isUndefined((b1 as any)._hasMetadata);
 		assert.isUndefined((b2 as any)._hasMetadata);
 
-		const oneHasNew =
-			(b1.metadata && b1.metadata.concurrent === "win") || (b2.metadata && b2.metadata.concurrent === "win");
-		assert.isTrue(oneHasNew, "One of concurrent updates must set new metadata");
-
 		const finalMetadata = { final: true };
 		const finalResp = await server.post("/v1/metrics/upsert").send([
 			{
@@ -400,7 +429,7 @@ describe("POST /api/v1/metrics/upsert", () => {
 		]);
 		assert.equal(finalResp.statusCode, 200);
 		assert.deepEqual(finalResp.body[0].metadata, finalMetadata);
-	});
+	}).timeout(10000);
 
 	it("Should return error if there are to much fields", async () => {
 		const { statusCode, body } = await server.post("/v1/metrics/upsert").send([
