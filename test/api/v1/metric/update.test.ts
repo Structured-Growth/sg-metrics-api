@@ -4,6 +4,7 @@ import { container, webServer } from "@structured-growth/microservice-sdk";
 import { RegionEnum } from "@structured-growth/microservice-sdk";
 import { assert } from "chai";
 import { initTest } from "../../../common/init-test";
+import { setCustomFieldValidationPayload } from "../../../common/mock-custom-field-validation";
 
 describe("PUT /api/v1/metrics/:metricId", () => {
 	const { server, context } = initTest();
@@ -146,5 +147,24 @@ describe("PUT /api/v1/metrics/:metricId", () => {
 		const { statusCode, body } = await server.get(`/v1/metrics/${context.createdMetric2NewId}`);
 		assert.equal(statusCode, 200);
 		assert.equal(body.takenAtOffset, 0);
+	});
+
+	it("Should return validation error for invalid custom fields", async () => {
+		setCustomFieldValidationPayload({
+			valid: false,
+			errors: {
+				a: ["must be a string"],
+			},
+		});
+
+		const { statusCode, body } = await server.put(`/v1/metrics/${context.createdMetricId}`).send({
+			metadata: {
+				a: 3,
+			},
+		});
+
+		assert.equal(statusCode, 422);
+		assert.equal(body.name, "ValidationError");
+		assert.isString(body.validation.body.metadata.a[0]);
 	});
 });

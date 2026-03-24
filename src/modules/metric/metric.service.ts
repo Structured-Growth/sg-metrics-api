@@ -11,6 +11,8 @@ import {
 	injectWithTransform,
 	LoggerTransform,
 	Logger,
+	validateCustomFields,
+	ValidationError,
 } from "@structured-growth/microservice-sdk";
 import { v4 } from "uuid";
 import * as AWS from "aws-sdk";
@@ -86,6 +88,13 @@ export class MetricService {
 			return [];
 		}
 
+		await this.validateMetadataList(
+			data.map((item) => ({
+				orgId: item.orgId,
+				metadata: item.metadata as Record<string, unknown> | undefined,
+			}))
+		);
+
 		const result = await this.metricSqlRepository.create(data, transaction);
 
 		await this.eventBus.publish({
@@ -128,6 +137,13 @@ export class MetricService {
 		if (!data.length) {
 			return [];
 		}
+
+		await this.validateMetadataList(
+			data.map((item) => ({
+				orgId: item.orgId,
+				metadata: item.metadata as Record<string, unknown> | undefined,
+			}))
+		);
 
 		const createdMetrics: Metric[] = [];
 
@@ -581,6 +597,35 @@ export class MetricService {
 						JSON.stringify({ arn, size: items.length, err: String(err) })
 					);
 				});
+		}
+	}
+
+	private async validateMetadataList(
+		items: {
+			orgId?: number;
+			metadata?: Record<string, unknown>;
+		}[]
+	): Promise<void> {
+		const validationBody: Array<{ metadata: unknown } | undefined> = [];
+
+		for (const [index, item] of items.entries()) {
+			const { valid, errors } = await validateCustomFields({
+				entity: "Metric",
+				data: item.metadata,
+				orgId: item.orgId,
+			});
+
+			if (!valid) {
+				validationBody[index] = {
+					metadata: errors,
+				};
+			}
+		}
+
+		if (validationBody.length > 0) {
+			throw new ValidationError({
+				body: validationBody,
+			});
 		}
 	}
 }
