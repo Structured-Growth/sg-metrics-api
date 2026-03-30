@@ -1,11 +1,15 @@
 import "../../../../src/app/providers";
 import { App } from "../../../../src/app/app";
-import { container, webServer } from "@structured-growth/microservice-sdk";
+import { container } from "@structured-growth/microservice-sdk";
 import { RegionEnum } from "@structured-growth/microservice-sdk";
 import { assert } from "chai";
 import { initTest } from "../../../common/init-test";
 import { v3 as uuidv3, v4 as uuidv4 } from "uuid";
-import { setCustomFieldValidationPayload } from "../../../common/mock-custom-field-validation";
+import {
+	seedMetricCategoryCustomFields,
+	seedMetricCustomFields,
+	seedMetricTypeCustomFields,
+} from "../../../common/seed-custom-fields";
 
 describe("POST /api/v1/metrics", () => {
 	const { server, context } = initTest();
@@ -28,6 +32,9 @@ describe("POST /api/v1/metrics", () => {
 	before(async () => {
 		process.env.TRANSLATE_API_URL = "";
 		await container.resolve<App>("App").ready;
+		await seedMetricCategoryCustomFields(orgId);
+		await seedMetricTypeCustomFields(orgId);
+		await seedMetricCustomFields(orgId);
 	});
 
 	it("Should create metric category", async () => {
@@ -219,13 +226,6 @@ describe("POST /api/v1/metrics", () => {
 	});
 
 	it("Should return validation error for invalid custom fields", async () => {
-		setCustomFieldValidationPayload({
-			valid: false,
-			errors: {
-				source: ["must be a string"],
-			},
-		});
-
 		const { statusCode, body } = await server.post("/v1/metrics").send([
 			{
 				orgId: orgId,

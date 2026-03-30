@@ -1,10 +1,14 @@
 import "../../../../src/app/providers";
 import { App } from "../../../../src/app/app";
-import { container, webServer } from "@structured-growth/microservice-sdk";
+import { container } from "@structured-growth/microservice-sdk";
 import { RegionEnum } from "@structured-growth/microservice-sdk";
 import { assert } from "chai";
 import { initTest } from "../../../common/init-test";
-import { setCustomFieldValidationPayload } from "../../../common/mock-custom-field-validation";
+import {
+	seedMetricCategoryCustomFields,
+	seedMetricCustomFields,
+	seedMetricTypeCustomFields,
+} from "../../../common/seed-custom-fields";
 
 describe("PUT /api/v1/metrics/:metricId", () => {
 	const { server, context } = initTest();
@@ -23,6 +27,9 @@ describe("PUT /api/v1/metrics/:metricId", () => {
 	before(async () => {
 		process.env.TRANSLATE_API_URL = "";
 		await container.resolve<App>("App").ready;
+		await seedMetricCategoryCustomFields(orgId);
+		await seedMetricTypeCustomFields(orgId);
+		await seedMetricCustomFields(orgId);
 	});
 
 	it("Should create metric category", async () => {
@@ -80,7 +87,7 @@ describe("PUT /api/v1/metrics/:metricId", () => {
 				value: value,
 				takenAt: "2024-05-16T14:30:00+00:00",
 				metadata: {
-					a: 1,
+					a: "1",
 				},
 			},
 		]);
@@ -120,12 +127,12 @@ describe("PUT /api/v1/metrics/:metricId", () => {
 		const { statusCode, body } = await server.put(`/v1/metrics/${context.createdMetricId}`).send({
 			value: value + 100,
 			metadata: {
-				a: 2,
+				a: "2",
 			},
 		});
 		assert.equal(statusCode, 200);
 		assert.equal(body.value, value + 100);
-		assert.equal(body.metadata.a, 2);
+		assert.equal(body.metadata.a, "2");
 	});
 
 	it("Should return updated metric with new value", async () => {
@@ -150,13 +157,6 @@ describe("PUT /api/v1/metrics/:metricId", () => {
 	});
 
 	it("Should return validation error for invalid custom fields", async () => {
-		setCustomFieldValidationPayload({
-			valid: false,
-			errors: {
-				a: ["must be a string"],
-			},
-		});
-
 		const { statusCode, body } = await server.put(`/v1/metrics/${context.createdMetricId}`).send({
 			metadata: {
 				a: 3,

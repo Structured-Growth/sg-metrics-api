@@ -4,14 +4,17 @@ import { container } from "@structured-growth/microservice-sdk";
 import { RegionEnum } from "@structured-growth/microservice-sdk";
 import { assert } from "chai";
 import { initTest } from "../../../common/init-test";
-import { setCustomFieldValidationPayload } from "../../../common/mock-custom-field-validation";
+import { seedMetricCategoryCustomFields } from "../../../common/seed-custom-fields";
 
 describe("POST /api/v1/metric-category", () => {
 	const { server } = initTest();
 	const code = `code-${Date.now()}`;
 	const orgId = parseInt(Date.now().toString().slice(0, 3));
 
-	before(async () => container.resolve<App>("App").ready);
+	before(async () => {
+		await container.resolve<App>("App").ready;
+		await seedMetricCategoryCustomFields(orgId);
+	});
 
 	it("Should create metric category", async () => {
 		const { statusCode, body } = await server.post("/v1/metric-category").send({
@@ -79,13 +82,6 @@ describe("POST /api/v1/metric-category", () => {
 	}).timeout(1800000);
 
 	it("Should return validation error for invalid custom fields", async () => {
-		setCustomFieldValidationPayload({
-			valid: false,
-			errors: {
-				specUrl: ["must be a valid url"],
-			},
-		});
-
 		const { statusCode, body } = await server.post("/v1/metric-category").send({
 			orgId: orgId,
 			region: RegionEnum.US,

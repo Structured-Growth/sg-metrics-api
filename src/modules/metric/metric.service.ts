@@ -11,7 +11,6 @@ import {
 	injectWithTransform,
 	LoggerTransform,
 	Logger,
-	validateCustomFields,
 	ValidationError,
 } from "@structured-growth/microservice-sdk";
 import { v4 } from "uuid";
@@ -42,6 +41,7 @@ import { MetricStatisticsBodyInterface } from "../../interfaces/metric-statistic
 import { MetricStatisticsResponseInterface } from "../../interfaces/metric-statistics-response.interface";
 import { MetricsUpsertBodyInterface } from "../../interfaces/metrics-upsert-body.interface";
 import { MetricsBulkDataInterface } from "./interfaces/metrics-bulk-data.interface";
+import { CustomFieldService } from "../custom-fields/custom-field.service";
 
 @autoInjectable()
 export class MetricService {
@@ -57,13 +57,18 @@ export class MetricService {
 		@inject("i18n") private getI18n: () => I18nType,
 		@inject("CacheService") private cacheService: CacheService,
 		@inject("accountApiUrl") private accountApiUrl: string,
+		@inject("CustomFieldService") private customFieldService: CustomFieldService,
 		@injectWithTransform("Logger", LoggerTransform, { module: "Metric" }) private logger?: Logger
 	) {
 		this.i18n = this.getI18n();
 		this.s3 = new AWS.S3();
 	}
 
-	public async create(params: MetricCreateBodyInterface[], transaction?: Transaction): Promise<MetricExtended[]> {
+	public async create(
+		params: MetricCreateBodyInterface[],
+		transaction?: Transaction,
+		inheritedOrgIds: number[] = []
+	): Promise<MetricExtended[]> {
 		// check if there are metrics with metricTypeCode and populate them with metricTypeId and metricCategoryId
 		const metricTypeCodes = map(params, "metricTypeCode").filter((i) => !!i);
 		let metricTypesMap: Record<string, MetricType> = {};
@@ -92,7 +97,8 @@ export class MetricService {
 			data.map((item) => ({
 				orgId: item.orgId,
 				metadata: item.metadata as Record<string, unknown> | undefined,
-			}))
+			})),
+			inheritedOrgIds
 		);
 
 		const result = await this.metricSqlRepository.create(data, transaction);
@@ -115,7 +121,11 @@ export class MetricService {
 		);
 	}
 
-	public async upsert(params: MetricCreateBodyInterface[], transaction?: Transaction): Promise<MetricExtended[]> {
+	public async upsert(
+		params: MetricCreateBodyInterface[],
+		transaction?: Transaction,
+		inheritedOrgIds: number[] = []
+	): Promise<MetricExtended[]> {
 		// check if there are metrics with metricTypeCode and populate them with metricTypeId and metricCategoryId
 		const metricTypeCodes = map(params, "metricTypeCode").filter((i) => !!i);
 		let metricTypesMap: Record<string, MetricType> = {};
@@ -142,7 +152,8 @@ export class MetricService {
 			data.map((item) => ({
 				orgId: item.orgId,
 				metadata: item.metadata as Record<string, unknown> | undefined,
-			}))
+			})),
+			inheritedOrgIds
 		);
 
 		const createdMetrics: Metric[] = [];
@@ -333,12 +344,19 @@ export class MetricService {
 	public async update(
 		id: string,
 		params: MetricUpdateAttributes & { metricTypeCode?: string; metricTypeVersion?: number },
-		transaction?: Transaction
+		transaction?: Transaction,
+		inheritedOrgIds: number[] = []
 	): Promise<MetricExtended> {
 		let { metricTypeCode, metricTypeVersion, ...updateParams } = params;
 
 		let metricTypeId: number | undefined;
 		let metricType: MetricType | undefined;
+
+		const currentMetric = await this.metricSqlRepository.read(id, { transaction });
+
+		if (!currentMetric) {
+			throw new NotFoundError(`${this.i18n.__("error.metric.name")} ${id} ${this.i18n.__("error.common.not_found")}`);
+		}
 
 		if (metricTypeCode && metricTypeVersion) {
 			const types = await this.metricTypeService.getByCodes([metricTypeCode], transaction);
@@ -351,6 +369,14 @@ export class MetricService {
 				);
 			}
 		}
+
+		const nextMetadata = updateParams.metadata !== undefined ? updateParams.metadata : currentMetric.metadata;
+		await this.customFieldService.validate(
+			"Metric",
+			nextMetadata as Record<string, unknown> | undefined,
+			currentMetric.orgId,
+			inheritedOrgIds
+		);
 
 		const updatedMetric = await this.metricSqlRepository.update(
 			id,
@@ -396,7 +422,10 @@ export class MetricService {
 		return { id, arn: metricAurora.arn, deleted: true };
 	}
 
-	public async bulk(data: MetricsBulkDataInterface): Promise<MetricsBulkResultInterface> {
+	public async bulk(
+		data: MetricsBulkDataInterface,
+		inheritedOrgIds: number[] = []
+	): Promise<MetricsBulkResultInterface> {
 		const result: MetricsBulkResultInterface = [];
 
 		await MetricSQL.sequelize.transaction(async (transaction) => {
@@ -404,21 +433,26 @@ export class MetricService {
 			for (let operation of data) {
 				switch (operation.op) {
 					case "create":
-						const createResult = await this.create([operation.data] as any, transaction);
+						const createResult = await this.create([operation.data] as any, transaction, inheritedOrgIds);
 						result.push({
 							op: "create",
 							data: createResult[0],
 						});
 						break;
 					case "upsert":
-						const upsertResult = await this.upsert([operation.data] as any, transaction);
+						const upsertResult = await this.upsert([operation.data] as any, transaction, inheritedOrgIds);
 						result.push({
 							op: "upsert",
 							data: upsertResult[0],
 						});
 						break;
 					case "update":
-						const updateResult = await this.update(operation.data.id, omit(operation.data, "id") as any, transaction);
+						const updateResult = await this.update(
+							operation.data.id,
+							omit(operation.data, "id") as any,
+							transaction,
+							inheritedOrgIds
+						);
 						result.push({
 							op: "update",
 							data: updateResult,
@@ -604,16 +638,19 @@ export class MetricService {
 		items: {
 			orgId?: number;
 			metadata?: Record<string, unknown>;
-		}[]
+		}[],
+		inheritedOrgIds: number[] = []
 	): Promise<void> {
 		const validationBody: Array<{ metadata: unknown } | undefined> = [];
 
 		for (const [index, item] of items.entries()) {
-			const { valid, errors } = await validateCustomFields({
-				entity: "Metric",
-				data: item.metadata,
-				orgId: item.orgId,
-			});
+			const { valid, errors } = await this.customFieldService.validate(
+				"Metric",
+				item.metadata,
+				item.orgId,
+				inheritedOrgIds,
+				false
+			);
 
 			if (!valid) {
 				validationBody[index] = {

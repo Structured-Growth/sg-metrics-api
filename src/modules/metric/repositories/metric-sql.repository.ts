@@ -5,7 +5,6 @@ import {
 	ValidationError,
 	I18nType,
 	inject,
-	validateCustomFields,
 } from "@structured-growth/microservice-sdk";
 import MetricSQL from "../../../../database/models/metric-sql.sequelize";
 import { MetricSearchParamsInterface } from "../../../interfaces/metric-search-params.interface";
@@ -144,7 +143,6 @@ export class MetricSqlRepository {
 			throw new NotFoundError(`${this.i18n.__("error.metric.name")} ${id} ${this.i18n.__("error.common.not_found")}`);
 		}
 		metricAurora.setAttributes(params);
-		await this.validateMetadata(metricAurora.toJSON().metadata, metricAurora.orgId);
 
 		return metricAurora.save({ transaction });
 	}
@@ -294,21 +292,5 @@ export class MetricSqlRepository {
 		}
 
 		return { where, page, limit, offset, order };
-	}
-
-	private async validateMetadata(data: object | undefined, orgId?: number): Promise<void> {
-		const { valid, errors } = await validateCustomFields({
-			entity: "Metric",
-			data: data as Record<string, unknown> | undefined,
-			orgId,
-		});
-
-		if (!valid) {
-			throw new ValidationError({
-				body: {
-					metadata: errors,
-				},
-			});
-		}
 	}
 }

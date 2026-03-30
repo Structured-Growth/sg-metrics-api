@@ -18,6 +18,7 @@ import { ValidationError } from "@structured-growth/microservice-sdk";
 import { SearchResultInterface, signedInternalFetch } from "@structured-growth/microservice-sdk";
 import { MetricCategorySearchParamsInterface } from "../../interfaces/metric-category-search-params.interface";
 import { Transaction } from "sequelize";
+import { CustomFieldService } from "../custom-fields/custom-field.service";
 
 @autoInjectable()
 export class MetricCategoryService {
@@ -34,6 +35,7 @@ export class MetricCategoryService {
 		@inject("MetricCategoryRepository") private metricCategoryRepository: MetricCategoryRepository,
 		@inject("MetricTypeRepository") private metricTypeRepository: MetricTypeRepository,
 		@inject("accountApiUrl") private accountApiUrl: string,
+		@inject("CustomFieldService") private customFieldService: CustomFieldService,
 		@inject("i18n") private getI18n: () => I18nType,
 		@inject("CacheService") private cacheService: CacheService,
 		@injectWithTransform("Logger", LoggerTransform, { module: "Metric" }) private logger?: Logger
@@ -63,7 +65,10 @@ export class MetricCategoryService {
 		}
 	}
 
-	public async create(params: MetricCategoryCreateBodyInterface): Promise<MetricCategory> {
+	public async create(
+		params: MetricCategoryCreateBodyInterface,
+		inheritedOrgIds: number[] = []
+	): Promise<MetricCategory> {
 		const existingMetricCategory = await this.metricCategoryRepository.findByCode(params.code);
 		if (existingMetricCategory) {
 			throw new ValidationError(
@@ -71,6 +76,8 @@ export class MetricCategoryService {
 				`${this.i18n.__("error.metric_category.name")} ${params.code} ${this.i18n.__("error.metric_category.exist")}`
 			);
 		}
+		await this.customFieldService.validate("MetricCategory", params.metadata, params.orgId, inheritedOrgIds);
+
 		const created = await this.metricCategoryRepository.create({
 			orgId: params.orgId,
 			region: params.region,
@@ -84,7 +91,11 @@ export class MetricCategoryService {
 		return created;
 	}
 
-	public async update(metricCategoryId: any, params: MetricCategoryUpdateBodyInterface): Promise<MetricCategory> {
+	public async update(
+		metricCategoryId: any,
+		params: MetricCategoryUpdateBodyInterface,
+		inheritedOrgIds: number[] = []
+	): Promise<MetricCategory> {
 		const current = await this.metricCategoryRepository.read(metricCategoryId);
 		if (!current) {
 			throw new NotFoundError(
@@ -100,6 +111,9 @@ export class MetricCategoryService {
 				);
 			}
 		}
+
+		const nextMetadata = params.metadata !== undefined ? params.metadata : current.metadata;
+		await this.customFieldService.validate("MetricCategory", nextMetadata, current.orgId, inheritedOrgIds);
 
 		this.cacheService
 			.invalidateTag(this.entityTag(current.arn))

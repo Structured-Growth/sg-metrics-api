@@ -6,8 +6,6 @@ import {
 	NotFoundError,
 	I18nType,
 	inject,
-	validateCustomFields,
-	ValidationError,
 } from "@structured-growth/microservice-sdk";
 import MetricCategory, {
 	MetricCategoryCreationAttributes,
@@ -120,7 +118,6 @@ export class MetricCategoryRepository
 			metadata?: Record<string, string>;
 		}
 	): Promise<MetricCategory> {
-		await this.validateMetadata(params.metadata, params.orgId);
 		const { metadata, ...metricAttributes } = params;
 
 		// Create the metric category
@@ -202,7 +199,6 @@ export class MetricCategoryRepository
 				transaction,
 			});
 			metricCategory.setAttributes(params);
-			await this.validateMetadata(metricCategory.metadata, metricCategory.orgId);
 			await metricCategory.save({
 				transaction,
 			});
@@ -259,21 +255,5 @@ export class MetricCategoryRepository
 		return MetricCategory.findOne({
 			where: { code },
 		});
-	}
-
-	private async validateMetadata(data: Record<string, unknown> | undefined, orgId?: number): Promise<void> {
-		const { valid, errors } = await validateCustomFields({
-			entity: "MetricCategory",
-			data,
-			orgId,
-		});
-
-		if (!valid) {
-			throw new ValidationError({
-				body: {
-					metadata: errors,
-				},
-			});
-		}
 	}
 }

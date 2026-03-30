@@ -5,4 +5,5 @@ export { MetricController } from "./metric.controller";
 export { MetricCategoryController } from "./metric-category.controller";
 export { MetricTypeController } from "./metric-type.controller";
 export { ReportsController } from "./reports.controller";
+export { CustomFieldsController } from "./custom-field.controller";
 export { DocsController } from "./docs.controller";
