@@ -8,6 +8,7 @@ import {
 	I18nType,
 	inject,
 	NotFoundError,
+	RegionEnum,
 	SearchResultInterface,
 	ValidateFuncArgs,
 } from "@structured-growth/microservice-sdk";
@@ -73,7 +74,7 @@ export class CustomFieldsController extends BaseController {
 				...query,
 				includeInherited: query.includeInherited?.toString() !== "false",
 			},
-			"orgIds" in this.principal && Array.isArray(this.principal.orgIds) ? this.principal.orgIds : []
+			this.principal.parentOrgIds ?? []
 		);
 
 		return {
@@ -98,8 +99,7 @@ export class CustomFieldsController extends BaseController {
 		return this.customFieldService.validate(
 			body.entity,
 			body.data,
-			body.orgId,
-			"orgIds" in this.principal && Array.isArray(this.principal.orgIds) ? this.principal.orgIds : [],
+			[body.orgId, ...(this.principal.parentOrgIds ?? [])],
 			false
 		);
 	}
@@ -114,7 +114,10 @@ export class CustomFieldsController extends BaseController {
 		@Queries() query: {},
 		@Body() body: CustomFieldCreateBodyInterface
 	): Promise<PublicCustomFieldAttributes> {
-		const customField = await this.customFieldRepository.create(body);
+		const customField = await this.customFieldService.create({
+			...body,
+			region: this.principal.region ?? RegionEnum.US,
+		});
 		this.response.status(201);
 
 		await this.eventBus.publish(
@@ -164,7 +167,7 @@ export class CustomFieldsController extends BaseController {
 		@Queries() query: {},
 		@Body() body: CustomFieldUpdateBodyInterface
 	): Promise<PublicCustomFieldAttributes> {
-		const customField = await this.customFieldRepository.update(customFieldId, body);
+		const customField = await this.customFieldService.update(customFieldId, body);
 
 		await this.eventBus.publish(
 			new EventMutation(

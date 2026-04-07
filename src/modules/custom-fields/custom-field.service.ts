@@ -2,27 +2,36 @@ import {
 	autoInjectable,
 	inject,
 	joi,
+	I18nType,
+	NotFoundError,
 	SearchResultInterface,
 	validate,
 	ValidationError,
 } from "@structured-growth/microservice-sdk";
 import { Op } from "sequelize";
-import CustomField from "../../../database/models/custom-field.sequelize";
+import CustomField, {
+	CustomFieldCreationAttributes,
+	CustomFieldUpdateAttributes,
+} from "../../../database/models/custom-field.sequelize";
 import { CustomFieldSearchParamsInterface } from "../../interfaces/custom-field-search-params.interface";
 import { CustomFieldRepository } from "./custom-field.repository";
 
 @autoInjectable()
 export class CustomFieldService {
-	constructor(@inject("CustomFieldRepository") private customFieldRepository: CustomFieldRepository) {}
+	private i18n: I18nType;
+
+	constructor(
+		@inject("CustomFieldRepository") private customFieldRepository: CustomFieldRepository,
+		@inject("i18n") private getI18n: () => I18nType
+	) {
+		this.i18n = this.getI18n();
+	}
 
 	public async search(
 		params: CustomFieldSearchParamsInterface,
-		inheritedOrgIds: number[] = []
+		parentOrgIds: number[] = []
 	): Promise<SearchResultInterface<CustomField>> {
-		const orgIds =
-			params.includeInherited === false
-				? [params.orgId]
-				: [params.orgId, ...this.normalizeInheritedOrgIds(params.orgId, inheritedOrgIds)];
+		const orgIds = params.includeInherited === false ? [params.orgId] : [params.orgId, ...parentOrgIds];
 
 		return this.customFieldRepository.search({
 			...params,
@@ -33,8 +42,7 @@ export class CustomFieldService {
 	public async validate(
 		entityName: string,
 		data: Record<string, unknown> | null | undefined,
-		orgId: number,
-		inheritedOrgIds: number[] = [],
+		orgIds: number[] = [],
 		throwError = true
 	): Promise<{
 		valid: boolean;
@@ -44,9 +52,8 @@ export class CustomFieldService {
 		const customFields = await CustomField.findAll({
 			where: {
 				entity: entityName,
-				status: "active",
 				orgId: {
-					[Op.or]: [orgId, ...this.normalizeInheritedOrgIds(orgId, inheritedOrgIds)],
+					[Op.or]: orgIds,
 				},
 			},
 		});
@@ -71,23 +78,49 @@ export class CustomFieldService {
 		return { valid, message, errors };
 	}
 
-	private normalizeInheritedOrgIds(orgId: number, inheritedOrgIds: number[]): number[] {
-		if (!Array.isArray(inheritedOrgIds)) {
-			return [];
+	public async create(params: CustomFieldCreationAttributes): Promise<CustomField> {
+		const duplicate = await this.customFieldRepository.search({
+			orgId: [params.orgId],
+			entity: [params.entity],
+			name: [params.name],
+		});
+
+		if (duplicate.data.length > 0) {
+			throw new ValidationError({
+				body: {
+					name: [this.i18n.__("error.custom_field.custom_field_created")],
+				},
+			});
 		}
 
-		const normalizedOrgIds = new Set<number>();
+		return this.customFieldRepository.create(params);
+	}
 
-		for (const inheritedOrgId of inheritedOrgIds) {
-			const normalizedOrgId = Number(inheritedOrgId);
+	public async update(id: number, params: CustomFieldUpdateAttributes): Promise<CustomField> {
+		const customField = await this.customFieldRepository.read(id);
 
-			if (!Number.isInteger(normalizedOrgId) || normalizedOrgId <= 0 || normalizedOrgId === orgId) {
-				continue;
-			}
-
-			normalizedOrgIds.add(normalizedOrgId);
+		if (!customField) {
+			throw new NotFoundError(
+				`${this.i18n.__("error.custom_field.name")} ${id} ${this.i18n.__("error.common.not_found")}`
+			);
 		}
 
-		return Array.from(normalizedOrgIds);
+		const nextEntity = params.entity ?? customField.entity;
+		const nextName = params.name ?? customField.name;
+		const duplicate = await this.customFieldRepository.search({
+			orgId: [customField.orgId],
+			entity: [nextEntity],
+			name: [nextName],
+		});
+
+		if (duplicate.data.some((item) => Number(item.id) !== Number(id))) {
+			throw new ValidationError({
+				body: {
+					name: [this.i18n.__("error.custom_field.custom_field_created")],
+				},
+			});
+		}
+
+		return this.customFieldRepository.update(id, params);
 	}
 }

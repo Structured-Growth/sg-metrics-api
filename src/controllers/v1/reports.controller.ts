@@ -88,10 +88,7 @@ export class ReportsController extends BaseController {
 	@DescribeResource("Organization", ({ body }) => Number(body.orgId))
 	@DescribeResource("Account", ({ body }) => Number(body.accountId))
 	async create(@Queries() query: {}, @Body() body: ReportCreateBodyInterface): Promise<PublicReportAttributes> {
-		const report = await this.reportsService.create(
-			body,
-			"orgIds" in this.principal && Array.isArray(this.principal.orgIds) ? this.principal.orgIds : []
-		);
+		const report = await this.reportsService.create(body, this.principal.parentOrgIds ?? []);
 		this.response.status(201);
 
 		await this.eventBus.publish(
@@ -142,11 +139,7 @@ export class ReportsController extends BaseController {
 		@Queries() query: {},
 		@Body() body: ReportUpdateBodyInterface
 	): Promise<PublicReportAttributes> {
-		const report = await this.reportsService.update(
-			reportId,
-			body,
-			"orgIds" in this.principal && Array.isArray(this.principal.orgIds) ? this.principal.orgIds : []
-		);
+		const report = await this.reportsService.update(reportId, body, this.principal.parentOrgIds ?? []);
 
 		await this.eventBus.publish(
 			new EventMutation(this.principal.arn, report.arn, `${this.appPrefix}:reports/update`, JSON.stringify(body))

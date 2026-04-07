@@ -16,7 +16,7 @@ describe("POST /api/v1/metrics", () => {
 	const code = `code-${Date.now()}`;
 	const relatedToRn = `relatedToRn-${Date.now()}`;
 	const userId = parseInt(Date.now().toString().slice(4));
-	const orgId = parseInt(Date.now().toString().slice(0, 3));
+	const orgId = (Date.now() % 30000) + 100;
 	const factor = parseInt(Date.now().toString().slice(0, 2));
 	const version = orgId - factor;
 	const accountId = orgId - factor - factor;
@@ -206,6 +206,7 @@ describe("POST /api/v1/metrics", () => {
 				value: "bad",
 				takenAt: "now",
 				takenAtOffset: "kk",
+				metadata: "bad",
 			},
 		]);
 		assert.equal(statusCode, 422);
@@ -223,6 +224,7 @@ describe("POST /api/v1/metrics", () => {
 		assert.isString(body.validation.body[0].value[0]);
 		assert.isString(body.validation.body[0].takenAt[0]);
 		assert.isString(body.validation.body[0].takenAtOffset[0]);
+		assert.isString(body.validation.body[0].metadata[0]);
 	});
 
 	it("Should return validation error for invalid custom fields", async () => {

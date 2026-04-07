@@ -7,6 +7,6 @@ export const ReportUpdateParamsValidator = joi.object({
 		title: joi.string().max(150).label("validator.reports.title"),
 		inDashboard: joi.boolean().label("validator.reports.inDashboard"),
 		reportParameters: joi.string().label("validator.reports.reportParameters"),
-		metadata: joi.object().allow(null).label("validator.reports.metadata"),
+		metadata: joi.object().label("validator.reports.metadata"),
 	}),
 });

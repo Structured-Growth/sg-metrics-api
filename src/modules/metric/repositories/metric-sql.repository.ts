@@ -159,8 +159,10 @@ export class MetricSqlRepository {
 
 	private buildQuery(
 		params:
-			| MetricSearchParamsInterface
-			| (MetricAggregateParamsInterface & { page?: number; limit?: number; sort?: any })
+			| (MetricSearchParamsInterface & { metadata?: Record<string, unknown> })
+			| ((MetricAggregateParamsInterface & { page?: number; limit?: number; sort?: any }) & {
+					metadata?: Record<string, unknown>;
+			  })
 	) {
 		const page = Number(params.page || 1);
 		const limit = Number(params.limit || 20);
@@ -256,17 +258,10 @@ export class MetricSqlRepository {
 			));
 
 		const metadataRaw = (params as any).metadata;
-		const metadataStr = typeof metadataRaw === "string" ? metadataRaw.trim() : "";
-		let metadataObj: Record<string, unknown> | null = null;
-
-		if (metadataStr) {
-			if (metadataStr.startsWith("{") && metadataStr.endsWith("}")) {
-				const parsed = JSON.parse(metadataStr);
-				if (parsed && typeof parsed === "object" && !Array.isArray(parsed)) {
-					metadataObj = parsed as Record<string, unknown>;
-				}
-			}
-		}
+		const metadataObj =
+			metadataRaw && typeof metadataRaw === "object" && !Array.isArray(metadataRaw)
+				? (metadataRaw as Record<string, unknown>)
+				: null;
 
 		if (metadataObj) {
 			where[Op.and] = where[Op.and] ?? [];
@@ -274,7 +269,7 @@ export class MetricSqlRepository {
 			for (const [keyRaw, valRaw] of Object.entries(metadataObj)) {
 				if (valRaw === null || valRaw === undefined) continue;
 
-				const key = String(keyRaw).replace(/[^a-zA-Z0-9_]/g, "");
+				const key = String(keyRaw).replace(/[^a-zA-Z0-9_-]/g, "");
 				if (!key) continue;
 
 				const v = String(valRaw).trim();

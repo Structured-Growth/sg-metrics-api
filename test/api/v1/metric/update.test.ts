@@ -15,7 +15,7 @@ describe("PUT /api/v1/metrics/:metricId", () => {
 	const code = `code-${Date.now()}`;
 	const userId = parseInt(Date.now().toString().slice(5));
 	const relatedToRn = `relatedTo-${Date.now()}`;
-	const orgId = parseInt(Date.now().toString().slice(0, 3));
+	const orgId = (Date.now() % 30000) + 100;
 	const factor = parseInt(Date.now().toString().slice(0, 2));
 	const version = orgId - factor;
 	const accountId = orgId - factor - factor;
@@ -154,6 +154,20 @@ describe("PUT /api/v1/metrics/:metricId", () => {
 		const { statusCode, body } = await server.get(`/v1/metrics/${context.createdMetric2NewId}`);
 		assert.equal(statusCode, 200);
 		assert.equal(body.takenAtOffset, 0);
+	});
+
+	it("Should return Joi validation error for invalid request body", async () => {
+		const { statusCode, body } = await server.put(`/v1/metrics/${context.createdMetricId}`).send({
+			value: "bad",
+			takenAt: "now",
+			metadata: "bad",
+		});
+
+		assert.equal(statusCode, 422);
+		assert.equal(body.name, "ValidationError");
+		assert.isString(body.validation.body.value[0]);
+		assert.isString(body.validation.body.takenAt[0]);
+		assert.isString(body.validation.body.metadata[0]);
 	});
 
 	it("Should return validation error for invalid custom fields", async () => {

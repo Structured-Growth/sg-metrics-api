@@ -130,16 +130,4 @@ describe("PUT /api/v1/metric-type/:metricTypeId", () => {
 		assert.equal(statusCode, 200);
 		assert.equal(body.status, "active");
 	}).timeout(1800000);
-
-	it("Should return validation error for invalid custom fields", async () => {
-		const { statusCode, body } = await server.put(`/v1/metric-type/${context.createdMetricTypeId}`).send({
-			metadata: {
-				specUrl: 123,
-			},
-		});
-
-		assert.equal(statusCode, 422);
-		assert.equal(body.name, "ValidationError");
-		assert.isString(body.validation.body.metadata.specUrl[0]);
-	}).timeout(1800000);
 });

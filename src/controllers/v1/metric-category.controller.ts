@@ -105,10 +105,7 @@ export class MetricCategoryController extends BaseController {
 		@Queries() query: {},
 		@Body() body: MetricCategoryCreateBodyInterface
 	): Promise<PublicMetricCategoryAttributes> {
-		const metricCategory = await this.metricCategoryService.create(
-			body,
-			"orgIds" in this.principal && Array.isArray(this.principal.orgIds) ? this.principal.orgIds : []
-		);
+		const metricCategory = await this.metricCategoryService.create(body);
 		this.response.status(201);
 
 		await this.eventBus.publish(
@@ -167,11 +164,7 @@ export class MetricCategoryController extends BaseController {
 		@Queries() query: {},
 		@Body() body: MetricCategoryUpdateBodyInterface
 	): Promise<PublicMetricCategoryAttributes> {
-		const metricCategory = await this.metricCategoryService.update(
-			metricCategoryId,
-			body,
-			"orgIds" in this.principal && Array.isArray(this.principal.orgIds) ? this.principal.orgIds : []
-		);
+		const metricCategory = await this.metricCategoryService.update(metricCategoryId, body);
 		this.response.status(200);
 
 		await this.eventBus.publish(

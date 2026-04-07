@@ -30,7 +30,8 @@
       "name": "Report"
     },
     "custom_field": {
-      "name": "Custom Field"
+      "name": "Custom Field",
+      "custom_field_created": "A custom field with this orgId, entity and name has already been created."
     },
     "export": {
       "server_problem": "Problem with reading mails",

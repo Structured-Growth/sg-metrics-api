@@ -7,5 +7,5 @@ export interface MetricUpdateBodyInterface {
 	takenAtOffset?: number;
 	metricTypeCode?: string;
 	metricTypeVersion?: number;
-	metadata?: object;
+	metadata?: Record<string, unknown>;
 }

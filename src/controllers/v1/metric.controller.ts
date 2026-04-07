@@ -218,11 +218,7 @@ export class MetricController extends BaseController {
 			};
 		});
 
-		const metrics = await this.metricService.create(
-			payload,
-			undefined,
-			"orgIds" in this.principal && Array.isArray(this.principal.orgIds) ? this.principal.orgIds : []
-		);
+		const metrics = await this.metricService.create(payload, undefined, this.principal.parentOrgIds ?? []);
 
 		await Promise.all(
 			metrics.map((metric, index) =>
@@ -302,7 +298,7 @@ export class MetricController extends BaseController {
 				isUndefined
 			) as any,
 			undefined,
-			"orgIds" in this.principal && Array.isArray(this.principal.orgIds) ? this.principal.orgIds : []
+			this.principal.parentOrgIds ?? []
 		);
 
 		await this.eventBus.publish(
@@ -344,11 +340,7 @@ export class MetricController extends BaseController {
 			};
 		});
 
-		const metrics = await this.metricService.upsert(
-			payload,
-			undefined,
-			"orgIds" in this.principal && Array.isArray(this.principal.orgIds) ? this.principal.orgIds : []
-		);
+		const metrics = await this.metricService.upsert(payload, undefined, this.principal.parentOrgIds ?? []);
 
 		await Promise.all(
 			metrics.map((metric, index) =>
@@ -448,10 +440,7 @@ export class MetricController extends BaseController {
 				},
 			};
 		}) as MetricsBulkDataInterface;
-		const result = await this.metricService.bulk(
-			data,
-			"orgIds" in this.principal && Array.isArray(this.principal.orgIds) ? this.principal.orgIds : []
-		);
+		const result = await this.metricService.bulk(data, this.principal.parentOrgIds ?? []);
 
 		void Promise.all(
 			result.map(({ op, data: metric }, index) => {

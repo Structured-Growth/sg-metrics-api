@@ -63,7 +63,7 @@ export class MetricCategoryRepository
 		if (params.metadata && Object.keys(params.metadata).length > 0) {
 			const metadataSearchQuery = Object.entries(params.metadata).map(([name, value]) => ({
 				name,
-				value: { [Op.iLike]: `%${value}%` }, // Adjust the operator according to your requirements
+				value: { [Op.iLike]: `%${value}%` },
 			}));
 
 			const metadataCategories = await MetricCategoryMetadata.findAll({
@@ -136,7 +136,6 @@ export class MetricCategoryRepository
 				}))
 			);
 
-			// Fetch the created metadata entries for the category
 			const createdMetadata = await MetricCategoryMetadata.findAll({
 				where: {
 					metricCategoryId: metricCategory.id,
@@ -144,7 +143,6 @@ export class MetricCategoryRepository
 				raw: true,
 			});
 
-			// Assign the metadata to the metricCategory object
 			metricCategory.metadata = createdMetadata.reduce((acc, item) => {
 				acc[item.name] = item.value;
 				return acc;

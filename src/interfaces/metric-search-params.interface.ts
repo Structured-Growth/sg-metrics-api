@@ -23,5 +23,9 @@ export interface MetricSearchParamsInterface
 	recordedAtMax?: Date;
 	nextToken?: string;
 	q?: string;
-	metadata?: string;
+	/**
+	 * Search by custom entity fields.
+	 * Example: metadata[source]=device
+	 */
+	"metadata[customFieldName]"?: string;
 }

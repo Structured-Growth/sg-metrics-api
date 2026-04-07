@@ -1,6 +1,7 @@
 import "../../../../src/app/providers";
 import { assert } from "chai";
 import { initTest } from "../../../common/init-test";
+import { customFieldAlternativesSchema } from "../../../common/custom-field-schema";
 
 describe("DELETE /api/v1/custom-fields/:customFieldId", () => {
 	const { server, context } = initTest();
@@ -9,11 +10,10 @@ describe("DELETE /api/v1/custom-fields/:customFieldId", () => {
 	it("Should create custom field", async () => {
 		const { statusCode, body } = await server.post("/v1/custom-fields").send({
 			orgId,
-			region: "us",
 			entity: "Report",
 			title: "Report Code",
 			name: "reportCode",
-			schema: { type: "string" },
+			schema: customFieldAlternativesSchema,
 			status: "active",
 		});
 

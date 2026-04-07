@@ -11,7 +11,15 @@ export const CustomFieldSearchParamsValidator = joi.object({
 				.items(joi.string().valid("active", "inactive", "archived"))
 				.label("validator.customFields.status"),
 			title: joi.array().items(joi.string().max(255)).label("validator.customFields.title"),
-			name: joi.array().items(joi.string().max(255)).label("validator.customFields.name"),
+			name: joi
+				.array()
+				.items(
+					joi
+						.string()
+						.pattern(/^[a-zA-Z0-9_-]+$/)
+						.max(255)
+				)
+				.label("validator.customFields.name"),
 			includeInherited: joi.boolean().label("validator.customFields.includeInherited"),
 		})
 		.concat(CommonSearchParamsValidator),

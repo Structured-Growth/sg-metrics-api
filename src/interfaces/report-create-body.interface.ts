@@ -6,5 +6,5 @@ export interface ReportCreateBodyInterface {
 	title: string;
 	inDashboard: boolean;
 	reportParameters: string;
-	metadata?: Record<string, unknown> | null;
+	metadata?: Record<string, unknown>;
 }

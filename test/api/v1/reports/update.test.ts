@@ -20,7 +20,7 @@ describe("PUT /api/v1/reports/:reportId", () => {
 			accountId,
 			title: "Quarterly report",
 			inDashboard: true,
-			reportParameters: "{\"period\":\"Q1\"}",
+			reportParameters: '{"period":"Q1"}',
 			metadata: {
 				reportCode: "R1",
 			},
@@ -39,5 +39,35 @@ describe("PUT /api/v1/reports/:reportId", () => {
 		assert.equal(statusCode, 200);
 		assert.equal(body.title, "Quarterly report v2");
 		assert.equal(body.metadata.reportCode, "R2");
+	});
+
+	it("Should return Joi validation error for invalid request body", async () => {
+		const { statusCode, body } = await server.put(`/v1/reports/${reportId}`).send({
+			title: 1,
+			inDashboard: "bad",
+			reportParameters: 2,
+			metadata: "bad",
+		});
+
+		assert.equal(statusCode, 422);
+		assert.equal(body.name, "ValidationError");
+		assert.isString(body.validation.body.title[0]);
+		assert.isString(body.validation.body.inDashboard[0]);
+		assert.isString(body.validation.body.reportParameters[0]);
+		assert.isString(body.validation.body.metadata[0]);
+	});
+
+	it("Should return custom fields validation error for invalid metadata", async () => {
+		const { statusCode, body } = await server.put(`/v1/reports/${reportId}`).send({
+			metadata: {
+				reportCode: {
+					invalid: true,
+				},
+			},
+		});
+
+		assert.equal(statusCode, 422);
+		assert.equal(body.name, "ValidationError");
+		assert.isString(body.validation.body.metadata.reportCode[0]);
 	});
 });

@@ -5,10 +5,14 @@ const Sequelize = require("sequelize");
 /** @type {import("sequelize-cli").Migration} */
 module.exports = {
 	async up(queryInterface) {
-		await queryInterface.addColumn(
+		await queryInterface.sequelize.query(
+			`UPDATE "${process.env.DB_SCHEMA}"."metrics" SET "metadata" = '{}'::jsonb WHERE "metadata" IS NULL;`
+		);
+
+		await queryInterface.changeColumn(
 			{
 				schema: process.env.DB_SCHEMA,
-				tableName: "reports",
+				tableName: "metrics",
 			},
 			"metadata",
 			{
@@ -20,12 +24,17 @@ module.exports = {
 	},
 
 	async down(queryInterface) {
-		await queryInterface.removeColumn(
+		await queryInterface.changeColumn(
 			{
 				schema: process.env.DB_SCHEMA,
-				tableName: "reports",
+				tableName: "metrics",
 			},
-			"metadata"
+			"metadata",
+			{
+				type: Sequelize.JSONB,
+				allowNull: true,
+				defaultValue: null,
+			}
 		);
 	},
 };

@@ -5,11 +5,13 @@ export interface ReportAttributes extends DefaultModelInterface {
 	title: string;
 	inDashboard: boolean;
 	reportParameters: string;
-	metadata?: Record<string, unknown> | null;
+	metadata: Record<string, unknown>;
 }
 
 export interface ReportCreationAttributes
-	extends Omit<ReportAttributes, "id" | "arn" | "createdAt" | "updatedAt" | "deletedAt"> {}
+	extends Omit<ReportAttributes, "id" | "arn" | "createdAt" | "updatedAt" | "deletedAt" | "metadata"> {
+	metadata?: Record<string, unknown>;
+}
 
 export interface ReportUpdateAttributes
 	extends Partial<Pick<ReportAttributes, "title" | "inDashboard" | "reportParameters" | "metadata">> {}
@@ -40,7 +42,7 @@ export class ReportSequelize extends Model<ReportAttributes, ReportCreationAttri
 	reportParameters: string;
 
 	@Column(DataType.JSONB)
-	metadata: Record<string, unknown> | null;
+	metadata: Record<string, unknown>;
 
 	static get arnPattern(): string {
 		return [container.resolve("appPrefix"), "<region>", "<orgId>", "<accountId>", "reports/<reportId>"].join(":");

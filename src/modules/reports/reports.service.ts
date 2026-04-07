@@ -20,19 +20,19 @@ export class ReportsService {
 		this.i18n = this.getI18n();
 	}
 
-	public async create(params: ReportCreateBodyInterface, inheritedOrgIds: number[] = []): Promise<ReportSequelize> {
-		await this.customFieldService.validate("Report", params.metadata, params.orgId, inheritedOrgIds);
+	public async create(params: ReportCreateBodyInterface, parentOrgIds: number[] = []): Promise<ReportSequelize> {
+		await this.customFieldService.validate("Report", params.metadata, [params.orgId, ...parentOrgIds]);
 
 		return this.reportRepository.create({
 			...params,
-			metadata: params.metadata ?? null,
+			metadata: params.metadata ?? {},
 		} as ReportCreationAttributes);
 	}
 
 	public async update(
 		id: number,
 		params: ReportUpdateBodyInterface,
-		inheritedOrgIds: number[] = []
+		parentOrgIds: number[] = []
 	): Promise<ReportSequelize> {
 		const report = await this.reportRepository.read(id);
 
@@ -40,13 +40,11 @@ export class ReportsService {
 			throw new NotFoundError(`${this.i18n.__("error.report.name")} ${id} ${this.i18n.__("error.common.not_found")}`);
 		}
 
-		const nextReport = {
-			...report.toJSON(),
-			...params,
-			metadata: params.metadata !== undefined ? params.metadata : report.metadata,
-		};
-
-		await this.customFieldService.validate("Report", nextReport.metadata, report.orgId, inheritedOrgIds);
+		await this.customFieldService.validate(
+			"Report",
+			params.metadata !== undefined ? params.metadata : report.metadata,
+			[report.orgId, ...parentOrgIds]
+		);
 
 		return this.reportRepository.update(id, params as ReportUpdateAttributes);
 	}

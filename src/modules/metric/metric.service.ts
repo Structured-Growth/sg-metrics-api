@@ -67,7 +67,7 @@ export class MetricService {
 	public async create(
 		params: MetricCreateBodyInterface[],
 		transaction?: Transaction,
-		inheritedOrgIds: number[] = []
+		parentOrgIds: number[] = []
 	): Promise<MetricExtended[]> {
 		// check if there are metrics with metricTypeCode and populate them with metricTypeId and metricCategoryId
 		const metricTypeCodes = map(params, "metricTypeCode").filter((i) => !!i);
@@ -98,7 +98,7 @@ export class MetricService {
 				orgId: item.orgId,
 				metadata: item.metadata as Record<string, unknown> | undefined,
 			})),
-			inheritedOrgIds
+			parentOrgIds
 		);
 
 		const result = await this.metricSqlRepository.create(data, transaction);
@@ -124,7 +124,7 @@ export class MetricService {
 	public async upsert(
 		params: MetricCreateBodyInterface[],
 		transaction?: Transaction,
-		inheritedOrgIds: number[] = []
+		parentOrgIds: number[] = []
 	): Promise<MetricExtended[]> {
 		// check if there are metrics with metricTypeCode and populate them with metricTypeId and metricCategoryId
 		const metricTypeCodes = map(params, "metricTypeCode").filter((i) => !!i);
@@ -153,7 +153,7 @@ export class MetricService {
 				orgId: item.orgId,
 				metadata: item.metadata as Record<string, unknown> | undefined,
 			})),
-			inheritedOrgIds
+			parentOrgIds
 		);
 
 		const createdMetrics: Metric[] = [];
@@ -345,7 +345,7 @@ export class MetricService {
 		id: string,
 		params: MetricUpdateAttributes & { metricTypeCode?: string; metricTypeVersion?: number },
 		transaction?: Transaction,
-		inheritedOrgIds: number[] = []
+		parentOrgIds: number[] = []
 	): Promise<MetricExtended> {
 		let { metricTypeCode, metricTypeVersion, ...updateParams } = params;
 
@@ -370,13 +370,11 @@ export class MetricService {
 			}
 		}
 
-		const nextMetadata = updateParams.metadata !== undefined ? updateParams.metadata : currentMetric.metadata;
-		await this.customFieldService.validate(
-			"Metric",
-			nextMetadata as Record<string, unknown> | undefined,
+		const nextMetadata = updateParams.metadata ?? currentMetric.metadata;
+		await this.customFieldService.validate("Metric", nextMetadata as Record<string, unknown> | undefined, [
 			currentMetric.orgId,
-			inheritedOrgIds
-		);
+			...parentOrgIds,
+		]);
 
 		const updatedMetric = await this.metricSqlRepository.update(
 			id,
@@ -422,10 +420,7 @@ export class MetricService {
 		return { id, arn: metricAurora.arn, deleted: true };
 	}
 
-	public async bulk(
-		data: MetricsBulkDataInterface,
-		inheritedOrgIds: number[] = []
-	): Promise<MetricsBulkResultInterface> {
+	public async bulk(data: MetricsBulkDataInterface, parentOrgIds: number[] = []): Promise<MetricsBulkResultInterface> {
 		const result: MetricsBulkResultInterface = [];
 
 		await MetricSQL.sequelize.transaction(async (transaction) => {
@@ -433,14 +428,14 @@ export class MetricService {
 			for (let operation of data) {
 				switch (operation.op) {
 					case "create":
-						const createResult = await this.create([operation.data] as any, transaction, inheritedOrgIds);
+						const createResult = await this.create([operation.data] as any, transaction, parentOrgIds);
 						result.push({
 							op: "create",
 							data: createResult[0],
 						});
 						break;
 					case "upsert":
-						const upsertResult = await this.upsert([operation.data] as any, transaction, inheritedOrgIds);
+						const upsertResult = await this.upsert([operation.data] as any, transaction, parentOrgIds);
 						result.push({
 							op: "upsert",
 							data: upsertResult[0],
@@ -451,7 +446,7 @@ export class MetricService {
 							operation.data.id,
 							omit(operation.data, "id") as any,
 							transaction,
-							inheritedOrgIds
+							parentOrgIds
 						);
 						result.push({
 							op: "update",
@@ -639,7 +634,7 @@ export class MetricService {
 			orgId?: number;
 			metadata?: Record<string, unknown>;
 		}[],
-		inheritedOrgIds: number[] = []
+		parentOrgIds: number[] = []
 	): Promise<void> {
 		const validationBody: Array<{ metadata: unknown } | undefined> = [];
 
@@ -647,8 +642,7 @@ export class MetricService {
 			const { valid, errors } = await this.customFieldService.validate(
 				"Metric",
 				item.metadata,
-				item.orgId,
-				inheritedOrgIds,
+				item.orgId ? [item.orgId, ...parentOrgIds] : [],
 				false
 			);
 

@@ -8,15 +8,34 @@ async function createCustomField(
 	title: string,
 	schema: Record<string, unknown>
 ): Promise<void> {
-	await CustomField.create({
-		orgId,
-		region: RegionEnum.US,
-		entity,
-		title,
-		name,
-		schema,
-		status: "active",
+	const [customField] = await CustomField.findOrCreate({
+		where: {
+			orgId,
+			entity,
+			name,
+		},
+		defaults: {
+			orgId,
+			region: RegionEnum.US,
+			entity,
+			title,
+			name,
+			schema,
+			status: "active",
+		},
 	});
+
+	if (
+		customField.title !== title ||
+		customField.status !== "active" ||
+		JSON.stringify(customField.schema) !== JSON.stringify(schema)
+	) {
+		await customField.update({
+			title,
+			schema,
+			status: "active",
+		});
+	}
 }
 
 export async function seedMetricCustomFields(orgId: number): Promise<void> {
