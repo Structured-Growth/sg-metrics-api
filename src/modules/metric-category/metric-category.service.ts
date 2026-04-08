@@ -71,6 +71,7 @@ export class MetricCategoryService {
 				`${this.i18n.__("error.metric_category.name")} ${params.code} ${this.i18n.__("error.metric_category.exist")}`
 			);
 		}
+
 		const created = await this.metricCategoryRepository.create({
 			orgId: params.orgId,
 			region: params.region,

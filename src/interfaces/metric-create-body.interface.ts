@@ -49,5 +49,5 @@ export interface MetricCreateBodyInterface {
 	/**
 	 * Custom metadata could be added to a metric
 	 */
-	metadata?: object;
+	metadata?: Record<string, unknown>;
 }

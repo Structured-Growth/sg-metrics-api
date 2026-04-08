@@ -29,6 +29,10 @@
     "report": {
       "name": "Report"
     },
+    "custom_field": {
+      "name": "Custom Field",
+      "custom_field_created": "A custom field with this orgId, entity and name has already been created."
+    },
     "export": {
       "server_problem": "Problem with reading mails",
       "no_emails": "The user does not have an email address to send a report",
@@ -75,7 +79,8 @@
       "arn": "Entity ARNs",
       "page": "Page",
       "limit": "Limit",
-      "sort": "Sort"
+      "sort": "Sort",
+      "metadata": "Metadata"
     },
     "metrics": {
       "orgId": "Organization Id",
@@ -145,7 +150,19 @@
       "title": "Title",
       "inDashboard": "In dashboard",
       "reportParameters": "Report Parameters",
-      "reportId": "Report Id"
+      "reportId": "Report Id",
+      "metadata": "Report metadata"
+    },
+    "customFields": {
+      "orgId": "Organization Id",
+      "region": "Region",
+      "entity": "Entity",
+      "title": "Title",
+      "name": "Name",
+      "schema": "Schema",
+      "status": "Status",
+      "includeInherited": "Include inherited",
+      "customFieldId": "Custom field Id"
     }
   }
 }

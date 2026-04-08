@@ -5,6 +5,7 @@ import { container, CacheService, MemoryCacheTransport } from "@structured-growt
 import { RegionEnum } from "@structured-growth/microservice-sdk";
 import { assert } from "chai";
 import { initTest } from "../common/init-test";
+import { seedMetricCategoryCustomFields, seedMetricTypeCustomFields } from "../common/seed-custom-fields";
 
 describe("MemoryCacheTransport", () => {
 	const { server, context } = initTest();
@@ -22,6 +23,8 @@ describe("MemoryCacheTransport", () => {
 		process.env.TRANSLATE_API_URL = "";
 
 		await container.resolve<App>("App").ready;
+		await seedMetricCategoryCustomFields(orgId);
+		await seedMetricTypeCustomFields(orgId);
 
 		cacheService = container.resolve<CacheService>("CacheService");
 		transport = container.resolve("CacheTransport");

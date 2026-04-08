@@ -6,8 +6,6 @@ import {
 	NotFoundError,
 	I18nType,
 	inject,
-	validateCustomFields,
-	ValidationError,
 } from "@structured-growth/microservice-sdk";
 import MetricCategory, {
 	MetricCategoryCreationAttributes,
@@ -65,7 +63,7 @@ export class MetricCategoryRepository
 		if (params.metadata && Object.keys(params.metadata).length > 0) {
 			const metadataSearchQuery = Object.entries(params.metadata).map(([name, value]) => ({
 				name,
-				value: { [Op.iLike]: `%${value}%` }, // Adjust the operator according to your requirements
+				value: { [Op.iLike]: `%${value}%` },
 			}));
 
 			const metadataCategories = await MetricCategoryMetadata.findAll({
@@ -120,7 +118,6 @@ export class MetricCategoryRepository
 			metadata?: Record<string, string>;
 		}
 	): Promise<MetricCategory> {
-		await this.validateMetadata(params.metadata, params.orgId);
 		const { metadata, ...metricAttributes } = params;
 
 		// Create the metric category
@@ -139,7 +136,6 @@ export class MetricCategoryRepository
 				}))
 			);
 
-			// Fetch the created metadata entries for the category
 			const createdMetadata = await MetricCategoryMetadata.findAll({
 				where: {
 					metricCategoryId: metricCategory.id,
@@ -147,7 +143,6 @@ export class MetricCategoryRepository
 				raw: true,
 			});
 
-			// Assign the metadata to the metricCategory object
 			metricCategory.metadata = createdMetadata.reduce((acc, item) => {
 				acc[item.name] = item.value;
 				return acc;
@@ -202,7 +197,6 @@ export class MetricCategoryRepository
 				transaction,
 			});
 			metricCategory.setAttributes(params);
-			await this.validateMetadata(metricCategory.metadata, metricCategory.orgId);
 			await metricCategory.save({
 				transaction,
 			});
@@ -259,21 +253,5 @@ export class MetricCategoryRepository
 		return MetricCategory.findOne({
 			where: { code },
 		});
-	}
-
-	private async validateMetadata(data: Record<string, unknown> | undefined, orgId?: number): Promise<void> {
-		const { valid, errors } = await validateCustomFields({
-			entity: "MetricCategory",
-			data,
-			orgId,
-		});
-
-		if (!valid) {
-			throw new ValidationError({
-				body: {
-					metadata: errors,
-				},
-			});
-		}
 	}
 }

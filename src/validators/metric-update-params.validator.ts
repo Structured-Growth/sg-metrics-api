@@ -11,16 +11,7 @@ export const MetricUpdateParamsValidator = joi.object({
 			takenAt: joi.string().regex(isoFormatWithTimezone).label("validator.metrics.takenAt"),
 			metricTypeCode: joi.string().max(50).label("validator.metrics.metricTypeCode"),
 			metricTypeVersion: joi.number().positive().label("validator.metrics.metricTypeVersion"),
-			metadata: joi
-				.object()
-				.max(10)
-				.pattern(
-					/^/,
-					joi
-						.alternatives()
-						.try(joi.boolean(), joi.number(), joi.string().max(255), joi.string().isoDate())
-						.allow("", null)
-				),
+			metadata: joi.object().label("validator.metrics.metadata"),
 		})
 		.with("metricTypeCode", "metricTypeVersion")
 		.with("metricTypeVersion", "metricTypeCode"),

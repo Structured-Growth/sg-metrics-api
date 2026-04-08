@@ -22,6 +22,7 @@ import { ReportCreateParamsValidator } from "../../validators/report-create-para
 import { ReportReadParamsValidator } from "../../validators/report-read-params.validator";
 import { ReportUpdateParamsValidator } from "../../validators/report-update-params.validator";
 import { ReportDeleteParamsValidator } from "../../validators/report-delete-params.validator";
+import { ReportsService } from "../../modules/reports/reports.service";
 
 const publicReportAttributes = [
 	"id",
@@ -34,6 +35,7 @@ const publicReportAttributes = [
 	"title",
 	"inDashboard",
 	"reportParameters",
+	"metadata",
 ] as const;
 type ReportKeys = (typeof publicReportAttributes)[number];
 type PublicReportAttributes = Pick<ReportAttributes, ReportKeys>;
@@ -45,6 +47,7 @@ export class ReportsController extends BaseController {
 	private i18n: I18nType;
 	constructor(
 		@inject("ReportsRepository") private reportsRepository: ReportsRepository,
+		@inject("ReportsService") private reportsService: ReportsService,
 		@inject("i18n") private getI18n: () => I18nType
 	) {
 		super();
@@ -85,7 +88,7 @@ export class ReportsController extends BaseController {
 	@DescribeResource("Organization", ({ body }) => Number(body.orgId))
 	@DescribeResource("Account", ({ body }) => Number(body.accountId))
 	async create(@Queries() query: {}, @Body() body: ReportCreateBodyInterface): Promise<PublicReportAttributes> {
-		const report = await this.reportsRepository.create(body);
+		const report = await this.reportsService.create(body, this.principal.parentOrgIds ?? []);
 		this.response.status(201);
 
 		await this.eventBus.publish(
@@ -136,7 +139,7 @@ export class ReportsController extends BaseController {
 		@Queries() query: {},
 		@Body() body: ReportUpdateBodyInterface
 	): Promise<PublicReportAttributes> {
-		const report = await this.reportsRepository.update(reportId, body);
+		const report = await this.reportsService.update(reportId, body, this.principal.parentOrgIds ?? []);
 
 		await this.eventBus.publish(
 			new EventMutation(this.principal.arn, report.arn, `${this.appPrefix}:reports/update`, JSON.stringify(body))

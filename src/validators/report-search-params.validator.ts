@@ -8,6 +8,7 @@ export const ReportSearchParamsValidator = joi.object({
 			accountId: joi.number().positive().label("validator.reports.accountId"),
 			title: joi.array().items(joi.string().max(150)).label("validator.reports.title"),
 			inDashboard: joi.boolean().label("validator.reports.inDashboard"),
+			metadata: joi.object().label("validator.reports.metadata"),
 		})
 		.concat(CommonSearchParamsValidator),
 });
