@@ -4,7 +4,11 @@ import { container, webServer } from "@structured-growth/microservice-sdk";
 import { RegionEnum } from "@structured-growth/microservice-sdk";
 import { assert } from "chai";
 import { initTest } from "../../../common/init-test";
-import { seedMetricCustomFields } from "../../../common/seed-custom-fields";
+import {
+	seedMetricCategoryCustomFields,
+	seedMetricCustomFields,
+	seedMetricTypeCustomFields,
+} from "../../../common/seed-custom-fields";
 
 describe("GET /api/v1/metrics:metricId", () => {
 	const { server, context } = initTest();
@@ -24,6 +28,8 @@ describe("GET /api/v1/metrics:metricId", () => {
 	before(async () => {
 		process.env.TRANSLATE_API_URL = "";
 		await container.resolve<App>("App").ready;
+		await seedMetricCategoryCustomFields(orgId);
+		await seedMetricTypeCustomFields(orgId);
 		await seedMetricCustomFields(orgId);
 	});
 
