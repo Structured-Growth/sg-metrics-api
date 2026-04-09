@@ -1,7 +1,9 @@
 import "../../../../src/app/providers";
 import { assert } from "chai";
 import { initTest } from "../../../common/init-test";
-import { RegionEnum } from "@structured-growth/microservice-sdk";
+import { RegionEnum, container } from "@structured-growth/microservice-sdk";
+import { App } from "../../../../src/app/app";
+import { seedMetricCategoryCustomFields, seedMetricTypeCustomFields } from "../../../common/seed-custom-fields";
 
 describe("DELETE /api/v1/metric-category/:metricCategoryId", () => {
 	const { server, context } = initTest();
@@ -9,6 +11,12 @@ describe("DELETE /api/v1/metric-category/:metricCategoryId", () => {
 	const orgId = parseInt(Date.now().toString().slice(0, 3));
 	const factor = parseInt(Date.now().toString().slice(0, 2));
 	const version = orgId - factor;
+
+	before(async () => {
+		await container.resolve<App>("App").ready;
+		await seedMetricCategoryCustomFields(orgId);
+		await seedMetricTypeCustomFields(orgId);
+	});
 
 	it("Should create metric category", async () => {
 		const { statusCode, body } = await server.post("/v1/metric-category").send({
