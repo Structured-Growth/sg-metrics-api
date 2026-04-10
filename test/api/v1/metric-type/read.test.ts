@@ -4,6 +4,7 @@ import { initTest } from "../../../common/init-test";
 import { RegionEnum, webServer } from "@structured-growth/microservice-sdk";
 import { container } from "@structured-growth/microservice-sdk";
 import { App } from "../../../../src/app/app";
+import { seedMetricCategoryCustomFields, seedMetricTypeCustomFields } from "../../../common/seed-custom-fields";
 
 describe("GET /api/v1/metric-type:metricTypeId", () => {
 	const { server, context } = initTest();
@@ -13,7 +14,11 @@ describe("GET /api/v1/metric-type:metricTypeId", () => {
 	const version = orgId - factor;
 	const accountId = orgId - factor - factor;
 
-	before(async () => container.resolve<App>("App").ready);
+	before(async () => {
+		await container.resolve<App>("App").ready;
+		await seedMetricCategoryCustomFields(orgId);
+		await seedMetricTypeCustomFields(orgId);
+	});
 
 	it("Should create metric category", async () => {
 		const { statusCode, body } = await server.post("/v1/metric-category").send({

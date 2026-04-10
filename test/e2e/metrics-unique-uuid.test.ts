@@ -3,6 +3,7 @@ import { RegionEnum } from "@structured-growth/microservice-sdk";
 import { assert } from "chai";
 import { initTest } from "../common/init-test";
 import { v4 } from "uuid";
+import { seedMetricCategoryCustomFields, seedMetricTypeCustomFields } from "../common/seed-custom-fields";
 
 describe("e2e/metrics-unique-uuid", () => {
 	const { server, context } = initTest();
@@ -18,6 +19,11 @@ describe("e2e/metrics-unique-uuid", () => {
 	const deviceId = version - accountId;
 	const batchId = `batchId-${Date.now()}`;
 	const value = factor - metricTypeVersion;
+
+	before(async () => {
+		await seedMetricCategoryCustomFields(orgId);
+		await seedMetricTypeCustomFields(orgId);
+	});
 
 	it("Should create metric category", async () => {
 		const { statusCode, body } = await server.post("/v1/metric-category").send({

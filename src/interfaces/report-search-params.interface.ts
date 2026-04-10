@@ -4,4 +4,9 @@ export interface ReportSearchParamsInterface extends Omit<DefaultSearchParamsInt
 	accountId?: number;
 	title?: string[];
 	inDashboard?: boolean;
+	/**
+	 * Search by custom entity fields.
+	 * Example: metadata[reportCode]=R1
+	 */
+	"metadata[customFieldName]"?: string;
 }

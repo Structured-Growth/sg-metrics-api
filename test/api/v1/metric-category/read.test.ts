@@ -1,12 +1,19 @@
 import "../../../../src/app/providers";
 import { assert } from "chai";
 import { initTest } from "../../../common/init-test";
-import { RegionEnum, webServer } from "@structured-growth/microservice-sdk";
+import { RegionEnum, webServer, container } from "@structured-growth/microservice-sdk";
+import { App } from "../../../../src/app/app";
+import { seedMetricCategoryCustomFields } from "../../../common/seed-custom-fields";
 
 describe("GET /api/v1/metric-category:metricCategoryId", () => {
 	const { server, context } = initTest();
 	const code = `code-${Date.now()}`;
 	const orgId = parseInt(Date.now().toString().slice(0, 3));
+
+	before(async () => {
+		await container.resolve<App>("App").ready;
+		await seedMetricCategoryCustomFields(orgId);
+	});
 
 	it("Should create metric category", async () => {
 		const { statusCode, body } = await server.post("/v1/metric-category").send({

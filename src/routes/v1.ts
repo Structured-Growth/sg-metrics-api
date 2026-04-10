@@ -56,6 +56,14 @@ router.get(pathPrefix + '/v1/reports/:reportId', handleRequest(Controllers.Repor
 router.put(pathPrefix + '/v1/reports/:reportId', handleRequest(Controllers.ReportsController, "update", handlerOpts));
 router.delete(pathPrefix + '/v1/reports/:reportId', handleRequest(Controllers.ReportsController, "delete", handlerOpts));
 
+//CustomFieldsController
+router.get(pathPrefix + '/v1/custom-fields', handleRequest(Controllers.CustomFieldsController, "search", handlerOpts));
+router.post(pathPrefix + '/v1/custom-fields/validate', handleRequest(Controllers.CustomFieldsController, "validateCustomFields", handlerOpts));
+router.post(pathPrefix + '/v1/custom-fields', handleRequest(Controllers.CustomFieldsController, "create", handlerOpts));
+router.get(pathPrefix + '/v1/custom-fields/:customFieldId', handleRequest(Controllers.CustomFieldsController, "get", handlerOpts));
+router.put(pathPrefix + '/v1/custom-fields/:customFieldId', handleRequest(Controllers.CustomFieldsController, "update", handlerOpts));
+router.delete(pathPrefix + '/v1/custom-fields/:customFieldId', handleRequest(Controllers.CustomFieldsController, "delete", handlerOpts));
+
 //DocsController
 router.get(pathPrefix + '/v1/docs/swagger.json', handleRequest(Controllers.DocsController, "getSwagger", handlerOpts));
 
@@ -94,6 +102,12 @@ export const actionToRouteMap = {
 	"ReportsController.get": 'get /v1/reports/:reportId',
 	"ReportsController.update": 'put /v1/reports/:reportId',
 	"ReportsController.delete": 'delete /v1/reports/:reportId',
+	"CustomFieldsController.search": 'get /v1/custom-fields',
+	"CustomFieldsController.validateCustomFields": 'post /v1/custom-fields/validate',
+	"CustomFieldsController.create": 'post /v1/custom-fields',
+	"CustomFieldsController.get": 'get /v1/custom-fields/:customFieldId',
+	"CustomFieldsController.update": 'put /v1/custom-fields/:customFieldId',
+	"CustomFieldsController.delete": 'delete /v1/custom-fields/:customFieldId',
 	"DocsController.getSwagger": 'get /v1/docs/swagger.json',
 	"ResolverController.resolve": 'get /v1/resolver/resolve',
 	"ResolverController.actions": 'get /v1/resolver/actions',

@@ -1,17 +1,22 @@
 import "../../../../src/app/providers";
 import { App } from "../../../../src/app/app";
-import { container, webServer } from "@structured-growth/microservice-sdk";
+import { container } from "@structured-growth/microservice-sdk";
 import { RegionEnum } from "@structured-growth/microservice-sdk";
 import { assert } from "chai";
 import { initTest } from "../../../common/init-test";
 import { v3 as uuidv3, v4 as uuidv4 } from "uuid";
+import {
+	seedMetricCategoryCustomFields,
+	seedMetricCustomFields,
+	seedMetricTypeCustomFields,
+} from "../../../common/seed-custom-fields";
 
 describe("POST /api/v1/metrics", () => {
 	const { server, context } = initTest();
 	const code = `code-${Date.now()}`;
 	const relatedToRn = `relatedToRn-${Date.now()}`;
 	const userId = parseInt(Date.now().toString().slice(4));
-	const orgId = parseInt(Date.now().toString().slice(0, 3));
+	const orgId = (Date.now() % 30000) + 100;
 	const factor = parseInt(Date.now().toString().slice(0, 2));
 	const version = orgId - factor;
 	const accountId = orgId - factor - factor;
@@ -27,6 +32,9 @@ describe("POST /api/v1/metrics", () => {
 	before(async () => {
 		process.env.TRANSLATE_API_URL = "";
 		await container.resolve<App>("App").ready;
+		await seedMetricCategoryCustomFields(orgId);
+		await seedMetricTypeCustomFields(orgId);
+		await seedMetricCustomFields(orgId);
 	});
 
 	it("Should create metric category", async () => {
@@ -198,6 +206,7 @@ describe("POST /api/v1/metrics", () => {
 				value: "bad",
 				takenAt: "now",
 				takenAtOffset: "kk",
+				metadata: "bad",
 			},
 		]);
 		assert.equal(statusCode, 422);
@@ -215,6 +224,32 @@ describe("POST /api/v1/metrics", () => {
 		assert.isString(body.validation.body[0].value[0]);
 		assert.isString(body.validation.body[0].takenAt[0]);
 		assert.isString(body.validation.body[0].takenAtOffset[0]);
+		assert.isString(body.validation.body[0].metadata[0]);
+	});
+
+	it("Should return validation error for invalid custom fields", async () => {
+		const { statusCode, body } = await server.post("/v1/metrics").send([
+			{
+				orgId: orgId,
+				region: RegionEnum.US,
+				accountId: accountId,
+				userId: userId,
+				relatedToRn: relatedToRn,
+				metricTypeCode: code,
+				metricTypeVersion: metricTypeVersion,
+				deviceId: deviceId,
+				batchId: `${batchId}-custom-fields`,
+				value: value,
+				takenAt: "2024-05-16T14:30:00+01:00",
+				metadata: {
+					source: 123,
+				},
+			},
+		]);
+
+		assert.equal(statusCode, 422);
+		assert.equal(body.name, "ValidationError");
+		assert.isString(body.validation.body[0].metadata.source[0]);
 	});
 
 	it("Should create metric with metadata", async () => {

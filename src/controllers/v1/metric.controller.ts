@@ -218,7 +218,7 @@ export class MetricController extends BaseController {
 			};
 		});
 
-		const metrics = await this.metricService.create(payload);
+		const metrics = await this.metricService.create(payload, undefined, this.principal.parentOrgIds ?? []);
 
 		await Promise.all(
 			metrics.map((metric, index) =>
@@ -270,7 +270,7 @@ export class MetricController extends BaseController {
 	}
 
 	/**
-	 * Update Metric  with one or few attributes
+	 * Update Metric with one or few attributes
 	 */
 	@OperationId("Update")
 	@Put("/:metricId")
@@ -296,7 +296,9 @@ export class MetricController extends BaseController {
 					metricTypeVersion: body.metricTypeVersion,
 				},
 				isUndefined
-			) as any
+			) as any,
+			undefined,
+			this.principal.parentOrgIds ?? []
 		);
 
 		await this.eventBus.publish(
@@ -338,7 +340,7 @@ export class MetricController extends BaseController {
 			};
 		});
 
-		const metrics = await this.metricService.upsert(payload);
+		const metrics = await this.metricService.upsert(payload, undefined, this.principal.parentOrgIds ?? []);
 
 		await Promise.all(
 			metrics.map((metric, index) =>
@@ -438,7 +440,7 @@ export class MetricController extends BaseController {
 				},
 			};
 		}) as MetricsBulkDataInterface;
-		const result = await this.metricService.bulk(data);
+		const result = await this.metricService.bulk(data, this.principal.parentOrgIds ?? []);
 
 		void Promise.all(
 			result.map(({ op, data: metric }, index) => {

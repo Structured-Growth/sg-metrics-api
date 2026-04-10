@@ -1,9 +1,10 @@
 import "../../../../src/app/providers";
 import { App } from "../../../../src/app/app";
-import { container, webServer } from "@structured-growth/microservice-sdk";
+import { container } from "@structured-growth/microservice-sdk";
 import { RegionEnum } from "@structured-growth/microservice-sdk";
 import { assert } from "chai";
 import { initTest } from "../../../common/init-test";
+import { seedMetricCategoryCustomFields, seedMetricTypeCustomFields } from "../../../common/seed-custom-fields";
 
 describe("POST /api/v1/metric-type", () => {
 	const { server, context } = initTest();
@@ -12,7 +13,11 @@ describe("POST /api/v1/metric-type", () => {
 	const factor = parseInt(Date.now().toString().slice(0, 2));
 	const version = orgId - factor;
 
-	before(async () => container.resolve<App>("App").ready);
+	before(async () => {
+		await container.resolve<App>("App").ready;
+		await seedMetricCategoryCustomFields(orgId);
+		await seedMetricTypeCustomFields(orgId);
+	});
 
 	it("Should create metric category", async () => {
 		const { statusCode, body } = await server.post("/v1/metric-category").send({
@@ -114,5 +119,26 @@ describe("POST /api/v1/metric-type", () => {
 		assert.isString(body.validation.body.relatedTo[0]);
 		assert.isString(body.validation.body.version[0]);
 		assert.isString(body.validation.body.status[0]);
+	}).timeout(1800000);
+
+	it("Should return validation error for invalid custom fields", async () => {
+		const { statusCode, body } = await server.post("/v1/metric-type").send({
+			orgId: orgId,
+			region: RegionEnum.US,
+			metricCategoryId: context["createdMetricCategoryId"],
+			title: `${code}-invalid-custom-fields`,
+			code: `${code}-invalid-custom-fields`,
+			unit: code,
+			factor: factor,
+			relatedTo: code,
+			version: version,
+			status: "inactive",
+			metadata: {
+				specUrl: 123,
+			},
+		});
+		assert.equal(statusCode, 422);
+		assert.equal(body.name, "ValidationError");
+		assert.isString(body.validation.body.metadata.specUrl[0]);
 	}).timeout(1800000);
 });

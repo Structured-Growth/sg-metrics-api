@@ -63,10 +63,8 @@ export class MetricSQL extends Model<MetricAttributes, MetricCreationAttributes>
 	@Column
 	isDeleted: boolean;
 
-	@Column({
-		type: DataType.JSONB,
-	})
-	metadata: object;
+	@Column(DataType.JSONB)
+	metadata: Record<string, unknown>;
 
 	static get arnPattern(): string {
 		return [

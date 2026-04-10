@@ -19,7 +19,7 @@ export interface MetricAttributes {
 	takenAtOffset: number;
 	recordedAt: Date;
 	isDeleted: boolean;
-	metadata: object;
+	metadata: Record<string, unknown>;
 	arn: string;
 }
 
@@ -54,7 +54,7 @@ export class Metric implements MetricAttributes {
 	takenAt: Date;
 	takenAtOffset: number;
 	recordedAt: Date;
-	metadata: object;
+	metadata: Record<string, unknown> = {};
 	isDeleted: boolean;
 
 	constructor(

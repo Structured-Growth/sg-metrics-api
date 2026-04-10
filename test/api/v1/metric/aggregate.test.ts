@@ -4,6 +4,7 @@ import { container } from "@structured-growth/microservice-sdk";
 import { RegionEnum } from "@structured-growth/microservice-sdk";
 import { assert } from "chai";
 import { initTest } from "../../../common/init-test";
+import { seedMetricCategoryCustomFields, seedMetricTypeCustomFields } from "../../../common/seed-custom-fields";
 
 describe("GET /api/v1/metrics/aggregate", () => {
 	const { server, context } = initTest();
@@ -23,6 +24,8 @@ describe("GET /api/v1/metrics/aggregate", () => {
 	before(async () => {
 		process.env.TRANSLATE_API_URL = "";
 		await container.resolve<App>("App").ready;
+		await seedMetricCategoryCustomFields(orgId);
+		await seedMetricTypeCustomFields(orgId);
 	});
 
 	it("Should create metric category", async () => {
@@ -178,34 +181,32 @@ describe("GET /api/v1/metrics/aggregate", () => {
 		assert.equal(statusCode, 200);
 	}).timeout(20000);
 
-	it("Should return nextToken when aggregate results exceed limit", async () => {
+	it("Should paginate aggregate results when they exceed limit", async () => {
 		const baseDate = new Date();
-
-		for (let i = 0; i < 15; i++) {
+		const metrics = Array.from({ length: 15 }, (_, i) => {
 			const metricValue = value + i;
-			const takenAtTime = new Date();
+			const takenAtTime = new Date(baseDate);
 			takenAtTime.setDate(baseDate.getDate() + i);
 
-			const takenAtFormatted = takenAtTime.toISOString().replace(/\.\d{3}Z$/, "+00:00");
+			return {
+				orgId: orgId,
+				region: RegionEnum.US,
+				accountId: accountId,
+				userId: userId,
+				relatedToRn: relatedToRn,
+				metricCategoryId: context.createdMetricCategoryId,
+				metricTypeId: context.createdMetricTypeId,
+				metricTypeVersion: metricTypeVersion,
+				deviceId: deviceId,
+				batchId: `${batchId}-aggregate-${i}`,
+				value: metricValue,
+				takenAt: takenAtTime.toISOString().replace(/\.\d{3}Z$/, "+00:00"),
+			};
+		});
 
-			const { statusCode } = await server.post("/v1/metrics").send([
-				{
-					orgId: orgId,
-					region: RegionEnum.US,
-					accountId: accountId,
-					userId: userId,
-					relatedToRn: relatedToRn,
-					metricCategoryId: context.createdMetricCategoryId,
-					metricTypeId: context.createdMetricTypeId,
-					metricTypeVersion: metricTypeVersion,
-					deviceId: deviceId,
-					batchId: batchId,
-					value: metricValue,
-					takenAt: takenAtFormatted,
-				},
-			]);
-			assert.equal(statusCode, 201);
-		}
+		const { statusCode: createStatusCode, body: createdBody } = await server.post("/v1/metrics").send(metrics);
+		assert.equal(createStatusCode, 201);
+		assert.equal(createdBody.length, 15);
 
 		let { statusCode, body } = await server.get("/v1/metrics/aggregate").query({
 			orgId,
@@ -214,12 +215,11 @@ describe("GET /api/v1/metrics/aggregate", () => {
 			row: "value",
 			rowAggregation: "avg",
 			limit: 5,
+			page: 1,
 		});
 		assert.equal(statusCode, 200);
 		assert.equal(body.data.length, 5);
-		// assert.isString(body.nextToken);
-
-		const firstNextToken = body.nextToken;
+		const firstPageTakenAt = body.data.map((item) => item.takenAt);
 
 		({ statusCode, body } = await server.get("/v1/metrics/aggregate").query({
 			orgId,
@@ -228,13 +228,12 @@ describe("GET /api/v1/metrics/aggregate", () => {
 			row: "value",
 			rowAggregation: "avg",
 			limit: 5,
-			nextToken: firstNextToken,
+			page: 2,
 		}));
 		assert.equal(statusCode, 200);
 		assert.equal(body.data.length, 5);
-		// assert.isString(body.nextToken);
-
-		const secondNextToken = body.nextToken;
+		const secondPageTakenAt = body.data.map((item) => item.takenAt);
+		assert.notDeepEqual(secondPageTakenAt, firstPageTakenAt);
 
 		({ statusCode, body } = await server.get("/v1/metrics/aggregate").query({
 			orgId,
@@ -243,12 +242,13 @@ describe("GET /api/v1/metrics/aggregate", () => {
 			row: "value",
 			rowAggregation: "avg",
 			limit: 5,
-			nextToken: secondNextToken,
+			page: 3,
 		}));
 		assert.equal(statusCode, 200);
 		assert.equal(body.data.length, 5);
-		// assert.isString(body.nextToken);
-	}).timeout(20000);
+		const thirdPageTakenAt = body.data.map((item) => item.takenAt);
+		assert.notDeepEqual(thirdPageTakenAt, secondPageTakenAt);
+	}).timeout(30000);
 
 	it("Should aggregate metrics with sum row aggregation", async () => {
 		const { statusCode, body } = await server.get(`/v1/metrics/aggregate`).query({

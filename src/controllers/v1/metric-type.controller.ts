@@ -104,7 +104,7 @@ export class MetricTypeController extends BaseController {
 	@HashFields(["title", "code", "unit", "factor"])
 	@ValidateFuncArgs(MetricTypeCreateParamsValidator)
 	async create(@Queries() query: {}, @Body() body: MetricTypeCreateBodyInterface): Promise<PublicMetricTypeAttributes> {
-		const metricType = await this.metricTypeService.create(body);
+		const metricType = await this.metricTypeService.create(body, this.principal.parentOrgIds ?? []);
 		this.response.status(201);
 
 		await this.eventBus.publish(
@@ -163,7 +163,7 @@ export class MetricTypeController extends BaseController {
 		@Queries() query: {},
 		@Body() body: MetricTypeUpdateBodyInterface
 	): Promise<PublicMetricTypeAttributes> {
-		const metricType = await this.metricTypeService.update(metricTypeId, body);
+		const metricType = await this.metricTypeService.update(metricTypeId, body, this.principal.parentOrgIds ?? []);
 		this.response.status(200);
 
 		await this.eventBus.publish(

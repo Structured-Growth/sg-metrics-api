@@ -1,10 +1,15 @@
 import "../../../../src/app/providers";
 import { App } from "../../../../src/app/app";
-import { container, webServer } from "@structured-growth/microservice-sdk";
+import { container } from "@structured-growth/microservice-sdk";
 import { RegionEnum } from "@structured-growth/microservice-sdk";
 import { assert } from "chai";
 import { initTest } from "../../../common/init-test";
 import { v4 } from "uuid";
+import {
+	seedMetricCategoryCustomFields,
+	seedMetricCustomFields,
+	seedMetricTypeCustomFields,
+} from "../../../common/seed-custom-fields";
 
 describe("POST /api/v1/metrics/bulk", () => {
 	const { server, context } = initTest();
@@ -13,7 +18,7 @@ describe("POST /api/v1/metrics/bulk", () => {
 	const metricUuid2 = v4();
 	const relatedToRn = `relatedToRn-${Date.now()}`;
 	const userId = parseInt(Date.now().toString().slice(4));
-	const orgId = parseInt(Date.now().toString().slice(0, 3));
+	const orgId = (Date.now() % 30000) + 100;
 	const factor = parseInt(Date.now().toString().slice(0, 2));
 	const version = orgId - factor;
 	const accountId = orgId - factor - factor;
@@ -25,6 +30,9 @@ describe("POST /api/v1/metrics/bulk", () => {
 	before(async () => {
 		process.env.TRANSLATE_API_URL = "";
 		await container.resolve<App>("App").ready;
+		await seedMetricCategoryCustomFields(orgId);
+		await seedMetricTypeCustomFields(orgId);
+		await seedMetricCustomFields(orgId);
 	});
 
 	it("Should run operations in a transaction", async () => {
@@ -303,5 +311,35 @@ describe("POST /api/v1/metrics/bulk", () => {
 					assert.equal(statusCode, 200);
 				}),
 		]);
+	}).timeout(300000);
+
+	it("Should return validation error for invalid custom fields", async () => {
+		const { statusCode, body } = await server.post("/v1/metrics/bulk").send([
+			{
+				op: "create",
+				data: {
+					id: v4(),
+					orgId: orgId,
+					region: RegionEnum.US,
+					accountId: accountId,
+					userId: userId,
+					relatedToRn: `${relatedToRn}-invalid-custom-fields`,
+					metricCategoryId: context.createdMetricCategoryId,
+					metricTypeId: context.createdMetricTypeId,
+					metricTypeVersion: metricTypeVersion,
+					deviceId: deviceId,
+					batchId: `${batchId}-invalid-custom-fields`,
+					value: value,
+					takenAt: "2024-05-16T14:30:00+01:00",
+					metadata: {
+						notes: 123,
+					},
+				},
+			},
+		]);
+
+		assert.equal(statusCode, 422);
+		assert.equal(body.name, "ValidationError");
+		assert.isString(body.validation.body[0].metadata.notes[0]);
 	}).timeout(300000);
 });

@@ -6,6 +6,7 @@ import { assert } from "chai";
 import { initTest } from "../common/init-test";
 import { filter, min, round, uniqBy } from "lodash";
 import { MetricAttributes } from "../../database/models/metric";
+import { seedMetricCategoryCustomFields, seedMetricTypeCustomFields } from "../common/seed-custom-fields";
 
 describe("e2e/aggregation-average", () => {
 	const { server, context } = initTest();
@@ -19,6 +20,8 @@ describe("e2e/aggregation-average", () => {
 	before(async function () {
 		this.timeout(1800000);
 		await container.resolve<App>("App").ready;
+		await seedMetricCategoryCustomFields(orgId);
+		await seedMetricTypeCustomFields(orgId);
 
 		const { statusCode: catStatus, body: catBody } = await server.post("/v1/metric-category").send({
 			orgId,

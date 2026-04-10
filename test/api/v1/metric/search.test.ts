@@ -4,13 +4,18 @@ import { container, webServer } from "@structured-growth/microservice-sdk";
 import { RegionEnum } from "@structured-growth/microservice-sdk";
 import { assert } from "chai";
 import { initTest } from "../../../common/init-test";
+import {
+	seedMetricCategoryCustomFields,
+	seedMetricCustomFields,
+	seedMetricTypeCustomFields,
+} from "../../../common/seed-custom-fields";
 
 describe("GET /api/v1/metrics", () => {
 	const { server, context } = initTest();
 	const code = `code-${Date.now()}`;
 	const userId = parseInt(Date.now().toString().slice(4));
 	const relatedToRn = `relatedTo-${Date.now()}`;
-	const orgId = parseInt(Date.now().toString().slice(0, 3));
+	const orgId = (Date.now() % 30000) + 100;
 	const factor = parseInt(Date.now().toString().slice(0, 2));
 	const version = orgId - factor;
 	const accountId = orgId - factor - factor;
@@ -24,6 +29,9 @@ describe("GET /api/v1/metrics", () => {
 	before(async () => {
 		process.env.TRANSLATE_API_URL = "";
 		await container.resolve<App>("App").ready;
+		await seedMetricCategoryCustomFields(orgId);
+		await seedMetricTypeCustomFields(orgId);
+		await seedMetricCustomFields(orgId);
 	});
 
 	it("Should create metric category", async () => {
@@ -80,6 +88,9 @@ describe("GET /api/v1/metrics", () => {
 				batchId: batchId,
 				value: value,
 				takenAt: "2024-05-16T14:30:00+01:00",
+				metadata: {
+					source: "device",
+				},
 			},
 		]);
 		assert.equal(statusCode, 201);
@@ -127,6 +138,7 @@ describe("GET /api/v1/metrics", () => {
 			value: "bad",
 			takenAt: "today",
 			takenAtOffset: "notneeded",
+			metadata: "bad",
 		});
 		assert.equal(statusCode, 422);
 		assert.equal(body.name, "ValidationError");
@@ -140,6 +152,7 @@ describe("GET /api/v1/metrics", () => {
 		assert.isString(body.validation.query.value[0]);
 		assert.isString(body.validation.query.takenAt[0]);
 		assert.isString(body.validation.query.takenAtOffset[0]);
+		assert.isString(body.validation.query.metadata[0]);
 	});
 
 	it("Should return created metric by id", async () => {
@@ -243,63 +256,61 @@ describe("GET /api/v1/metrics", () => {
 		assert.equal(body.data[0].userId, userId);
 	});
 
-	it("Should return nextToken when results exceed limit", async () => {
-		for (let i = 0; i < 15; i++) {
+	it("Should paginate results when they exceed limit", async () => {
+		const metrics = Array.from({ length: 15 }, (_, i) => {
 			const metricValue = value + i;
 			const takenAtTime = new Date();
 			takenAtTime.setMinutes(takenAtTime.getMinutes() + i);
 
-			const takenAtFormatted = takenAtTime.toISOString().replace(/\.\d{3}Z$/, "+00:00");
+			return {
+				orgId: orgId,
+				region: RegionEnum.US,
+				accountId: accountId,
+				userId: userId,
+				relatedToRn: relatedToRn,
+				metricCategoryId: context.createdMetricCategoryId,
+				metricTypeId: context.createdMetricTypeId,
+				metricTypeVersion: metricTypeVersion,
+				deviceId: deviceId,
+				batchId: `${batchId}-search-${i}`,
+				value: metricValue,
+				takenAt: takenAtTime.toISOString().replace(/\.\d{3}Z$/, "+00:00"),
+			};
+		});
 
-			const { statusCode } = await server.post("/v1/metrics").send([
-				{
-					orgId: orgId,
-					region: RegionEnum.US,
-					accountId: accountId,
-					userId: userId,
-					relatedToRn: relatedToRn,
-					metricCategoryId: context.createdMetricCategoryId,
-					metricTypeId: context.createdMetricTypeId,
-					metricTypeVersion: metricTypeVersion,
-					deviceId: deviceId,
-					batchId: batchId,
-					value: metricValue,
-					takenAt: takenAtFormatted,
-				},
-			]);
-			assert.equal(statusCode, 201);
-		}
+		const { statusCode: createStatusCode, body: createdBody } = await server.post("/v1/metrics").send(metrics);
+		assert.equal(createStatusCode, 201);
+		assert.equal(createdBody.length, 15);
 
 		let { statusCode, body } = await server.get("/v1/metrics").query({
 			"userId[0]": userId,
 			limit: 5,
+			page: 1,
 		});
 		assert.equal(statusCode, 200);
 		assert.equal(body.data.length, 5);
-		// assert.isString(body.nextToken);
-
-		const firstNextToken = body.nextToken;
+		const firstPageIds = body.data.map((item) => item.id);
 
 		({ statusCode, body } = await server.get("/v1/metrics").query({
 			"userId[0]": userId,
 			limit: 5,
-			nextToken: firstNextToken,
+			page: 2,
 		}));
 		assert.equal(statusCode, 200);
 		assert.equal(body.data.length, 5);
-		// assert.isString(body.nextToken);
-
-		const secondNextToken = body.nextToken;
+		const secondPageIds = body.data.map((item) => item.id);
+		assert.notDeepEqual(secondPageIds, firstPageIds);
 
 		({ statusCode, body } = await server.get("/v1/metrics").query({
 			"userId[0]": userId,
 			limit: 5,
-			nextToken: secondNextToken,
+			page: 3,
 		}));
 		assert.equal(statusCode, 200);
 		assert.equal(body.data.length, 5);
-		// assert.isString(body.nextToken);
-	}).timeout(20000);
+		const thirdPageIds = body.data.map((item) => item.id);
+		assert.notDeepEqual(thirdPageIds, secondPageIds);
+	}).timeout(30000);
 
 	it("Should search by relatedToRn", async () => {
 		const { statusCode, body } = await server.get("/v1/metrics").query({
@@ -309,6 +320,28 @@ describe("GET /api/v1/metrics", () => {
 		assert.equal(statusCode, 200);
 		assert.equal(body.data[0].userId, userId);
 		assert.equal(body.data[0].relatedToRn, relatedToRn);
+	});
+
+	it("Should search by metadata", async () => {
+		const { statusCode, body } = await server.get("/v1/metrics").query({
+			"userId[0]": userId,
+			"metadata[source]": "device",
+		});
+
+		assert.equal(statusCode, 200);
+		assert.equal(body.data[0].id, context.createdMetricId);
+		assert.equal(body.data[0].metadata.source, "device");
+	});
+
+	it("Should search by metadata wildcard", async () => {
+		const { statusCode, body } = await server.get("/v1/metrics").query({
+			"userId[0]": userId,
+			"metadata[source]": "dev*",
+		});
+
+		assert.equal(statusCode, 200);
+		assert.equal(body.data[0].id, context.createdMetricId);
+		assert.equal(body.data[0].metadata.source, "device");
 	});
 
 	it("Should return error if metricTypeId is not an array", async () => {

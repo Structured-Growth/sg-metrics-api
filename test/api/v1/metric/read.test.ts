@@ -4,13 +4,18 @@ import { container, webServer } from "@structured-growth/microservice-sdk";
 import { RegionEnum } from "@structured-growth/microservice-sdk";
 import { assert } from "chai";
 import { initTest } from "../../../common/init-test";
+import {
+	seedMetricCategoryCustomFields,
+	seedMetricCustomFields,
+	seedMetricTypeCustomFields,
+} from "../../../common/seed-custom-fields";
 
 describe("GET /api/v1/metrics:metricId", () => {
 	const { server, context } = initTest();
 	const code = `code-${Date.now()}`;
 	const userId = parseInt(Date.now().toString().slice(5));
 	const relatedToRn = `relatedTo-${Date.now()}`;
-	const orgId = parseInt(Date.now().toString().slice(0, 3));
+	const orgId = (Date.now() % 30000) + 100;
 	const factor = parseInt(Date.now().toString().slice(0, 2));
 	const version = orgId - factor;
 	const accountId = orgId - factor - factor;
@@ -23,6 +28,9 @@ describe("GET /api/v1/metrics:metricId", () => {
 	before(async () => {
 		process.env.TRANSLATE_API_URL = "";
 		await container.resolve<App>("App").ready;
+		await seedMetricCategoryCustomFields(orgId);
+		await seedMetricTypeCustomFields(orgId);
+		await seedMetricCustomFields(orgId);
 	});
 
 	it("Should create metric category", async () => {
@@ -79,6 +87,9 @@ describe("GET /api/v1/metrics:metricId", () => {
 				batchId: batchId,
 				value: value,
 				takenAt: "2024-05-16T14:30:00+01:00",
+				metadata: {
+					source: "device",
+				},
 			},
 		]);
 		assert.equal(statusCode, 201);
@@ -107,6 +118,7 @@ describe("GET /api/v1/metrics:metricId", () => {
 		assert.equal(body.takenAtOffset, 60);
 		assert.isString(body.recordedAt);
 		assert.isObject(body.metadata);
+		assert.equal(body.metadata.source, "device");
 	});
 
 	it("Should return error is metric type id is wrong", async () => {

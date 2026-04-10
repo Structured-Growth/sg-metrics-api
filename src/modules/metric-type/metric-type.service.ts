@@ -20,6 +20,7 @@ import { MetricSqlRepository } from "../metric/repositories/metric-sql.repositor
 import { MetricTypeSearchParamsInterface } from "../../interfaces/metric-type-search-params.interface";
 import { SearchResultInterface } from "@structured-growth/microservice-sdk";
 import { Transaction } from "sequelize";
+import { CustomFieldService } from "../custom-fields/custom-field.service";
 
 @autoInjectable()
 export class MetricTypeService {
@@ -36,6 +37,7 @@ export class MetricTypeService {
 		@inject("MetricTypeRepository") private metricTypeRepository: MetricTypeRepository,
 		@inject("MetricCategoryRepository") private metricCategoryRepository: MetricCategoryRepository,
 		@inject("MetricSqlRepository") private metricSqlRepository: MetricSqlRepository,
+		@inject("CustomFieldService") private customFieldService: CustomFieldService,
 		@inject("accountApiUrl") private accountApiUrl: string,
 		@inject("CacheService") private cacheService: CacheService,
 		@inject("i18n") private getI18n: () => I18nType,
@@ -74,7 +76,7 @@ export class MetricTypeService {
 		}
 	}
 
-	public async create(params: MetricTypeCreateBodyInterface): Promise<MetricType> {
+	public async create(params: MetricTypeCreateBodyInterface, parentOrgIds: number[] = []): Promise<MetricType> {
 		if (params.metricCategoryId) {
 			const checkMetricCategoryId = await this.metricCategoryRepository.read(params.metricCategoryId);
 			if (!checkMetricCategoryId) {
@@ -92,6 +94,8 @@ export class MetricTypeService {
 				`${this.i18n.__("error.metric_type.name")} ${params.code} ${this.i18n.__("error.metric_type.exist")}`
 			);
 		}
+
+		await this.customFieldService.validate("MetricType", params.metadata, [params.orgId, ...parentOrgIds]);
 
 		const created = await this.metricTypeRepository.create({
 			orgId: params.orgId,
@@ -112,7 +116,11 @@ export class MetricTypeService {
 		return created;
 	}
 
-	public async update(metricTypeId, params: MetricTypeUpdateBodyInterface): Promise<MetricType> {
+	public async update(
+		metricTypeId,
+		params: MetricTypeUpdateBodyInterface,
+		parentOrgIds: number[] = []
+	): Promise<MetricType> {
 		const current = await this.metricTypeRepository.read(metricTypeId);
 		if (!current) {
 			throw new NotFoundError(
@@ -128,6 +136,11 @@ export class MetricTypeService {
 				);
 			}
 		}
+
+		await this.customFieldService.validate("MetricType", params.metadata ?? current.metadata, [
+			current.orgId,
+			...parentOrgIds,
+		]);
 
 		await this.cacheService.invalidateTag(this.entityTag(current.arn)).catch(() => null);
 

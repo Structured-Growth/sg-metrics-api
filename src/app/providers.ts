@@ -26,6 +26,8 @@ import { ReportsRepository } from "../modules/reports/reports.repository";
 import { ReportsService } from "../modules/reports/reports.service";
 import { MetricSqlRepository } from "../modules/metric/repositories/metric-sql.repository";
 import { MetricExportService } from "../modules/metric/metric-export.service";
+import { CustomFieldRepository } from "../modules/custom-fields/custom-field.repository";
+import { CustomFieldService } from "../modules/custom-fields/custom-field.service";
 
 // load and validate env variables
 loadEnvironment();
@@ -77,6 +79,7 @@ container.register("MetricCategoryService", MetricCategoryService);
 container.register("MetricTypeService", MetricTypeService);
 container.register("ReportsService", ReportsService);
 container.register("MetricExportService", MetricExportService);
+container.register("CustomFieldService", CustomFieldService);
 
 container.register("eventbusName", { useValue: process.env.EVENTBUS_NAME || "sg-eventbus-dev" });
 container.register("EventbusProvider", eventBusProviders[process.env.EVENTBUS_PROVIDER || "TestEventbusProvider"]);
@@ -88,3 +91,4 @@ container.register("MetricTypeRepository", MetricTypeRepository);
 container.register("MetricTimestreamRepository", MetricTimestreamRepository);
 container.register("ReportsRepository", ReportsRepository);
 container.register("MetricSqlRepository", MetricSqlRepository);
+container.register("CustomFieldRepository", CustomFieldRepository);

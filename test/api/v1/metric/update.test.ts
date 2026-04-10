@@ -1,16 +1,21 @@
 import "../../../../src/app/providers";
 import { App } from "../../../../src/app/app";
-import { container, webServer } from "@structured-growth/microservice-sdk";
+import { container } from "@structured-growth/microservice-sdk";
 import { RegionEnum } from "@structured-growth/microservice-sdk";
 import { assert } from "chai";
 import { initTest } from "../../../common/init-test";
+import {
+	seedMetricCategoryCustomFields,
+	seedMetricCustomFields,
+	seedMetricTypeCustomFields,
+} from "../../../common/seed-custom-fields";
 
 describe("PUT /api/v1/metrics/:metricId", () => {
 	const { server, context } = initTest();
 	const code = `code-${Date.now()}`;
 	const userId = parseInt(Date.now().toString().slice(5));
 	const relatedToRn = `relatedTo-${Date.now()}`;
-	const orgId = parseInt(Date.now().toString().slice(0, 3));
+	const orgId = (Date.now() % 30000) + 100;
 	const factor = parseInt(Date.now().toString().slice(0, 2));
 	const version = orgId - factor;
 	const accountId = orgId - factor - factor;
@@ -22,6 +27,9 @@ describe("PUT /api/v1/metrics/:metricId", () => {
 	before(async () => {
 		process.env.TRANSLATE_API_URL = "";
 		await container.resolve<App>("App").ready;
+		await seedMetricCategoryCustomFields(orgId);
+		await seedMetricTypeCustomFields(orgId);
+		await seedMetricCustomFields(orgId);
 	});
 
 	it("Should create metric category", async () => {
@@ -79,7 +87,7 @@ describe("PUT /api/v1/metrics/:metricId", () => {
 				value: value,
 				takenAt: "2024-05-16T14:30:00+00:00",
 				metadata: {
-					a: 1,
+					a: "1",
 				},
 			},
 		]);
@@ -119,12 +127,12 @@ describe("PUT /api/v1/metrics/:metricId", () => {
 		const { statusCode, body } = await server.put(`/v1/metrics/${context.createdMetricId}`).send({
 			value: value + 100,
 			metadata: {
-				a: 2,
+				a: "2",
 			},
 		});
 		assert.equal(statusCode, 200);
 		assert.equal(body.value, value + 100);
-		assert.equal(body.metadata.a, 2);
+		assert.equal(body.metadata.a, "2");
 	});
 
 	it("Should return updated metric with new value", async () => {
@@ -146,5 +154,31 @@ describe("PUT /api/v1/metrics/:metricId", () => {
 		const { statusCode, body } = await server.get(`/v1/metrics/${context.createdMetric2NewId}`);
 		assert.equal(statusCode, 200);
 		assert.equal(body.takenAtOffset, 0);
+	});
+
+	it("Should return Joi validation error for invalid request body", async () => {
+		const { statusCode, body } = await server.put(`/v1/metrics/${context.createdMetricId}`).send({
+			value: "bad",
+			takenAt: "now",
+			metadata: "bad",
+		});
+
+		assert.equal(statusCode, 422);
+		assert.equal(body.name, "ValidationError");
+		assert.isString(body.validation.body.value[0]);
+		assert.isString(body.validation.body.takenAt[0]);
+		assert.isString(body.validation.body.metadata[0]);
+	});
+
+	it("Should return validation error for invalid custom fields", async () => {
+		const { statusCode, body } = await server.put(`/v1/metrics/${context.createdMetricId}`).send({
+			metadata: {
+				a: 3,
+			},
+		});
+
+		assert.equal(statusCode, 422);
+		assert.equal(body.name, "ValidationError");
+		assert.isString(body.validation.body.metadata.a[0]);
 	});
 });
