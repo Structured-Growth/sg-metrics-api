@@ -11,6 +11,7 @@ import {
 	I18nType,
 	HashFields,
 	MaskFields,
+	Emits,
 } from "@structured-growth/microservice-sdk";
 import { MetricAttributes } from "../../../database/models/metric";
 import { MetricSqlRepository } from "../../modules/metric/repositories/metric-sql.repository";
@@ -205,6 +206,8 @@ export class MetricController extends BaseController {
 	@DescribeResource("MetricType", ({ body }) => body.map((i) => i.metricTypeId))
 	@DescribeResource("Device", ({ body }) => body.map((i) => i.deviceId))
 	@HashFields(["value", "metricCategoryCode", "metricTypeCode"])
+	@Emits("-:-:-:events/mutation")
+	@Emits("metrics/create")
 	@ValidateFuncArgs(MetricCreateParamsValidator)
 	async create(
 		@Queries() query: {},

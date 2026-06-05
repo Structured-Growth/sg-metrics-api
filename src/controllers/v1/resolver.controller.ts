@@ -5,12 +5,14 @@ import {
 	BaseController,
 	DescribeAction,
 	NotFoundError,
+	getRegisteredEmits,
 } from "@structured-growth/microservice-sdk";
 import * as controllers from "./index";
 import { ResolveQueryParamsInterface } from "../../interfaces/resolve-query-params.interface";
 import { ResolveResourceResponseInterface } from "../../interfaces/resolve-resource-response.interface";
 import { ResolveActionsResponseInterface } from "../../interfaces/resolve-actions-response.interface";
 import { ResolveModelsResponseInterface } from "../../interfaces/resolve-models-response.interface";
+import { ResolveEventsResponseInterface } from "../../interfaces/resolve-events-response.interface";
 
 @Route("v1/resolver")
 @Tags("Resolver")
@@ -100,6 +102,19 @@ export class ResolverController extends BaseController {
 
 		return {
 			data: models,
+		};
+	}
+
+	/**
+	 * List all microservice emitted events
+	 */
+	@OperationId("List events")
+	@Get("/events")
+	@SuccessResponse(200, "Returns events")
+	@DescribeAction("resolve/events")
+	async events(): Promise<ResolveEventsResponseInterface> {
+		return {
+			data: getRegisteredEmits(),
 		};
 	}
 }
