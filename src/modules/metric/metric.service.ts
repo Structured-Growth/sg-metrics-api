@@ -65,7 +65,7 @@ export class MetricService {
 		this.s3 = new AWS.S3();
 	}
 
-	@Emits("events/metrics/created")
+	@Emits("*:*:*:events/metrics/created")
 	public async create(
 		params: MetricCreateBodyInterface[],
 		transaction?: Transaction,
