@@ -130,7 +130,7 @@ function extractEmitEntry(
 	return {
 		className,
 		targetName,
-		event: resolveEventName(eventArg.text),
+		event: eventArg.text,
 		payloadSchemaName: payloadType ? resolvePayloadSchemaName(payloadTypeNode, payloadType, checker) : undefined,
 		payloadSchema: payloadTypeNode
 			? resolvePayloadSchema(payloadTypeNode, sourceFile, className, targetName, payloadSchemaContext)
@@ -177,15 +177,6 @@ function resolvePayloadSchemaName(typeNode: ts.TypeNode, type: ts.Type, checker:
 
 	const rendered = checker.typeToString(type, typeNode, TYPE_FORMAT_FLAGS);
 	return rendered || undefined;
-}
-
-function resolveEventName(event: string): string {
-	const appPrefix = process.env.APP_PREFIX;
-	if (!appPrefix || event.startsWith(`${appPrefix}:`)) {
-		return event;
-	}
-
-	return `${appPrefix}:${event}`;
 }
 
 function shouldScanSourceFile(fileName: string): boolean {
