@@ -13,6 +13,7 @@ import { ResolveResourceResponseInterface } from "../../interfaces/resolve-resou
 import { ResolveActionsResponseInterface } from "../../interfaces/resolve-actions-response.interface";
 import { ResolveModelsResponseInterface } from "../../interfaces/resolve-models-response.interface";
 import { ResolveEventsResponseInterface } from "../../interfaces/resolve-events-response.interface";
+import { mergeRegisteredEmitsWithManifest, readGeneratedEmitsManifest } from "../../emits/emits-manifest";
 
 @Route("v1/resolver")
 @Tags("Resolver")
@@ -113,8 +114,11 @@ export class ResolverController extends BaseController {
 	@SuccessResponse(200, "Returns events")
 	@DescribeAction("resolve/events")
 	async events(): Promise<ResolveEventsResponseInterface> {
+		const runtimeEmits = getRegisteredEmits();
+		const generatedManifest = readGeneratedEmitsManifest();
+
 		return {
-			data: getRegisteredEmits(),
+			data: mergeRegisteredEmitsWithManifest(runtimeEmits, generatedManifest),
 		};
 	}
 }

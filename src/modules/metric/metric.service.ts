@@ -19,6 +19,7 @@ import * as AWS from "aws-sdk";
 import { MetricSqlRepository } from "./repositories/metric-sql.repository";
 import {
 	Metric,
+	MetricAttributes,
 	MetricCreationAttributes,
 	MetricExtended,
 	MetricUpdateAttributes,
@@ -65,7 +66,7 @@ export class MetricService {
 		this.s3 = new AWS.S3();
 	}
 
-	@Emits("*:*:*:events/metrics/created")
+	@Emits<{ metrics: MetricAttributes[] }>("*:*:*:events/metrics/created")
 	public async create(
 		params: MetricCreateBodyInterface[],
 		transaction?: Transaction,

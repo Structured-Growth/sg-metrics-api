@@ -13,11 +13,12 @@
     "build-docker": "docker build --build-arg github_token=$GITHUB_TOKEN --platform linux/amd64 -t structured-growth/sg-metrics-api:latest .",
     "dev": "nodemon src/cli.ts web",
     "dev-cli": "ts-node src/cli.ts",
+    "emits": "npm run dev-cli emits",
     "dev-link-sdk": "npm link @structured-growth/microservice-sdk",
     "routes": "npm run routes.v1",
     "routes.v1": "tsoa routes -c tsoa.v1.json",
-    "docs": "npm run apidocs.v1 && npm run redoc.v1",
-		"docs:docker": "cp .env.example .env && npm run docs && rm -f .env",
+    "docs": "npm run emits && npm run apidocs.v1 && npm run redoc.v1",
+    "docs:docker": "cp .env.example .env && npm run docs && rm -f .env",
     "apidocs.v1": "npm run dev-cli docs",
     "redoc.v1": "redocly build-docs -o .docs/openapi.v1/index.html .docs/openapi.v1/swagger.json",
     "prettier": "prettier --check src"
@@ -82,6 +83,7 @@
     "semantic-release": "^23.0.0",
     "sequelize-typescript-generator": "^11.0.6",
     "supertest": "^6.3.4",
+    "ts-json-schema-generator": "^2.4.0",
     "ts-node": "^10.9.2",
     "typescript": "^5.3.3"
   },
