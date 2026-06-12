@@ -24,13 +24,16 @@ export function mergeRegisteredEmitsWithManifest<T extends { className?: string;
 	manifestEntries: EmitsManifestEntryInterface[]
 ): Array<T & Partial<EmitsManifestEntryInterface>> {
 	const manifestByKey = new Map(
-		manifestEntries.map((entry) => [
-			buildEmitKey(entry.className, entry.targetName, normalizeEventName(entry.event)),
-			{
-				...entry,
-				event: normalizeEventName(entry.event),
-			},
-		] as const)
+		manifestEntries.map(
+			(entry) =>
+				[
+					buildEmitKey(entry.className, entry.targetName, normalizeEventName(entry.event)),
+					{
+						...entry,
+						event: normalizeEventName(entry.event),
+					},
+				] as const
+		)
 	);
 
 	return registeredEmits.map((emit) => {
