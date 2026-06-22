@@ -71,6 +71,7 @@ router.get(pathPrefix + '/v1/docs/swagger.json', handleRequest(Controllers.DocsC
 router.get(pathPrefix + '/v1/resolver/resolve', handleRequest(Controllers.ResolverController, "resolve", handlerOpts));
 router.get(pathPrefix + '/v1/resolver/actions', handleRequest(Controllers.ResolverController, "actions", handlerOpts));
 router.get(pathPrefix + '/v1/resolver/models', handleRequest(Controllers.ResolverController, "models", handlerOpts));
+router.get(pathPrefix + '/v1/resolver/events', handleRequest(Controllers.ResolverController, "events", handlerOpts));
 
 // map is required for correct resolving action by route
 export const actionToRouteMap = {
@@ -112,4 +113,5 @@ export const actionToRouteMap = {
 	"ResolverController.resolve": 'get /v1/resolver/resolve',
 	"ResolverController.actions": 'get /v1/resolver/actions',
 	"ResolverController.models": 'get /v1/resolver/models',
+	"ResolverController.events": 'get /v1/resolver/events',
 };

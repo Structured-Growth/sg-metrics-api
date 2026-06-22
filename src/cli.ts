@@ -5,6 +5,7 @@ import { container, generateApiDocs, Lifecycle, QueueService } from "@structured
 import { program } from "commander";
 import { Message } from "aws-sdk/clients/sqs";
 import { min } from "lodash";
+import { generateEmitsManifest } from "./emits/generate-emits-manifest";
 
 const cluster = require("node:cluster");
 const http = require("node:http");
@@ -80,6 +81,15 @@ program
 				servers: (process.env.API_DOCS_HOST_LIST || "").split(",").map((url) => ({ url })),
 			},
 		} as any);
+		process.exit();
+	});
+
+program
+	.command("emits")
+	.description("Generate emits manifest")
+	.action(async () => {
+		const entries = generateEmitsManifest();
+		console.log(`Generated emits manifest with ${entries.length} entr${entries.length === 1 ? "y" : "ies"}`);
 		process.exit();
 	});
 

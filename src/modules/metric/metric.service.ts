@@ -12,12 +12,14 @@ import {
 	LoggerTransform,
 	Logger,
 	ValidationError,
+	Emits,
 } from "@structured-growth/microservice-sdk";
 import { v4 } from "uuid";
 import * as AWS from "aws-sdk";
 import { MetricSqlRepository } from "./repositories/metric-sql.repository";
 import {
 	Metric,
+	MetricAttributes,
 	MetricCreationAttributes,
 	MetricExtended,
 	MetricUpdateAttributes,
@@ -64,6 +66,7 @@ export class MetricService {
 		this.s3 = new AWS.S3();
 	}
 
+	@Emits<{ metrics: MetricAttributes[] }>("*:*:*:events/metrics/created")
 	public async create(
 		params: MetricCreateBodyInterface[],
 		transaction?: Transaction,
@@ -103,12 +106,7 @@ export class MetricService {
 
 		const result = await this.metricSqlRepository.create(data, transaction);
 
-		await this.eventBus.publish({
-			arn: `${this.appPrefix}:${data[0].region}:${data[0].orgId}:${data[0].accountId}:events/metrics/created`,
-			data: {
-				metrics: result.map((metric) => metric.toJSON()),
-			},
-		});
+		await this.publishGroupedMetricEvents(result, "created");
 
 		const { typeCodeMap, categoryCodeMap } = await this.getMetricCodeMaps(result, transaction);
 
@@ -167,7 +165,7 @@ export class MetricService {
 		);
 
 		if (createdMetrics.length > 0) {
-			this.publishGroupedMetricEvents(createdMetrics);
+			await this.publishGroupedMetricEvents(createdMetrics, "upsert");
 		}
 
 		const resultMetrics = result.map((item) => new Metric(item.toJSON()));
@@ -586,7 +584,7 @@ export class MetricService {
 		};
 	}
 
-	private publishGroupedMetricEvents(metrics: Metric[]): void {
+	private async publishGroupedMetricEvents(metrics: Metric[], eventName: "created" | "upsert"): Promise<void> {
 		type Group = { arn: string; items: Metric[] };
 		const groups = new Map<string, Group>();
 
@@ -604,7 +602,7 @@ export class MetricService {
 			let entry = groups.get(key);
 			if (!entry) {
 				entry = {
-					arn: `${this.appPrefix}:${region}:${orgId}:${accountId}:events/metrics/upsert`,
+					arn: `${this.appPrefix}:${region}:${orgId}:${accountId}:events/metrics/${eventName}`,
 					items: [],
 				};
 				groups.set(key, entry);
@@ -612,21 +610,24 @@ export class MetricService {
 			entry.items.push(m);
 		}
 
-		for (const { arn, items } of groups.values()) {
-			void this.eventBus
-				.publish({
-					arn,
-					data: {
-						metrics: items.map((metric) => metric.toJSON()),
-					},
-				})
-				.catch((err: unknown) => {
+		await Promise.all(
+			Array.from(groups.values()).map(async ({ arn, items }) => {
+				try {
+					await this.eventBus.publish({
+						arn,
+						data: {
+							metrics: items.map((metric) => metric.toJSON()),
+						},
+					});
+				} catch (err: unknown) {
 					console.log(
-						"Failed to publish metrics upsert event:",
+						`Failed to publish metrics ${eventName} event:`,
 						JSON.stringify({ arn, size: items.length, err: String(err) })
 					);
-				});
-		}
+					throw err;
+				}
+			})
+		);
 	}
 
 	private async validateMetadataList(
