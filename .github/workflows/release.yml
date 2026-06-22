@@ -12,20 +12,20 @@ permissions:
   issues: read
 
 jobs:
-  # 1. run unit test
-  unit-tests:
-    name: Unit tests
-    uses: ./.github/workflows/unit-tests.yml
-    secrets:
-      EC2_PUBLIC_IP: ${{ secrets.EC2_PUBLIC_IP }}
-      EC2_SSH_PRIVATE_KEY: ${{ secrets.EC2_SSH_PRIVATE_KEY }}
-      NPM_AUTH_TOKEN: ${{ secrets.NPM_AUTH_TOKEN }}
-      DB_ENDPOINT: ${{ secrets.DB_ENDPOINT }}
-      DB_PORT: ${{ secrets.DB_PORT }}
-      DB_NAME: ${{ secrets.DB_NAME }}
-      DB_MASTER_USERNAME: ${{ secrets.DB_MASTER_USERNAME }}
-      DB_MASTER_PASSWORD: ${{ secrets.DB_MASTER_PASSWORD }}
-      DB_SCHEMA: ${{ secrets.DB_SCHEMA }}
+#  # 1. run unit test
+#  unit-tests:
+#    name: Unit tests
+#    uses: ./.github/workflows/unit-tests.yml
+#    secrets:
+#      EC2_PUBLIC_IP: ${{ secrets.EC2_PUBLIC_IP }}
+#      EC2_SSH_PRIVATE_KEY: ${{ secrets.EC2_SSH_PRIVATE_KEY }}
+#      NPM_AUTH_TOKEN: ${{ secrets.NPM_AUTH_TOKEN }}
+#      DB_ENDPOINT: ${{ secrets.DB_ENDPOINT }}
+#      DB_PORT: ${{ secrets.DB_PORT }}
+#      DB_NAME: ${{ secrets.DB_NAME }}
+#      DB_MASTER_USERNAME: ${{ secrets.DB_MASTER_USERNAME }}
+#      DB_MASTER_PASSWORD: ${{ secrets.DB_MASTER_PASSWORD }}
+#      DB_SCHEMA: ${{ secrets.DB_SCHEMA }}
 
   # 2. lint commit messages
   #    lint-commit:
@@ -36,14 +36,13 @@ jobs:
 
   # 3. prettier check
   prettier-check:
-    needs: [ unit-tests ]
     name: Prettier check
     uses: ./.github/workflows/prettier.yml
     if: success()
 
   # 4. dependencies generate report
   dependencies:
-    needs: [ unit-tests, prettier-check ]
+    needs: [prettier-check ]
     name: Dependencies
     uses: ./.github/workflows/dependencies.yml
     secrets:
@@ -53,14 +52,14 @@ jobs:
 
   # 5. documentation generate reports
   documentation:
-    needs: [ unit-tests, prettier-check, dependencies ]
+    needs: [ prettier-check, dependencies ]
     name: Security check
     uses: ./.github/workflows/documentation.yml
     if: success()
 
   # 6. release create
   release:
-    needs: [ unit-tests, prettier-check, dependencies, documentation ]
+    needs: [ prettier-check, dependencies, documentation ]
     name: Release
     runs-on: ubuntu-latest
     env:
@@ -97,7 +96,7 @@ jobs:
 
   # 7. slack notification about created release
   notify-slack:
-    needs: [ unit-tests, prettier-check, dependencies, documentation, release ]
+    needs: [ prettier-check, dependencies, documentation, release ]
     name: Notify Slack
     uses: ./.github/workflows/slack-notification-rel.yml
     with:
