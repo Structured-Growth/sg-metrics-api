@@ -1,19 +1,17 @@
 import { Get, Route, Tags, Queries, SuccessResponse, OperationId } from "tsoa";
 import {
-	inject,
 	autoInjectable,
 	BaseController,
 	DescribeAction,
 	NotFoundError,
-	getRegisteredEmits,
+	readGeneratedEmitsManifest,
+	EmitsManifestEntryInterface,
 } from "@structured-growth/microservice-sdk";
 import * as controllers from "./index";
 import { ResolveQueryParamsInterface } from "../../interfaces/resolve-query-params.interface";
 import { ResolveResourceResponseInterface } from "../../interfaces/resolve-resource-response.interface";
 import { ResolveActionsResponseInterface } from "../../interfaces/resolve-actions-response.interface";
 import { ResolveModelsResponseInterface } from "../../interfaces/resolve-models-response.interface";
-import { ResolveEventsResponseInterface } from "../../interfaces/resolve-events-response.interface";
-import { mergeRegisteredEmitsWithManifest, readGeneratedEmitsManifest } from "../../emits/emits-manifest";
 
 @Route("v1/resolver")
 @Tags("Resolver")
@@ -107,18 +105,15 @@ export class ResolverController extends BaseController {
 	}
 
 	/**
-	 * List all microservice emitted events
+	 * List all events emitted by the microservice
 	 */
 	@OperationId("List events")
 	@Get("/events")
 	@SuccessResponse(200, "Returns events")
 	@DescribeAction("resolve/events")
-	async events(): Promise<ResolveEventsResponseInterface> {
-		const runtimeEmits = getRegisteredEmits();
-		const generatedManifest = readGeneratedEmitsManifest();
-
+	async events(): Promise<{ data: EmitsManifestEntryInterface[] }> {
 		return {
-			data: mergeRegisteredEmitsWithManifest(runtimeEmits, generatedManifest),
+			data: readGeneratedEmitsManifest(),
 		};
 	}
 }
