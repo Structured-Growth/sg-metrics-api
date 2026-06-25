@@ -66,7 +66,7 @@ export class MetricService {
 		this.s3 = new AWS.S3();
 	}
 
-	@Emits<{ metrics: MetricAttributes[] }>("*:*:*:events/metrics/created")
+	@Emits<{ metrics: MetricAttributes[] }>("events/metrics/created", [Metric])
 	public async create(
 		params: MetricCreateBodyInterface[],
 		transaction?: Transaction,
@@ -119,6 +119,7 @@ export class MetricService {
 		);
 	}
 
+	@Emits<{ metrics: MetricAttributes[] }>("events/metrics/upserted", [Metric])
 	public async upsert(
 		params: MetricCreateBodyInterface[],
 		transaction?: Transaction,
@@ -165,7 +166,7 @@ export class MetricService {
 		);
 
 		if (createdMetrics.length > 0) {
-			await this.publishGroupedMetricEvents(createdMetrics, "upsert");
+			await this.publishGroupedMetricEvents(createdMetrics, "upserted");
 		}
 
 		const resultMetrics = result.map((item) => new Metric(item.toJSON()));
@@ -339,6 +340,7 @@ export class MetricService {
 		};
 	}
 
+	@Emits<MetricAttributes>("events/metrics/updated", [Metric])
 	public async update(
 		id: string,
 		params: MetricUpdateAttributes & { metricTypeCode?: string; metricTypeVersion?: number },
@@ -386,6 +388,12 @@ export class MetricService {
 
 		const metric = new Metric(updatedMetric.toJSON());
 
+		await this.eventBus.publish({
+			arn: `events/metrics/updated`,
+			data: metric.toJSON(),
+			resources: [metric.arn],
+		});
+
 		let metricCategoryCode: string | undefined;
 
 		if (metricType) {
@@ -406,16 +414,23 @@ export class MetricService {
 		}) as MetricExtended;
 	}
 
+	@Emits<MetricAttributes>("events/metrics/deleted", [Metric])
 	public async delete(id: string, transaction?: Transaction): Promise<{ id: string; arn?: string; deleted: boolean }> {
-		const metricAurora = await this.metricSqlRepository.read(id, { transaction });
+		const metric = await this.metricSqlRepository.read(id, { transaction });
 
-		if (!metricAurora) {
+		if (!metric) {
 			return { id, deleted: false };
 		}
 
 		await this.metricSqlRepository.delete(id, transaction);
 
-		return { id, arn: metricAurora.arn, deleted: true };
+		await this.eventBus.publish({
+			arn: `events/metrics/deleted`,
+			data: metric.toJSON(),
+			resources: [metric.arn],
+		});
+
+		return { id, arn: metric.arn, deleted: true };
 	}
 
 	public async bulk(data: MetricsBulkDataInterface, parentOrgIds: number[] = []): Promise<MetricsBulkResultInterface> {
@@ -584,7 +599,7 @@ export class MetricService {
 		};
 	}
 
-	private async publishGroupedMetricEvents(metrics: Metric[], eventName: "created" | "upsert"): Promise<void> {
+	private async publishGroupedMetricEvents(metrics: Metric[], eventName: "created" | "upserted"): Promise<void> {
 		type Group = { arn: string; items: Metric[] };
 		const groups = new Map<string, Group>();
 
@@ -602,7 +617,7 @@ export class MetricService {
 			let entry = groups.get(key);
 			if (!entry) {
 				entry = {
-					arn: `${this.appPrefix}:${region}:${orgId}:${accountId}:events/metrics/${eventName}`,
+					arn: `events/metrics/${eventName}`,
 					items: [],
 				};
 				groups.set(key, entry);
@@ -615,6 +630,7 @@ export class MetricService {
 				try {
 					await this.eventBus.publish({
 						arn,
+						resources: items.map((i) => i.arn),
 						data: {
 							metrics: items.map((metric) => metric.toJSON()),
 						},

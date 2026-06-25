@@ -67,25 +67,17 @@ export class MetricSQL extends Model<MetricAttributes, MetricCreationAttributes>
 	metadata: Record<string, unknown>;
 
 	static get arnPattern(): string {
-		return [
-			container.resolve("appPrefix"),
-			"<region>",
-			"<orgId>",
-			"<accountId>",
-			"users/<userId>/devices/<deviceId>/metric-categories/<metricCategoryId>/metric-types/<metricTypeId>/metrics/<metricId>",
-		].join(":");
+		return [container.resolve("appPrefix"), ":<region>", ":<orgId>", ":<accountId>", ":metrics/<metricId>"].join("");
 	}
 
 	get arn(): string {
 		return [
 			container.resolve("appPrefix"),
-			this.region,
-			this.orgId,
-			this.accountId || "-",
-			`users/${this.userId}/devices/${this.deviceId || "-"}/metric-categories/${this.metricCategoryId}/metric-types/${
-				this.metricTypeId
-			}/metrics/${this.id}`,
-		].join(":");
+			`:${this.region}`,
+			`:${this.orgId}`,
+			`:${this.accountId}` || "-",
+			`:metrics/${this.id}`,
+		].join("");
 	}
 }
 

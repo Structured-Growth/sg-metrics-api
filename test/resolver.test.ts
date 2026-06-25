@@ -24,7 +24,7 @@ describe("Test resolver", () => {
 	it("Should return list of actions", async () => {
 		const { data } = await controller.actions();
 		assert.isArray(data);
-		assert.equal(data.filter((item) => item.action.includes("resolve")).length, 3);
+		assert.equal(data.filter((item) => item.action.includes("resolve")).length, 4);
 	});
 
 	it("Should return list of models", async () => {
